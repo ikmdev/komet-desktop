@@ -491,26 +491,37 @@ public class App extends Application  {
     }
 
     private void appStateChangeListener(ObservableValue<? extends AppState> observable, AppState oldValue, AppState newValue) {
+        LOG.info("App state transition: {} → {}", oldValue, newValue);
         try {
             switch (newValue) {
                 case SELECTED_DATA_SOURCE -> {
+                    LOG.info("Transitioning to LOADING_DATA_SOURCE");
                     Platform.runLater(() -> state.set(LOADING_DATA_SOURCE));
                     TinkExecutor.threadPool().submit(new LoadDataSourceTask(state));
                 }
                 case SELECT_USER -> {
+                    LOG.info("Launching login author screen");
                     appPages.launchLoginAuthor(primaryStage);
+                    LOG.info("Login author screen launched successfully");
                 }
                 case RUNNING -> {
+                    LOG.info("App entering RUNNING state");
                     if (userProperty.get() == null) {
                         //If user property is not set then use the TinkarTerm.User concept.
+                        LOG.info("No user set, using TinkarTerm.USER");
                         userProperty.set(TinkarTerm.USER);
                     }
+                    LOG.info("Launching landing page for user: {}", userProperty.get());
                     appPages.launchLandingPage(primaryStage, (ConceptFacade) userProperty.get());
+                    LOG.info("Landing page launched successfully");
                 }
-                case SHUTDOWN -> quit();
+                case SHUTDOWN -> {
+                    LOG.info("App shutting down");
+                    quit();
+                }
             }
         } catch (Throwable e) {
-            LOG.error("Error during state change", e);
+            LOG.error("Error during state change from {} to {}", oldValue, newValue, e);
             Platform.exit();
         }
     }
