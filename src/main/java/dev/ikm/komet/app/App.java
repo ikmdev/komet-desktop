@@ -120,6 +120,10 @@ public class App extends Application  {
     public static final SimpleObjectProperty<AppState> state = new SimpleObjectProperty<>(STARTING);
     public static final SimpleObjectProperty<ConceptFacade> userProperty = new SimpleObjectProperty<>();
 
+    // Shutdown coordination flags
+    private static volatile boolean shutdownInProgress = false;
+    private static volatile boolean primitiveDataStopped = false;
+
     static Stage primaryStage;
 
     WebAPI webAPI;
@@ -186,12 +190,42 @@ public class App extends Application  {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             LOG.info("Starting shutdown hook");
 
+            // Only perform cleanup if PrimitiveData hasn't been stopped yet
+            // AND we're not in the middle of a JavaFX shutdown (which can cause native crashes)
+            if (primitiveDataStopped) {
+                LOG.info("PrimitiveData already stopped - skipping shutdown hook cleanup");
+                LOG.info("Finished shutdown hook");
+                return;
+            }
+
             try {
-                // Save and stop primitive data services gracefully
-                PrimitiveData.save();
-                PrimitiveData.stop();
-            } catch (Exception e) {
+                LOG.info("PrimitiveData not yet stopped - performing emergency shutdown");
+
+                // Quick timeout-based shutdown to avoid hanging during JVM termination
+                Thread shutdownThread = new Thread(() -> {
+                    try {
+                        PrimitiveData.save();
+                        PrimitiveData.stop();
+                        primitiveDataStopped = true;
+                        LOG.info("Emergency shutdown completed successfully");
+                    } catch (Throwable e) {
+                        LOG.error("Error during emergency PrimitiveData shutdown", e);
+                    }
+                });
+
+                shutdownThread.setDaemon(true);
+                shutdownThread.start();
+
+                // Wait max 2 seconds for clean shutdown, then let JVM exit anyway
+                shutdownThread.join(2000);
+
+                if (shutdownThread.isAlive()) {
+                    LOG.warn("Emergency shutdown did not complete in time - forcing JVM exit");
+                }
+            } catch (Throwable e) {
+                // Use Throwable to catch all errors including native crashes
                 LOG.error("Error during shutdown hook execution", e);
+                // Don't rethrow - allow JVM to shutdown cleanly
             }
 
             LOG.info("Finished shutdown hook");
@@ -382,6 +416,9 @@ public class App extends Application  {
     public void stop() {
         LOG.info("Stopping application\n\n###############\n\n");
 
+        // Set shutdown flag to prevent further state transitions
+        shutdownInProgress = true;
+
         appGithub.disconnectFromGithub();
 
         if (IS_DESKTOP) {
@@ -492,6 +529,13 @@ public class App extends Application  {
 
     private void appStateChangeListener(ObservableValue<? extends AppState> observable, AppState oldValue, AppState newValue) {
         LOG.info("App state transition: {} → {}", oldValue, newValue);
+
+        // Prevent state transitions if shutdown is already in progress
+        if (shutdownInProgress && newValue != SHUTDOWN) {
+            LOG.warn("Ignoring state transition to {} because shutdown is in progress", newValue);
+            return;
+        }
+
         try {
             switch (newValue) {
                 case SELECTED_DATA_SOURCE -> {
@@ -522,8 +566,46 @@ public class App extends Application  {
             }
         } catch (Throwable e) {
             LOG.error("Error during state change from {} to {}", oldValue, newValue, e);
-            Platform.exit();
+            // Perform critical data cleanup before exit (skip UI cleanup which may be unsafe)
+            try {
+                stopDataServices();
+            } catch (Exception cleanupException) {
+                LOG.error("Error during emergency data cleanup", cleanupException);
+            }
+
+            // Give background threads time to complete
+            try {
+                LOG.info("Waiting for background threads to settle");
+                Thread.sleep(500);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+
+            // Don't call Platform.exit() - it can cause native crashes during error handling
+            // Instead, call System.exit() to terminate cleanly without JavaFX shutdown
+            LOG.info("Calling System.exit(1) - data already saved, skipping JavaFX shutdown");
+            System.exit(1);
         }
+    }
+
+    /**
+     * Stops data services (PrimitiveData and Preferences).
+     * Safe to call multiple times.
+     */
+    private void stopDataServices() {
+        // Stop PrimitiveData only once
+        if (!primitiveDataStopped) {
+            LOG.info(">>> Stopping PrimitiveData");
+            PrimitiveData.stop();
+            primitiveDataStopped = true;
+            LOG.info(">>> PrimitiveData stopped");
+        } else {
+            LOG.info(">>> PrimitiveData already stopped - skipping");
+        }
+
+        LOG.info(">>> Stopping Preferences");
+        Preferences.stop();
+        LOG.info(">>> Preferences stopped");
     }
 
     public void quit() {
@@ -532,87 +614,11 @@ public class App extends Application  {
         saveJournalWindowsToPreferences();
         LOG.info(">>> Saved journal windows to preferences");
 
-        PrimitiveData.stop();
-        LOG.info(">>> PrimitiveData stopped");
+        stopDataServices();
 
-        Preferences.stop();
-        LOG.info(">>> Preferences stopped");
-
-        if (IS_MAC) {
-            LOG.info(">>> macOS detected - disabling NSApplication integration");
-
-            // CRITICAL: Must execute synchronously if already on JavaFX thread
-            if (Platform.isFxApplicationThread()) {
-                LOG.info(">>> Executing synchronously on JavaFX thread");
-
-                try {
-                    LOG.info(">>> Clearing NSApplication delegate");
-                    MenuToolkit tk = MenuToolkit.toolkit();
-                    // Force cleanup of NSApplication delegate
-                    tk.setApplicationMenu(new Menu());
-                    LOG.info(">>> NSApplication delegate cleared");
-                } catch (Exception e) {
-                    LOG.error("Error clearing NSApplication delegate", e);
-                }
-
-                LOG.info(">>> Closing {} windows", Window.getWindows().size());
-                List<Window> windowsCopy = new ArrayList<>(Window.getWindows());
-                for (Window window : windowsCopy) {
-                    try {
-                        LOG.info(">>> Closing window: {}", window);
-                        if (window instanceof Stage stage) {
-                            stage.close();
-                        } else {
-                            window.hide();
-                        }
-                    } catch (Exception e) {
-                        LOG.error("Error closing window", e);
-                    }
-                }
-                LOG.info(">>> All windows closed");
-            } else {
-                // If not on FX thread, schedule and wait
-                LOG.info(">>> Scheduling on JavaFX thread");
-
-                CountDownLatch latch = new CountDownLatch(1);
-                Platform.runLater(() -> {
-                    try {
-                        LOG.info(">>> Clearing NSApplication delegate");
-                        MenuToolkit tk = MenuToolkit.toolkit();
-                        tk.setApplicationMenu(new Menu());
-                        LOG.info(">>> NSApplication delegate cleared");
-
-                        LOG.info(">>> Closing {} windows", Window.getWindows().size());
-                        List<Window> windowsCopy = new ArrayList<>(Window.getWindows());
-                        for (Window window : windowsCopy) {
-                            try {
-                                LOG.info(">>> Closing window: {}", window);
-                                if (window instanceof Stage stage) {
-                                    stage.close();
-                                } else {
-                                    window.hide();
-                                }
-                            } catch (Exception e) {
-                                LOG.error("Error closing window", e);
-                            }
-                        }
-                        LOG.info(">>> All windows closed");
-                    } catch (Exception e) {
-                        LOG.error("Error in macOS cleanup", e);
-                    } finally {
-                        latch.countDown();
-                    }
-                });
-
-                try {
-                    latch.await(500, java.util.concurrent.TimeUnit.MILLISECONDS);
-                    LOG.info(">>> macOS cleanup completed");
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    LOG.error("Interrupted waiting for macOS cleanup");
-                }
-            }
-        }
+        // Note: Removed explicit macOS MenuToolkit cleanup as it conflicts with
+        // Platform.exit()'s own native shutdown, causing SIGSEGV in objc_msgSend.
+        // Platform.exit() will handle all JavaFX/native cleanup automatically.
 
         LOG.info(">>> Calling Platform.exit()");
 
