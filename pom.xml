@@ -292,22 +292,7 @@
             <groupId>dev.ikm.ike</groupId>
             <artifactId>rocks-kb-engine</artifactId>
         </dependency>
-        <dependency>
-            <groupId>dev.ikm.jpms</groupId>
-            <artifactId>rocksdbjni-jpms</artifactId>
-            <version>10.4.2.r1-SNAPSHOT</version>
-            <classifier>osx</classifier>
-            <exclusions>
-                <exclusion>
-                    <groupId>net.java.dev.jna</groupId>
-                    <artifactId>jna</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>net.java.dev.jna</groupId>
-                    <artifactId>jna-platform</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+        <!-- rocksdbjni-jpms moved to OS-specific profiles below -->
         <dependency>
             <groupId>dev.ikm.jpms</groupId>
             <artifactId>jna-jpms</artifactId>
@@ -773,6 +758,47 @@
                         </configuration>
                     </execution>
 
+                    <!-- Windows-specific version components (Major.Minor.Build.Revision) -->
+                    <execution>
+                        <id>timestamp-property-win-major</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>timestamp-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>win.version.major</name>
+                            <pattern>yy</pattern>
+                            <locale>en_US</locale>
+                            <timeZone>UTC</timeZone>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>timestamp-property-win-minor</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>timestamp-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>win.version.minor</name>
+                            <pattern>MMdd</pattern>
+                            <locale>en_US</locale>
+                            <timeZone>UTC</timeZone>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>timestamp-property-win-build</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>timestamp-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>win.version.build</name>
+                            <pattern>HHmm</pattern>
+                            <locale>en_US</locale>
+                            <timeZone>UTC</timeZone>
+                        </configuration>
+                    </execution>
+
                     <!-- Detect if this is a SNAPSHOT build -->
                     <execution>
                         <id>detect-snapshot</id>
@@ -816,6 +842,36 @@
                             <regex>^$</regex>
                             <replacement>0</replacement>
                             <failIfNoMatch>false</failIfNoMatch>
+                        </configuration>
+                    </execution>
+
+                    <!-- Set Windows version revision (same as build.qualifier) -->
+                    <execution>
+                        <id>set-win-revision</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>regex-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>win.version.revision</name>
+                            <value>${build.qualifier}</value>
+                            <regex>^(.+)$</regex>
+                            <replacement>$1</replacement>
+                        </configuration>
+                    </execution>
+
+                    <!-- Create Windows-specific version string (Major.Minor.Build.Revision) -->
+                    <execution>
+                        <id>set-win-version</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>regex-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>win.app.version</name>
+                            <value>${win.version.major}.${win.version.minor}.${win.version.build}.${win.version.revision}</value>
+                            <regex>^(.+)$</regex>
+                            <replacement>$1</replacement>
                         </configuration>
                     </execution>
 
@@ -881,6 +937,7 @@
                             <target>
                                 <echo message="JPackage App Name: ${jpackage.app.name}"/>
                                 <echo message="JPackage App Version: ${jpackage.app.version}"/>
+                                <echo message="Windows App Version: ${win.app.version}"/>
                                 <echo message="Is Snapshot: ${is.snapshot}"/>
                             </target>
                         </configuration>
@@ -1012,6 +1069,24 @@
                 <jpackage.icon>src/main/resources/icons/KOMET.icns</jpackage.icon>
                 <jpackage.resourceDir>installer_resources/resourceDir_unix</jpackage.resourceDir>
             </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>dev.ikm.jpms</groupId>
+                    <artifactId>rocksdbjni-jpms</artifactId>
+                    <version>10.4.2.r1-SNAPSHOT</version>
+                    <classifier>osx</classifier>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>net.java.dev.jna</groupId>
+                            <artifactId>jna</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>net.java.dev.jna</groupId>
+                            <artifactId>jna-platform</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
         </profile>
         <profile>
             <id>linux</id>
@@ -1026,6 +1101,24 @@
                 <jpackage.icon>src/main/resources/icons/Komet.png</jpackage.icon>
                 <jpackage.resourceDir>installer_resources/resourceDir_unix</jpackage.resourceDir>
             </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>dev.ikm.jpms</groupId>
+                    <artifactId>rocksdbjni-jpms</artifactId>
+                    <version>10.4.2.r1-SNAPSHOT</version>
+                    <classifier>linux64</classifier>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>net.java.dev.jna</groupId>
+                            <artifactId>jna</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>net.java.dev.jna</groupId>
+                            <artifactId>jna-platform</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
         </profile>
         <profile>
             <id>windows</id>
@@ -1038,7 +1131,27 @@
                 <jpackage.type>MSI</jpackage.type>
                 <jpackage.icon>src/main/resources/icons/Komet.ico</jpackage.icon>
                 <jpackage.resourceDir>installer_resources/resourceDir_win</jpackage.resourceDir>
+                <!-- Override jpackage.app.version for Windows with proper format -->
+                <jpackage.app.version>${win.app.version}</jpackage.app.version>
             </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>dev.ikm.jpms</groupId>
+                    <artifactId>rocksdbjni-jpms</artifactId>
+                    <version>10.4.2.r1-SNAPSHOT</version>
+                    <classifier>win64</classifier>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>net.java.dev.jna</groupId>
+                            <artifactId>jna</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>net.java.dev.jna</groupId>
+                            <artifactId>jna-platform</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
         </profile>
         <profile>
             <id>jlink-profile</id>
