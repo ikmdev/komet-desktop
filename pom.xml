@@ -295,11 +295,11 @@
         <!-- rocksdbjni-jpms moved to OS-specific profiles below -->
         <dependency>
             <groupId>dev.ikm.jpms</groupId>
-            <artifactId>jna-jpms</artifactId>
+            <artifactId>jna</artifactId>
         </dependency>
         <dependency>
             <groupId>dev.ikm.jpms</groupId>
-            <artifactId>jna-platform-jpms</artifactId>
+            <artifactId>jna-platform</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -384,16 +384,15 @@
                             </artifactItem>
                             <artifactItem>
                                 <groupId>dev.ikm.jpms</groupId>
-                                <artifactId>rocksdbjni-jpms</artifactId>
-                                <version>10.4.2.r1-SNAPSHOT</version>
+                                <artifactId>rocksdbjni</artifactId>
                             </artifactItem>
                             <artifactItem>
                                 <groupId>dev.ikm.jpms</groupId>
-                                <artifactId>jna-jpms</artifactId>
+                                <artifactId>jna</artifactId>
                             </artifactItem>
                             <artifactItem>
                                 <groupId>dev.ikm.jpms</groupId>
-                                <artifactId>jna-platform-jpms</artifactId>
+                                <artifactId>jna-platform</artifactId>
                             </artifactItem>
                         </artifactItems>
                     </configuration>
