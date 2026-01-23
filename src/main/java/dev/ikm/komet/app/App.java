@@ -20,6 +20,7 @@ import de.jangassen.MenuToolkit;
 import dev.ikm.komet.framework.ScreenInfo;
 import dev.ikm.komet.framework.graphics.LoadFonts;
 import dev.ikm.komet.framework.preferences.PrefX;
+import dev.ikm.komet.app.aboutdialog.BuildInfoProperties;
 import dev.ikm.komet.kview.events.CreateJournalEvent;
 import dev.ikm.komet.kview.events.CreateKLEditorWindowEvent;
 import dev.ikm.komet.kview.events.SignInUserEvent;
@@ -63,11 +64,14 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.prefs.BackingStoreException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static dev.ikm.komet.app.AppState.LOADING_DATA_SOURCE;
 import static dev.ikm.komet.app.AppState.LOGIN;
@@ -242,11 +246,59 @@ public class App extends Application  {
         System.out.println(context.getConfiguration());
     }
 
+    private static void logStartupInfo() {
+        BuildInfoProperties buildInfo = new BuildInfoProperties();
+        String buildVersion = buildInfo.getBuildVersion();
+        String mavenVersion = buildInfo.getMavenVersion();
+        String version = (buildVersion != null && !buildVersion.isBlank() && !buildVersion.equals("${build.version}"))
+                ? buildVersion
+                : mavenVersion;
+
+        LOG.info("Komet version: {}", version);
+        LOG.info("Build time: {}", buildInfo.getBuildTime());
+        LOG.info("Runtime: java={}, javafx={}, os={}, arch={}, platform={}",
+                System.getProperty("java.version"),
+                System.getProperty("javafx.runtime.version"),
+                System.getProperty("os.name"),
+                System.getProperty("os.arch"),
+                IS_BROWSER ? "browser" : (IS_DESKTOP ? "desktop" : "unknown"));
+
+        logModuleJars();
+    }
+
+    private static void logModuleJars() {
+        Path[] candidates = new Path[] { Path.of("module-jars"), Path.of("..", "module-jars") };
+        for (Path dir : candidates) {
+            if (!Files.isDirectory(dir)) {
+                continue;
+            }
+
+            LOG.info("module-jars directory: {}", dir.toAbsolutePath());
+            try (Stream<Path> stream = Files.list(dir)) {
+                List<String> jarNames = stream
+                        .map(path -> path.getFileName().toString())
+                        .sorted()
+                        .collect(Collectors.toList());
+                if (jarNames.isEmpty()) {
+                    LOG.info("module-jars is empty");
+                } else {
+                    LOG.info("module-jars contents ({}): {}", jarNames.size(), String.join(", ", jarNames));
+                }
+            } catch (IOException e) {
+                LOG.warn("Failed to list module-jars contents from {}", dir.toAbsolutePath(), e);
+            }
+            return;
+        }
+
+        LOG.info("module-jars directory not found in working directory or parent");
+    }
+
     @Override
     public void init() throws Exception {
         initLog4J2FromConf();
 
         LOG.info("Starting Komet");
+        logStartupInfo();
 
         // Set system properties for macOS look and feel and application name in the menu bar
         configureMacOSProperties();

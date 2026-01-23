@@ -10,6 +10,9 @@
           <entry name="$MAVEN_REPOSITORY$/io/soabase/record-builder/record-builder-core/34/record-builder-core-34.jar" />
           <entry name="$MAVEN_REPOSITORY$/com/squareup/javapoet/1.12.1/javapoet-1.12.1.jar" />
           <entry name="$MAVEN_REPOSITORY$/io/soabase/record-builder/record-builder-processor/34/record-builder-processor-34.jar" />
+          <entry name="$MAVEN_REPOSITORY$/io/soabase/record-builder/record-builder-core/34/record-builder-core-34.jar" />
+          <entry name="$MAVEN_REPOSITORY$/com/squareup/javapoet/1.12.1/javapoet-1.12.1.jar" />
+          <entry name="$MAVEN_REPOSITORY$/io/soabase/record-builder/record-builder-processor/34/record-builder-processor-34.jar" />
         </processorPath>
         <module name="komet-desktop" />
       </profile>
