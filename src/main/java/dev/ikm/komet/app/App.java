@@ -267,7 +267,18 @@ public class App extends Application  {
     }
 
     private static void logModuleJars() {
-        Path[] candidates = new Path[] { Path.of("module-jars"), Path.of("..", "module-jars") };
+        List<Path> candidates = new ArrayList<>();
+        candidates.add(Path.of("module-jars"));
+        candidates.add(Path.of("..", "module-jars"));
+
+        String javaHome = System.getProperty("java.home");
+        if (javaHome != null && !javaHome.isBlank()) {
+            Path javaHomePath = Path.of(javaHome);
+            candidates.add(javaHomePath.resolve("module-jars"));
+            candidates.add(javaHomePath.resolve("..").resolve("module-jars"));
+            candidates.add(javaHomePath.resolve("..").resolve("..").resolve("module-jars"));
+        }
+
         for (Path dir : candidates) {
             if (!Files.isDirectory(dir)) {
                 continue;
