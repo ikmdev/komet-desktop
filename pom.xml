@@ -48,7 +48,7 @@
             <dependency>
                 <groupId>dev.ikm.ike</groupId>
                 <artifactId>ike-bom</artifactId>
-                <version>${ike-bom.version}</version>
+                <version>3.0.7-kec-jan-19-SNAPSHOT</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

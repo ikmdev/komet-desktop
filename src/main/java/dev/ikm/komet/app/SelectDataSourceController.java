@@ -29,6 +29,11 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
+
+import dev.ikm.tinkar.common.service.ServiceExclusionGroup;
+import dev.ikm.tinkar.common.service.ServiceLifecycleManager;
+import java.util.List;
+import java.util.Map;
 import org.controlsfx.control.PropertySheet;
 import org.controlsfx.validation.ValidationMessage;
 import org.controlsfx.validation.ValidationResult;
@@ -90,8 +95,17 @@ public class SelectDataSourceController {
     void initialize() {
         assert dataSourceChoiceBox != null : "fx:id=\"dataSourceChoiceBox\" was not injected: check your FXML file 'SelectDataSource.fxml'.";
         assert cancelButton != null : "fx:id=\"cancelButton\" was not injected: check your FXML file 'SelectDataSource.fxml'.";
-        ObservableList<DataServiceController<?>> controllerOptions = FXCollections.observableList(PrimitiveData.getControllerOptions());
-        controllerOptions.forEach(dataServiceController -> dataSourceChoiceBox.getItems().add(dataServiceController));
+
+        ServiceLifecycleManager lifecycleManager = ServiceLifecycleManager.get();
+    
+        // Ensure services are discovered
+        if (!lifecycleManager.isDiscovered()) {
+            lifecycleManager.discoverServices();
+        }
+
+        // Get sorted DATA_PROVIDER services (already sorted alphabetically)
+        lifecycleManager.getServicesForGroup(ServiceExclusionGroup.DATA_PROVIDER)
+                .forEach(service -> dataSourceChoiceBox.getItems().add((DataServiceController<?>) service));
 
         dataSourceChoiceBox.getSelectionModel().selectedItemProperty().addListener(this::dataSourceChanged);
 
@@ -104,11 +118,10 @@ public class SelectDataSourceController {
         propertySheet.setPropertyEditorFactory(new KometPropertyEditorFactory(null));
 
         // Set default data service
-        controllerOptions.stream()
+        dataSourceChoiceBox.getItems().stream()
                 .filter(dataServiceController -> "Open SpinedArrayStore".equals(dataServiceController.controllerName()))
                 .findFirst()
                 .ifPresentOrElse(dataSourceChoiceBox.getSelectionModel()::select,
-                        // If default data service is not found, select the first one on the choice box.
                         dataSourceChoiceBox.getSelectionModel()::selectFirst);
     }
 
@@ -174,10 +187,13 @@ public class SelectDataSourceController {
     void okButtonPressed(ActionEvent event) {
         saveDataServiceProperties(dataSourceChoiceBox.getValue());
         dataSourceChoiceBox.getValue().setDataUriOption(fileListView.getSelectionModel().getSelectedItem());
-        dev.ikm.tinkar.common.service.ServiceLifecycleManager.get().selectServiceForGroup(
-            dev.ikm.tinkar.common.service.ServiceExclusionGroup.DATA_PROVIDER,
+        
+        // Select the service for the group BEFORE starting services
+        ServiceLifecycleManager.get().selectServiceForGroup(
+            ServiceExclusionGroup.DATA_PROVIDER,
             dataSourceChoiceBox.getValue().getClass()
         );
+        
         TabPane progressTabPane = new TabPane();
         rootBorderPane.setCenter(progressTabPane);
         rootBorderPane.setTop(null);
