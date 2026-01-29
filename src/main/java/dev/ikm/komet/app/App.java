@@ -17,6 +17,7 @@ package dev.ikm.komet.app;
 
 import com.jpro.webapi.WebAPI;
 import de.jangassen.MenuToolkit;
+import dev.ikm.komet.app.aboutdialog.BuildInfoProperties;
 import dev.ikm.komet.framework.ScreenInfo;
 import dev.ikm.komet.framework.graphics.LoadFonts;
 import dev.ikm.komet.framework.preferences.PrefX;
