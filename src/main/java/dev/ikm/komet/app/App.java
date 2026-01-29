@@ -20,7 +20,6 @@ import de.jangassen.MenuToolkit;
 import dev.ikm.komet.framework.ScreenInfo;
 import dev.ikm.komet.framework.graphics.LoadFonts;
 import dev.ikm.komet.framework.preferences.PrefX;
-import dev.ikm.komet.app.aboutdialog.BuildInfoProperties;
 import dev.ikm.komet.kview.events.CreateJournalEvent;
 import dev.ikm.komet.kview.events.CreateKLEditorWindowEvent;
 import dev.ikm.komet.kview.events.SignInUserEvent;
@@ -64,14 +63,11 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.prefs.BackingStoreException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static dev.ikm.komet.app.AppState.LOADING_DATA_SOURCE;
 import static dev.ikm.komet.app.AppState.LOGIN;
@@ -117,16 +113,15 @@ import static dev.ikm.tinkar.events.FrameworkTopics.IMPORT_TOPIC;
  * @see LoginFeatureFlag
  * @see KometPreferences
  */
-public class App extends Application {
+public class App extends Application  {
 
     private static final Logger LOG = LoggerFactory.getLogger(App.class);
     public static final String ICON_LOCATION = "/icons/Komet.png";
     public static final SimpleObjectProperty<AppState> state = new SimpleObjectProperty<>(STARTING);
     public static final SimpleObjectProperty<ConceptFacade> userProperty = new SimpleObjectProperty<>();
 
-    // Shutdown coordination flags - using AtomicBoolean for thread-safe check-and-set
-    private static final Object SHUTDOWN_LOCK = new Object();
-    static volatile boolean shutdownInProgress = false;
+    // Shutdown coordination flags
+    private static volatile boolean shutdownInProgress = false;
     private static volatile boolean primitiveDataStopped = false;
 
     static Stage primaryStage;
@@ -191,40 +186,51 @@ public class App extends Application {
      * cleanup operations are performed even if the application is terminated unexpectedly.
      */
     private static void addShutdownHook() {
-    LOG.info("Adding shutdown hook");
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-        LOG.info("Starting shutdown hook");
-        
-        // Synchronize to prevent concurrent execution with quit()
-        synchronized (SHUTDOWN_LOCK) {
-            // Only run shutdown hook cleanup if quit() hasn't already been called
-            if (shutdownInProgress) {
-                LOG.info("quit() already in progress - shutdown hook exiting early");
+        // Adding a shutdown hook that ensures data is saved and resources are released before the application exits
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            LOG.info("Starting shutdown hook");
+
+            // Only perform cleanup if PrimitiveData hasn't been stopped yet
+            // AND we're not in the middle of a JavaFX shutdown (which can cause native crashes)
+            if (primitiveDataStopped) {
+                LOG.info("PrimitiveData already stopped - skipping shutdown hook cleanup");
+                LOG.info("Finished shutdown hook");
                 return;
             }
-            
-            // Mark that we're shutting down
-            shutdownInProgress = true;
-        }
-        
-        // Only stop PrimitiveData in the shutdown hook if it hasn't been stopped already
-        // Use synchronized block to ensure atomic check-and-set
-        synchronized (SHUTDOWN_LOCK) {
-            if (!primitiveDataStopped) {
+
+            try {
                 LOG.info("PrimitiveData not yet stopped - performing emergency shutdown");
-                primitiveDataStopped = true; // Set BEFORE calling stop()
-                try {
-                    PrimitiveData.stop();
-                    LOG.info("PrimitiveData stopped in shutdown hook");
-                } catch (Throwable t) {
-                    LOG.error("Error stopping PrimitiveData in shutdown hook", t);
+
+                // Quick timeout-based shutdown to avoid hanging during JVM termination
+                Thread shutdownThread = new Thread(() -> {
+                    try {
+                        PrimitiveData.save();
+                        PrimitiveData.stop();
+                        primitiveDataStopped = true;
+                        LOG.info("Emergency shutdown completed successfully");
+                    } catch (Throwable e) {
+                        LOG.error("Error during emergency PrimitiveData shutdown", e);
+                    }
+                });
+
+                shutdownThread.setDaemon(true);
+                shutdownThread.start();
+
+                // Wait max 2 seconds for clean shutdown, then let JVM exit anyway
+                shutdownThread.join(2000);
+
+                if (shutdownThread.isAlive()) {
+                    LOG.warn("Emergency shutdown did not complete in time - forcing JVM exit");
                 }
-            } else {
-                LOG.info("PrimitiveData already stopped - shutdown hook skipping");
+            } catch (Throwable e) {
+                // Use Throwable to catch all errors including native crashes
+                LOG.error("Error during shutdown hook execution", e);
+                // Don't rethrow - allow JVM to shutdown cleanly
             }
-        }
-    }, "Komet-Shutdown-Hook"));
-}
+
+            LOG.info("Finished shutdown hook");
+        }));
+    }
     public static void initLog4J2FromConf() {
         // Resolve <bin directory>/../conf/xml (or your app’s working dir/../conf)
         Path cfg = Path.of("..", "conf", "log4j2.xml").toAbsolutePath();
@@ -236,70 +242,11 @@ public class App extends Application {
         System.out.println(context.getConfiguration());
     }
 
-    private static void logStartupInfo() {
-        BuildInfoProperties buildInfo = new BuildInfoProperties();
-        String buildVersion = buildInfo.getBuildVersion();
-        String mavenVersion = buildInfo.getMavenVersion();
-        String version = (buildVersion != null && !buildVersion.isBlank() && !buildVersion.equals("${build.version}"))
-                ? buildVersion
-                : mavenVersion;
-
-        LOG.info("Komet version: {}", version);
-        LOG.info("Build time: {}", buildInfo.getBuildTime());
-        LOG.info("Runtime: java={}, javafx={}, os={}, arch={}, platform={}",
-                System.getProperty("java.version"),
-                System.getProperty("javafx.runtime.version"),
-                System.getProperty("os.name"),
-                System.getProperty("os.arch"),
-                IS_BROWSER ? "browser" : (IS_DESKTOP ? "desktop" : "unknown"));
-
-        logModuleJars();
-    }
-
-    private static void logModuleJars() {
-        List<Path> candidates = new ArrayList<>();
-        candidates.add(Path.of("module-jars"));
-        candidates.add(Path.of("..", "module-jars"));
-
-        String javaHome = System.getProperty("java.home");
-        if (javaHome != null && !javaHome.isBlank()) {
-            Path javaHomePath = Path.of(javaHome);
-            candidates.add(javaHomePath.resolve("module-jars"));
-            candidates.add(javaHomePath.resolve("..").resolve("module-jars"));
-            candidates.add(javaHomePath.resolve("..").resolve("..").resolve("module-jars"));
-        }
-
-        for (Path dir : candidates) {
-            if (!Files.isDirectory(dir)) {
-                continue;
-            }
-
-            LOG.info("module-jars directory: {}", dir.toAbsolutePath());
-            try (Stream<Path> stream = Files.list(dir)) {
-                List<String> jarNames = stream
-                        .map(path -> path.getFileName().toString())
-                        .sorted()
-                        .collect(Collectors.toList());
-                if (jarNames.isEmpty()) {
-                    LOG.info("module-jars is empty");
-                } else {
-                    LOG.info("module-jars contents ({}): {}", jarNames.size(), String.join(", ", jarNames));
-                }
-            } catch (IOException e) {
-                LOG.warn("Failed to list module-jars contents from {}", dir.toAbsolutePath(), e);
-            }
-            return;
-        }
-
-        LOG.info("module-jars directory not found in working directory or parent");
-    }
-
     @Override
     public void init() throws Exception {
         initLog4J2FromConf();
 
         LOG.info("Starting Komet");
-        logStartupInfo();
 
         // Set system properties for macOS look and feel and application name in the menu bar
         configureMacOSProperties();
@@ -407,6 +354,7 @@ public class App extends Application {
             stage.setOnCloseRequest(windowEvent -> state.set(SHUTDOWN));
 
             // Show stage and set initial state
+            LOG.info("Style classes: \n" + scene.getRoot().getStyleClass().toString());
             stage.show();
         } catch (Exception ex) {
             LOG.error("Failed to initialize the application", ex);
@@ -646,96 +594,59 @@ public class App extends Application {
      * Safe to call multiple times.
      */
     private void stopDataServices() {
-        // Use a local flag to determine if we should actually stop
-        boolean shouldStop = false;
-        
-        // Synchronize ONLY for the flag check - don't hold lock during stop()
-        synchronized (SHUTDOWN_LOCK) {
-            if (!primitiveDataStopped) {
-                primitiveDataStopped = true; // Set BEFORE calling stop()
-                shouldStop = true;
-            }
-        }
-        
-        // Perform the actual stop OUTSIDE the synchronized block
-        if (shouldStop) {
+        // Stop PrimitiveData only once
+        if (!primitiveDataStopped) {
             LOG.info(">>> Stopping PrimitiveData");
-            try {
-                PrimitiveData.stop();
-                LOG.info(">>> PrimitiveData stopped");
-            } catch (Throwable t) {
-                LOG.error(">>> Error stopping PrimitiveData", t);
-            }
+            PrimitiveData.stop();
+            primitiveDataStopped = true;
+            LOG.info(">>> PrimitiveData stopped");
         } else {
             LOG.info(">>> PrimitiveData already stopped - skipping");
         }
 
         LOG.info(">>> Stopping Preferences");
-        try {
-            Preferences.stop();
-            LOG.info(">>> Preferences stopped");
-        } catch (Throwable t) {
-            LOG.error(">>> Error stopping Preferences", t);
-        }
+        Preferences.stop();
+        LOG.info(">>> Preferences stopped");
     }
 
     public void quit() {
-    LOG.info(">>> quit() called - thread: {}", Thread.currentThread().getName());
-    
-    // Prevent re-entrant calls using synchronized block
-    synchronized (SHUTDOWN_LOCK) {
-        if (shutdownInProgress) {
-            LOG.warn(">>> quit() already in progress, ignoring duplicate call");
-            return;
-        }
-        shutdownInProgress = true;
-    }
+        LOG.info(">>> quit() called - thread: {}", Thread.currentThread().getName());
 
-    saveJournalWindowsToPreferences();
-    LOG.info(">>> Saved journal windows to preferences");
+        saveJournalWindowsToPreferences();
+        LOG.info(">>> Saved journal windows to preferences");
 
-    stopDataServices();
+        stopDataServices();
 
-    // Note: Removed explicit macOS MenuToolkit cleanup as it conflicts with
-    // Platform.exit()'s own native shutdown, causing SIGSEGV in objc_msgSend.
-    // Platform.exit() will handle all JavaFX/native cleanup automatically.
+        // Note: Removed explicit macOS MenuToolkit cleanup as it conflicts with
+        // Platform.exit()'s own native shutdown, causing SIGSEGV in objc_msgSend.
+        // Platform.exit() will handle all JavaFX/native cleanup automatically.
 
-    LOG.info(">>> Calling Platform.exit()");
+        LOG.info(">>> Calling Platform.exit()");
 
-    // Exit JavaFX - but do it synchronously if we're already on FX thread
-    if (Platform.isFxApplicationThread()) {
-        LOG.info(">>> Already on FX thread, calling Platform.exit()");
-        Platform.exit();
-        
-        // Give Platform.exit() time to clean up before stopping server
-        try {
-            Thread.sleep(200);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    } else {
-        LOG.info(">>> Scheduling Platform.exit() on FX thread");
-        CountDownLatch exitLatch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            LOG.info(">>> Platform.exit() executing on FX thread");
+        // Exit JavaFX
+        if (Platform.isFxApplicationThread()) {
+            LOG.info(">>> Already on FX thread, calling Platform.exit()");
             Platform.exit();
-            exitLatch.countDown();
-        });
+        } else {
+            LOG.info(">>> Scheduling Platform.exit() on FX thread");
+            Platform.runLater(() -> {
+                LOG.info(">>> Platform.exit() executing on FX thread");
+                Platform.exit();
+            });
 
-        // Wait for Platform.exit() to complete
-        try {
-            exitLatch.await();
-            LOG.info(">>> Platform.exit() completed");
-            Thread.sleep(200); // Give it time to clean up
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            // Wait for exit to be scheduled
+            try {
+                Thread.sleep(100);
+                LOG.info(">>> Waited for Platform.exit() scheduling");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
-    }
 
-    LOG.info(">>> Calling stopServer()");
-    stopServer();
-    LOG.info(">>> quit() method complete");
-}
+        LOG.info(">>> Calling stopServer()");
+        stopServer();
+        LOG.info(">>> quit() method complete");
+    }
 
     /**
      * Stops the JPro server by running the stop script.
