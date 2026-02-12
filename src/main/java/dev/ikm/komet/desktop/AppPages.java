@@ -1,8 +1,41 @@
-package dev.ikm.komet.app;
+package dev.ikm.komet.desktop;
 
+import static dev.ikm.komet.desktop.App.IS_BROWSER;
+import static dev.ikm.komet.desktop.App.IS_MAC;
+import static dev.ikm.komet.desktop.AppState.SHUTDOWN;
+import static dev.ikm.komet.desktop.util.CssFile.ICONS;
+import static dev.ikm.komet.desktop.util.CssFile.KLCORE_CSS;
+import static dev.ikm.komet.desktop.util.CssFile.KLEDITOR_CSS;
+import static dev.ikm.komet.desktop.util.CssFile.KLEDITOR_WINDOW_CSS;
+import static dev.ikm.komet.desktop.util.CssFile.KOMET_CSS;
+import static dev.ikm.komet.desktop.util.CssFile.KVIEW_CSS;
+import static dev.ikm.komet.desktop.util.CssUtils.addStylesheets;
+import static dev.ikm.komet.kview.events.EventTopics.JOURNAL_TOPIC;
+import static dev.ikm.komet.kview.events.JournalTileEvent.UPDATE_JOURNAL_TILE;
+import static dev.ikm.komet.kview.mvvm.model.DataModelHelper.fetchDescendentsOfConcept;
+import static dev.ikm.komet.kview.mvvm.view.loginauthor.LoginAuthorViewModel.LoginProperties.SELECTED_AUTHOR;
+import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.CURRENT_JOURNAL_WINDOW_TOPIC;
+import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.VIEW_PROPERTIES;
+import static dev.ikm.komet.kview.mvvm.viewmodel.JournalViewModel.JOURNAL_NAME;
+import static dev.ikm.komet.kview.mvvm.viewmodel.JournalViewModel.WINDOW_SETTINGS;
+import static dev.ikm.komet.preferences.JournalWindowPreferences.AUTHOR_LOGIN_WINDOW;
+import static dev.ikm.komet.preferences.JournalWindowPreferences.DEFAULT_JOURNAL_HEIGHT;
+import static dev.ikm.komet.preferences.JournalWindowPreferences.DEFAULT_JOURNAL_WIDTH;
+import static dev.ikm.komet.preferences.JournalWindowPreferences.MAIN_KOMET_WINDOW;
+import static dev.ikm.komet.preferences.JournalWindowSettings.CAN_DELETE;
+import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_DIR_NAME;
+import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_HEIGHT;
+import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_TITLE;
+import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_WIDTH;
+import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_XPOS;
+import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_YPOS;
+import static dev.ikm.komet.preferences.JournalWindowSettings.PARENT_VIEW_COORDINATES;
+import static dev.ikm.komet.preferences.KLEditorPreferences.KL_EDITOR_APP;
+import static javafx.scene.layout.Region.USE_COMPUTED_SIZE;
 import dev.ikm.komet.framework.KometNodeFactory;
 import dev.ikm.komet.framework.preferences.PrefX;
 import dev.ikm.komet.framework.view.ObservableEditCoordinate;
+import dev.ikm.komet.framework.view.ObservableViewNoOverride;
 import dev.ikm.komet.framework.view.ViewProperties;
 import dev.ikm.komet.framework.window.WindowSettings;
 import dev.ikm.komet.kleditorapp.view.KLEditorMainScreenController;
@@ -12,6 +45,7 @@ import dev.ikm.komet.kview.mvvm.view.journal.JournalController;
 import dev.ikm.komet.kview.mvvm.view.landingpage.LandingPageViewFactory;
 import dev.ikm.komet.kview.mvvm.view.login.LoginPageController;
 import dev.ikm.komet.kview.mvvm.view.loginauthor.LoginAuthorController;
+import dev.ikm.komet.kview.mvvm.viewmodel.JournalViewModel;
 import dev.ikm.komet.navigator.graph.GraphNavigatorNodeFactory;
 import dev.ikm.komet.preferences.KometPreferences;
 import dev.ikm.komet.preferences.KometPreferencesImpl;
@@ -36,42 +70,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
-import static dev.ikm.komet.app.App.IS_BROWSER;
-import static dev.ikm.komet.app.App.IS_MAC;
-import static dev.ikm.komet.app.AppState.SHUTDOWN;
-import static dev.ikm.komet.app.util.CssFile.ICONS;
-import static dev.ikm.komet.app.util.CssFile.KLCORE_CSS;
-import static dev.ikm.komet.app.util.CssFile.KLEDITOR_CSS;
-import static dev.ikm.komet.app.util.CssFile.KLEDITOR_WINDOW_CSS;
-import static dev.ikm.komet.app.util.CssFile.KOMET_CSS;
-import static dev.ikm.komet.app.util.CssFile.KVIEW_CSS;
-import static dev.ikm.komet.app.util.CssUtils.addStylesheets;
-import static dev.ikm.komet.kview.events.EventTopics.JOURNAL_TOPIC;
-import static dev.ikm.komet.kview.events.JournalTileEvent.UPDATE_JOURNAL_TILE;
-import static dev.ikm.komet.kview.mvvm.model.DataModelHelper.fetchDescendentsOfConcept;
-import static dev.ikm.komet.kview.mvvm.view.loginauthor.LoginAuthorViewModel.LoginProperties.SELECTED_AUTHOR;
-import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.CURRENT_JOURNAL_WINDOW_TOPIC;
-import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.VIEW_PROPERTIES;
-import static dev.ikm.komet.kview.mvvm.viewmodel.JournalViewModel.JOURNAL_NAME;
-import static dev.ikm.komet.kview.mvvm.viewmodel.JournalViewModel.WINDOW_SETTINGS;
-import static dev.ikm.komet.preferences.JournalWindowPreferences.AUTHOR_LOGIN_WINDOW;
-import static dev.ikm.komet.preferences.JournalWindowPreferences.DEFAULT_JOURNAL_HEIGHT;
-import static dev.ikm.komet.preferences.JournalWindowPreferences.DEFAULT_JOURNAL_WIDTH;
-import static dev.ikm.komet.preferences.JournalWindowPreferences.MAIN_KOMET_WINDOW;
-import static dev.ikm.komet.preferences.JournalWindowSettings.CAN_DELETE;
-import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_DIR_NAME;
-import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_HEIGHT;
-import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_TITLE;
-import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_WIDTH;
-import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_XPOS;
-import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_YPOS;
-import static dev.ikm.komet.preferences.KLEditorPreferences.KL_EDITOR_APP;
-import static javafx.scene.layout.Region.USE_COMPUTED_SIZE;
+import java.util.*;
 
 public class AppPages {
     private static final Logger LOG = LoggerFactory.getLogger(AppPages.class);
@@ -257,6 +256,7 @@ public class AppPages {
         final KometPreferences appPreferences = KometPreferencesImpl.getConfigurationRootPreferences();
         final KometPreferences windowPreferences = appPreferences.node(MAIN_KOMET_WINDOW);
         final WindowSettings windowSettings = new WindowSettings(windowPreferences);
+        final ObservableViewNoOverride parentViewCoordinates = journalWindowSettings.getValue(PARENT_VIEW_COORDINATES);
         final UUID journalTopic = journalWindowSettings.getValue(JOURNAL_TOPIC);
         Objects.requireNonNull(journalTopic, "journalTopic cannot be null");
 
@@ -267,6 +267,7 @@ public class AppPages {
                 .updateViewModel("journalViewModel", journalViewModel -> {
                     journalViewModel.setPropertyValue(CURRENT_JOURNAL_WINDOW_TOPIC, journalTopic);
                     journalViewModel.setPropertyValue(WINDOW_SETTINGS, windowSettings);
+                    journalViewModel.setPropertyValue(JournalViewModel.PARENT_VIEW_COORDINATES, parentViewCoordinates);
                     journalViewModel.setPropertyValue(JOURNAL_NAME, journalWindowSettings.getValue(JOURNAL_TITLE));
                 });
         JFXNode<BorderPane, JournalController> journalJFXNode = FXMLMvvmLoader.make(journalConfig);
@@ -304,7 +305,6 @@ public class AppPages {
             journalStage.setWidth(journalWindowSettings.getValue(JOURNAL_WIDTH));
             journalStage.setX(journalWindowSettings.getValue(JOURNAL_XPOS));
             journalStage.setY(journalWindowSettings.getValue(JOURNAL_YPOS));
-            journalController.restoreWindows(windowSettings, journalWindowSettings);
         } else {
             journalStage.setMaximized(true);
         }
@@ -320,6 +320,8 @@ public class AppPages {
         });
 
         journalStage.setOnShown(windowEvent -> {
+            journalController.restoreWindows(windowSettings, journalWindowSettings);
+
             KometNodeFactory navigatorNodeFactory = new GraphNavigatorNodeFactory();
             KometNodeFactory searchNodeFactory = new SearchNodeFactory();
 

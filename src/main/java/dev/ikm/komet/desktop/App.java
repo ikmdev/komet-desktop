@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.ikm.komet.app;
+package dev.ikm.komet.desktop;
 
 import com.jpro.webapi.WebAPI;
-import de.jangassen.MenuToolkit;
-import dev.ikm.komet.app.aboutdialog.BuildInfoProperties;
+import dev.ikm.komet.desktop.aboutdialog.BuildInfoProperties;
 import dev.ikm.komet.framework.ScreenInfo;
 import dev.ikm.komet.framework.graphics.LoadFonts;
 import dev.ikm.komet.framework.preferences.PrefX;
@@ -46,13 +45,11 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import one.jpro.platform.utils.CommandRunner;
 import one.jpro.platform.utils.PlatformUtils;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -73,16 +70,16 @@ import java.util.prefs.BackingStoreException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static dev.ikm.komet.app.AppState.LOADING_DATA_SOURCE;
-import static dev.ikm.komet.app.AppState.LOGIN;
-import static dev.ikm.komet.app.AppState.RUNNING;
-import static dev.ikm.komet.app.AppState.SELECT_DATA_SOURCE;
-import static dev.ikm.komet.app.AppState.SHUTDOWN;
-import static dev.ikm.komet.app.AppState.STARTING;
-import static dev.ikm.komet.app.LoginFeatureFlag.ENABLED_WEB_ONLY;
-import static dev.ikm.komet.app.util.CssFile.KOMET_CSS;
-import static dev.ikm.komet.app.util.CssFile.KVIEW_CSS;
-import static dev.ikm.komet.app.util.CssUtils.addStylesheets;
+import static dev.ikm.komet.desktop.AppState.LOADING_DATA_SOURCE;
+import static dev.ikm.komet.desktop.AppState.LOGIN;
+import static dev.ikm.komet.desktop.AppState.RUNNING;
+import static dev.ikm.komet.desktop.AppState.SELECT_DATA_SOURCE;
+import static dev.ikm.komet.desktop.AppState.SHUTDOWN;
+import static dev.ikm.komet.desktop.AppState.STARTING;
+import static dev.ikm.komet.desktop.LoginFeatureFlag.ENABLED_WEB_ONLY;
+import static dev.ikm.komet.desktop.util.CssFile.KOMET_CSS;
+import static dev.ikm.komet.desktop.util.CssFile.KVIEW_CSS;
+import static dev.ikm.komet.desktop.util.CssUtils.addStylesheets;
 import static dev.ikm.komet.kview.events.EventTopics.JOURNAL_TOPIC;
 import static dev.ikm.komet.kview.events.EventTopics.KL_TOPIC;
 import static dev.ikm.komet.kview.events.EventTopics.USER_TOPIC;
@@ -317,7 +314,7 @@ public class App extends Application {
         kViewEventBus = EvtBusFactory.getInstance(EvtBus.class);
 
         // Create a subscriber for handling CreateJournalEvent
-        Subscriber<CreateJournalEvent> detailsSubscriber = evt -> {
+        Subscriber<CreateJournalEvent> summonJournalWindowSubscriber = evt -> {
             final PrefX journalWindowSettingsObjectMap = evt.getWindowSettingsObjectMap();
             final UUID journalTopic = journalWindowSettingsObjectMap.getValue(JOURNAL_TOPIC);
             final String journalName = journalWindowSettingsObjectMap.getValue(JOURNAL_TITLE);
@@ -340,7 +337,7 @@ public class App extends Application {
         };
 
         // Subscribe the subscriber to the JOURNAL_TOPIC
-        kViewEventBus.subscribe(JOURNAL_TOPIC, CreateJournalEvent.class, detailsSubscriber);
+        kViewEventBus.subscribe(JOURNAL_TOPIC, CreateJournalEvent.class, summonJournalWindowSubscriber);
 
         // Create a subscriber for handling KL Window Event
         Subscriber<CreateKLEditorWindowEvent> createKLEditorWindowEventSubscriber = evt -> {

@@ -17,13 +17,11 @@
  * Sample Skeleton for 'SelectDataSource.fxml' Controller Class
  */
 
-package dev.ikm.komet.app;
+package dev.ikm.komet.desktop;
 
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -32,7 +30,7 @@ import javafx.scene.layout.GridPane;
 
 import dev.ikm.tinkar.common.service.ServiceExclusionGroup;
 import dev.ikm.tinkar.common.service.ServiceLifecycleManager;
-import java.util.List;
+
 import java.util.Map;
 import org.controlsfx.control.PropertySheet;
 import org.controlsfx.validation.ValidationMessage;
@@ -46,14 +44,12 @@ import dev.ikm.komet.progress.ProgressNodeFactory;
 import dev.ikm.tinkar.common.service.DataServiceController;
 import dev.ikm.tinkar.common.service.DataServiceProperty;
 import dev.ikm.tinkar.common.service.DataUriOption;
-import dev.ikm.tinkar.common.service.PrimitiveData;
 import dev.ikm.tinkar.common.util.text.NaturalOrder;
 import dev.ikm.tinkar.common.validation.ValidationRecord;
 
 import java.io.File;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.ResourceBundle;
 
 public class SelectDataSourceController {
@@ -119,7 +115,7 @@ public class SelectDataSourceController {
 
         // Set default data service
         dataSourceChoiceBox.getItems().stream()
-                .filter(dataServiceController -> "Open SpinedArrayStore".equals(dataServiceController.controllerName()))
+                .filter(dataServiceController -> "Open Rocks KB".equals(dataServiceController.controllerName()))
                 .findFirst()
                 .ifPresentOrElse(dataSourceChoiceBox.getSelectionModel()::select,
                         dataSourceChoiceBox.getSelectionModel()::selectFirst);

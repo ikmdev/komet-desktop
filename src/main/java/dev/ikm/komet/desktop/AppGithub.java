@@ -1,4 +1,4 @@
-package dev.ikm.komet.app;
+package dev.ikm.komet.desktop;
 
 import dev.ikm.komet.framework.progress.ProgressHelper;
 import dev.ikm.komet.kview.controls.GlassPane;

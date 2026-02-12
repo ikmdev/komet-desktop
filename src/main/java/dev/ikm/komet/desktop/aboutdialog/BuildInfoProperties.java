@@ -1,4 +1,4 @@
-package dev.ikm.komet.app.aboutdialog;
+package dev.ikm.komet.desktop.aboutdialog;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

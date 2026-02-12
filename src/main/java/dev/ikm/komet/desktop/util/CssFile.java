@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.ikm.komet.app.util;
+package dev.ikm.komet.desktop.util;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.ikm.komet.app;
+package dev.ikm.komet.desktop;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;

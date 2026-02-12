@@ -1,10 +1,9 @@
-package dev.ikm.komet.app;
+package dev.ikm.komet.desktop;
 
-import com.jpro.webapi.WebAPI;
 import com.sun.management.OperatingSystemMXBean;
 import de.jangassen.MenuToolkit;
 import de.jangassen.model.AppearanceMode;
-import dev.ikm.komet.app.aboutdialog.AboutDialog;
+import dev.ikm.komet.desktop.aboutdialog.AboutDialog;
 import dev.ikm.komet.framework.graphics.Icon;
 import dev.ikm.komet.framework.preferences.KometPreferencesStage;
 import dev.ikm.komet.framework.window.WindowSettings;
@@ -43,8 +42,8 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.prefs.BackingStoreException;
 
-import static dev.ikm.komet.app.App.*;
-import static dev.ikm.komet.app.AppState.RUNNING;
+import static dev.ikm.komet.desktop.App.*;
+import static dev.ikm.komet.desktop.AppState.RUNNING;
 import static dev.ikm.komet.kview.fxutils.FXUtils.getFocusedWindow;
 import static dev.ikm.komet.kview.mvvm.view.changeset.exchange.GitTask.OperationMode.PULL;
 import static dev.ikm.komet.kview.mvvm.view.changeset.exchange.GitTask.OperationMode.SYNC;

@@ -13,11 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.ikm.komet.app.key;
+package dev.ikm.komet.desktop.value;
 
-public enum StartupSystemKeys {
-    DATA_SOURCE,
-    URL,
-    USERNAME,
-    PASSWORD
+public enum DataSource {
+    FILESYSTEM("File system"),
+    TARGET_DATABASE("Target database"),
+    WEBSOCKET("WebSocket");
+
+    String nameForInterface;
+
+    DataSource(String nameForInterface) {
+        this.nameForInterface = nameForInterface;
+    }
+
+    @Override
+    public String toString() {
+        return nameForInterface;
+    }
 }

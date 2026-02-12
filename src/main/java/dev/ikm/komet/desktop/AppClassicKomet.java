@@ -1,4 +1,4 @@
-package dev.ikm.komet.app;
+package dev.ikm.komet.desktop;
 
 import dev.ikm.komet.details.DetailsNodeFactory;
 import dev.ikm.komet.framework.KometNode;
@@ -42,9 +42,9 @@ import java.lang.annotation.Annotation;
 import java.util.function.Consumer;
 import java.util.prefs.BackingStoreException;
 
-import static dev.ikm.komet.app.App.*;
-import static dev.ikm.komet.app.util.CssFile.KOMET_CSS;
-import static dev.ikm.komet.app.util.CssUtils.addStylesheets;
+import static dev.ikm.komet.desktop.App.*;
+import static dev.ikm.komet.desktop.util.CssFile.KOMET_CSS;
+import static dev.ikm.komet.desktop.util.CssUtils.addStylesheets;
 import static dev.ikm.komet.framework.KometNodeFactory.KOMET_NODES;
 import static dev.ikm.komet.framework.window.WindowSettings.Keys.*;
 import static dev.ikm.komet.preferences.JournalWindowPreferences.JOURNALS;

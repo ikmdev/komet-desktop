@@ -407,7 +407,7 @@
                     <version>0.0.8</version>
                     <configuration>
                         <!-- Shared Settings -->
-                        <mainClass>dev.ikm.komet.application/dev.ikm.komet.app.App</mainClass>
+                        <mainClass>dev.ikm.komet.desktop/dev.ikm.komet.desktop.App</mainClass>
                         <stripDebug>false</stripDebug>
                         <compress>2</compress>
                         <bindServices>true</bindServices>
@@ -417,7 +417,7 @@
                         <!-- Base Options (Common to Standard, Debug, and Profile) -->
                         <options>
                             <option>--enable-preview</option>
-                            <option>-Xmx24g</option>
+                            <option>-Xmx42g</option>
                             <option>-Dlog4j.configurationFile=$APPDIR/conf/log4j2.xml</option>
                             <option>--add-opens</option>
                             <option>javafx.graphics/javafx.scene=org.controlsfx.controls</option>
@@ -445,11 +445,11 @@
                         <icon>${jpackage.icon}</icon>
                         <vendor>IKM</vendor>
                         <runtimeImage>target/kometRuntimeImage</runtimeImage>
-                        <module>dev.ikm.komet.application/dev.ikm.komet.app.App</module>
+                        <module>dev.ikm.komet.desktop/dev.ikm.komet.desktop.App</module>
                         <winMenu>true</winMenu>
                         <javaOptions>
                             <option>--enable-preview</option>
-                            <option>-Xmx24g</option>
+                            <option>-Xmx42g</option>
                             <option>--add-opens</option>
                             <option>javafx.graphics/javafx.scene=org.controlsfx.controls</option>
                             <option>--add-exports</option>

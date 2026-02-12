@@ -24,12 +24,12 @@ import dev.ikm.tinkar.entity.ChangeSetWriterService;
 import dev.ikm.tinkar.entity.EntityService;
 import dev.ikm.tinkar.entity.StampService;
 
-module dev.ikm.komet.application {
+module dev.ikm.komet.desktop {
 
-    exports dev.ikm.komet.app;
-    exports dev.ikm.komet.app.util;
-    opens dev.ikm.komet.app to javafx.fxml;
-    opens dev.ikm.komet.app.aboutdialog to javafx.fxml;
+    exports dev.ikm.komet.desktop;
+    exports dev.ikm.komet.desktop.util;
+    opens dev.ikm.komet.desktop to javafx.fxml;
+    opens dev.ikm.komet.desktop.aboutdialog to javafx.fxml;
     requires java.xml;
 
     // TODO Not happy that I have to specify these here... Can't dynamically add modules?

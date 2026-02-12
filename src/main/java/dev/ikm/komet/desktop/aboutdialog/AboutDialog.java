@@ -1,4 +1,4 @@
-package dev.ikm.komet.app.aboutdialog;
+package dev.ikm.komet.desktop.aboutdialog;
 
 import javafx.scene.control.Dialog;
 import javafx.stage.Modality;

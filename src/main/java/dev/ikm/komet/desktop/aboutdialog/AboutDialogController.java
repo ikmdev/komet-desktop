@@ -1,4 +1,4 @@
-package dev.ikm.komet.app.aboutdialog;
+package dev.ikm.komet.desktop.aboutdialog;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;

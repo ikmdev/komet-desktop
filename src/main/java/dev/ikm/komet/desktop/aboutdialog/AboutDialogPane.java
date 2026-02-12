@@ -1,4 +1,4 @@
-package dev.ikm.komet.app.aboutdialog;
+package dev.ikm.komet.desktop.aboutdialog;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -23,7 +23,7 @@ public class AboutDialogPane extends DialogPane {
         getButtonTypes().addAll(ButtonType.OK);
 
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/dev/ikm/komet/app/aboutdialog/AboutDialog.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/dev/ikm/komet/desktop/aboutdialog/AboutDialog.fxml"));
             Parent root = loader.load();
             controller = loader.getController();
 
