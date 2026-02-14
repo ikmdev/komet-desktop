@@ -1,0 +1,54 @@
+project:
+  name: komet-desktop
+  stereotype: DESKTOP
+  versionPattern: CUSTOM
+  description: Knowledge Management Environment Toolkit
+
+platform:
+  replacements:
+    aarch_64: aarch64
+
+assemble:
+  jpackage:
+    komet:
+      active: ALWAYS
+      exported: false
+      verbose: false
+      attachPlatform: true
+      applicationPackage:
+        appName: '${jpackage.app.name}'
+        appVersion: '${jpackage.app.version}'
+        vendor: IKM
+      launcher:
+        javaOptions:
+          - --enable-preview
+          - -Xmx42g
+          - --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls
+          - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
+          - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
+      java:
+        mainModule: dev.ikm.komet.desktop
+        mainClass: dev.ikm.komet.desktop.App
+      runtimeImages:
+        - path: ${project.build.directory}/kometRuntimeImage
+          platform: osx-aarch_64
+        - path: ${project.build.directory}/kometRuntimeImage
+          platform: osx-x86_64
+        - path: ${project.build.directory}/kometRuntimeImage
+          platform: linux-x86_64
+        - path: ${project.build.directory}/kometRuntimeImage
+          platform: windows-x86_64
+      osx:
+        types: [pkg]
+        icon: ${project.basedir}/src/main/resources/icons/KOMET.icns
+        resourceDir: ${project.basedir}/src/main/resources/installer/resourceDir_unix
+        packageName: Komet Desktop
+      linux:
+        types: [rpm]
+        icon: ${project.basedir}/src/main/resources/icons/Komet.png
+        resourceDir: ${project.basedir}/src/main/resources/installer/resourceDir_unix
+      windows:
+        types: [msi]
+        icon: ${project.basedir}/src/main/resources/icons/Komet.ico
+        resourceDir: ${project.basedir}/src/main/resources/installer/resourceDir_win
+        menu: true

@@ -30,10 +30,7 @@
         <failsafe.args>--enable-preview</failsafe.args>
         <javadoc.args>--enable-preview</javadoc.args>
 
-        <!-- Default JPackage settings (overridden by OS profiles) -->
-        <jpackage.type>app-image</jpackage.type> <!-- Valid default, or use 'unknown' -->
-        <jpackage.icon>src/main/resources/icons/Komet.png</jpackage.icon>
-        <jpackage.resourceDir>installer_resources/resourceDir_unix</jpackage.resourceDir>
+        <!-- JPackage output destination (used by create-desktop-installer profile) -->
         <jpackage.app.dest>target/dist/installer</jpackage.app.dest>
         <!-- JProfiler agent path (auto-detected by platform) -->
         <jprofiler.agent.path>/Applications/JProfiler.app/Contents/Resources/app/bin/macos/libjprofilerti.jnilib
@@ -441,31 +438,13 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>org.panteleyev</groupId>
-                    <artifactId>jpackage-maven-plugin</artifactId>
-                    <version>1.7.3</version> <!-- Pin the version -->
+                    <groupId>org.jreleaser</groupId>
+                    <artifactId>jreleaser-maven-plugin</artifactId>
+                    <version>1.22.0</version>
                     <configuration>
-                        <name>${jpackage.app.name}</name>
-                        <appVersion>${jpackage.app.version}</appVersion>
-                        <destination>${jpackage.app.dest}</destination>
-                        <resourceDir>${jpackage.resourceDir}</resourceDir>
-                        <type>${jpackage.type}</type>
-                        <icon>${jpackage.icon}</icon>
-                        <vendor>IKM</vendor>
-                        <runtimeImage>target/kometRuntimeImage</runtimeImage>
-                        <module>dev.ikm.komet.desktop/dev.ikm.komet.desktop.App</module>
-                        <winMenu>true</winMenu>
-                        <javaOptions>
-                            <option>--enable-preview</option>
-                            <option>-Xmx42g</option>
-                            <option>--add-opens</option>
-                            <option>javafx.graphics/javafx.scene=org.controlsfx.controls</option>
-                            <option>--add-exports</option>
-                            <option>javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
-                            </option>
-                            <option>--add-exports</option>
-                            <option>javafx.base/com.sun.javafx.event=one.jpro.platform.file</option>
-                        </javaOptions>
+                        <basedir>${project.basedir}</basedir>
+                        <configFile>${project.build.directory}/jreleaser-config/jreleaser.yml</configFile>
+                        <outputDirectory>${project.build.directory}/jreleaser</outputDirectory>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -551,6 +530,24 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
+                    <!-- Filter jreleaser.yml so Maven properties are resolved before JReleaser reads it -->
+                    <execution>
+                        <id>filter-jreleaser-config</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/jreleaser-config</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/jreleaser</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+
                     <!-- Execution 1: Standard -->
                     <execution>
                         <id>copy-log4j-standard</id>
@@ -1047,14 +1044,14 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.panteleyev</groupId>
-                        <artifactId>jpackage-maven-plugin</artifactId>
+                        <groupId>org.jreleaser</groupId>
+                        <artifactId>jreleaser-maven-plugin</artifactId>
                         <executions>
                             <execution>
                                 <id>Installer</id>
                                 <phase>verify</phase>
                                 <goals>
-                                    <goal>jpackage</goal>
+                                    <goal>assemble</goal>
                                 </goals>
                             </execution>
                         </executions>
@@ -1070,11 +1067,6 @@
                     <family>mac</family>
                 </os>
             </activation>
-            <properties>
-                <jpackage.type>PKG</jpackage.type>
-                <jpackage.icon>src/main/resources/icons/KOMET.icns</jpackage.icon>
-                <jpackage.resourceDir>installer_resources/resourceDir_unix</jpackage.resourceDir>
-            </properties>
             <dependencies>
                 <dependency>
                     <groupId>dev.ikm.jpms</groupId>
@@ -1102,11 +1094,6 @@
                     <name>Linux</name>
                 </os>
             </activation>
-            <properties>
-                <jpackage.type>RPM</jpackage.type>
-                <jpackage.icon>src/main/resources/icons/Komet.png</jpackage.icon>
-                <jpackage.resourceDir>installer_resources/resourceDir_unix</jpackage.resourceDir>
-            </properties>
             <dependencies>
                 <dependency>
                     <groupId>dev.ikm.jpms</groupId>
@@ -1134,9 +1121,6 @@
                 </os>
             </activation>
             <properties>
-                <jpackage.type>MSI</jpackage.type>
-                <jpackage.icon>src/main/resources/icons/Komet.ico</jpackage.icon>
-                <jpackage.resourceDir>installer_resources/resourceDir_win</jpackage.resourceDir>
                 <!-- Override jpackage.app.version for Windows with proper format -->
                 <jpackage.app.version>${win.app.version}</jpackage.app.version>
             </properties>
