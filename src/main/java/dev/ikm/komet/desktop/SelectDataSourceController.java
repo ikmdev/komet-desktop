@@ -115,7 +115,7 @@ public class SelectDataSourceController {
 
         // Set default data service
         dataSourceChoiceBox.getItems().stream()
-                .filter(dataServiceController -> "Open Rocks KB".equals(dataServiceController.controllerName()))
+                .filter(dataServiceController -> dataServiceController.controllerName().startsWith("Open Spined"))
                 .findFirst()
                 .ifPresentOrElse(dataSourceChoiceBox.getSelectionModel()::select,
                         dataSourceChoiceBox.getSelectionModel()::selectFirst);
