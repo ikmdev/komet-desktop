@@ -443,7 +443,7 @@
                 <plugin>
                     <groupId>org.panteleyev</groupId>
                     <artifactId>jpackage-maven-plugin</artifactId>
-                    <version>1.6.0</version> <!-- Pin the version -->
+                    <version>1.7.3</version> <!-- Pin the version -->
                     <configuration>
                         <name>${jpackage.app.name}</name>
                         <appVersion>${jpackage.app.version}</appVersion>
