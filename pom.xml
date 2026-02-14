@@ -35,9 +35,15 @@
         <!-- JProfiler agent path (auto-detected by platform) -->
         <jprofiler.agent.path>/Applications/JProfiler.app/Contents/Resources/app/bin/macos/libjprofilerti.jnilib
         </jprofiler.agent.path>
-        <skip.image.standard>true</skip.image.standard>
+        <skip.image.standard>false</skip.image.standard>
         <skip.image.profile>true</skip.image.profile>
         <skip.image.debug>true</skip.image.debug>
+        <!-- Platform-specific JReleaser jlink work directory name (set by OS profiles) -->
+        <jreleaser.platform.work>work-unknown</jreleaser.platform.work>
+        <jreleaser.platform.suffix>unknown</jreleaser.platform.suffix>
+        <jreleaser.jlink.standard.active>ALWAYS</jreleaser.jlink.standard.active>
+        <jreleaser.jlink.profile.active>NEVER</jreleaser.jlink.profile.active>
+        <jreleaser.jlink.debug.active>NEVER</jreleaser.jlink.debug.active>
     </properties>
 
     <dependencyManagement>
@@ -407,42 +413,10 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>org.openjfx</groupId>
-                    <artifactId>javafx-maven-plugin</artifactId>
-                    <version>0.0.8</version>
-                    <configuration>
-                        <!-- Shared Settings -->
-                        <mainClass>dev.ikm.komet.desktop/dev.ikm.komet.desktop.App</mainClass>
-                        <stripDebug>false</stripDebug>
-                        <compress>2</compress>
-                        <bindServices>true</bindServices>
-                        <noHeaderFiles>true</noHeaderFiles>
-                        <noManPages>true</noManPages>
-                        <ignoreSigningInformation>true</ignoreSigningInformation>
-                        <!-- Base Options (Common to Standard, Debug, and Profile) -->
-                        <options>
-                            <option>--enable-preview</option>
-                            <option>-Xmx42g</option>
-                            <option>-Dlog4j.configurationFile=$APPDIR/conf/log4j2.xml</option>
-                            <option>--add-opens</option>
-                            <option>javafx.graphics/javafx.scene=org.controlsfx.controls</option>
-                            <option>--add-exports</option>
-                            <option>javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
-                            </option>
-                            <option>--add-exports</option>
-                            <option>javafx.base/com.sun.javafx.event=one.jpro.platform.file</option>
-                            <option>
-                                -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer
-                            </option>
-                        </options>
-                    </configuration>
-                </plugin>
-                <plugin>
                     <groupId>org.jreleaser</groupId>
                     <artifactId>jreleaser-maven-plugin</artifactId>
                     <version>1.22.0</version>
                     <configuration>
-                        <basedir>${project.basedir}</basedir>
                         <configFile>${project.build.directory}/jreleaser-config/jreleaser.yml</configFile>
                         <outputDirectory>${project.build.directory}/jreleaser</outputDirectory>
                     </configuration>
@@ -460,72 +434,6 @@
             </plugins>
         </pluginManagement>
         <plugins>
-            <plugin>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-maven-plugin</artifactId>
-                <executions>
-                    <!-- 1. STANDARD -->
-                    <execution>
-                        <id>jlink-standard</id>
-                        <phase>package[1]</phase>
-                        <goals>
-                            <goal>jlink</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skip.image.standard}</skip>
-                            <launcher>launchKomet</launcher>
-                            <jlinkImageName>kometRuntimeImage</jlinkImageName>
-                            <jlinkZipName>kometJlink</jlinkZipName>
-                            <jlinkVerbose>false</jlinkVerbose>
-                            <!-- Inherits options from pluginManagement -->
-                        </configuration>
-                    </execution>
-
-                    <!-- 2. PROFILE -->
-                    <execution>
-                        <id>jlink-profile</id>
-                        <phase>package[1]</phase>
-                        <goals>
-                            <goal>jlink</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skip.image.profile}</skip>
-                            <launcher>profileKomet</launcher>
-                            <jlinkImageName>kometProfileRuntimeImage</jlinkImageName>
-                            <jlinkZipName>kometProfileJlink</jlinkZipName>
-                            <jlinkVerbose>false</jlinkVerbose>
-
-                            <!-- APPENDS these options to the base list -->
-                            <options combine.children="append">
-                                <option>-agentpath:${jprofiler.agent.path}=port=8849,nowait</option>
-                                <option>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005</option>
-                            </options>
-                        </configuration>
-                    </execution>
-
-                    <!-- 3. DEBUG -->
-                    <execution>
-                        <id>jlink-debug</id>
-                        <phase>package[1]</phase>
-                        <goals>
-                            <goal>jlink</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skip.image.debug}</skip>
-                            <launcher>debugKomet</launcher>
-                            <jlinkImageName>kometDebugRuntimeImage</jlinkImageName>
-                            <jlinkZipName>kometDebugJlink</jlinkZipName>
-                            <jlinkVerbose>false</jlinkVerbose>
-
-                            <!-- APPENDS these options to the base list -->
-                            <options combine.children="append">
-                                <option>-Xms24g</option>
-                                <option>-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000</option>
-                            </options>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
@@ -548,64 +456,61 @@
                         </configuration>
                     </execution>
 
-                    <!-- Execution 1: Standard -->
+                    <!-- log4j2.xml copy is now handled by JReleaser jlink fileSets -->
+
+                    <!-- Copy JReleaser generated launcher scripts over jlink minimal launchers.
+                         JReleaser generates proper launchers with JAVA_OPTS into inputs/bin/ but
+                         jlink overwrites them with minimal scripts via its launcher flag. -->
                     <execution>
-                        <id>copy-log4j-standard</id>
+                        <id>fix-standard-launcher</id>
                         <phase>package[2]</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
                             <skip>${skip.image.standard}</skip>
-                            <outputDirectory>${project.build.directory}/kometRuntimeImage/conf</outputDirectory>
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}/bin</outputDirectory>
+                            <overwrite>true</overwrite>
                             <resources>
                                 <resource>
-                                    <directory>src/main/resources</directory>
-                                    <includes>
-                                        <include>log4j2.xml</include>
-                                    </includes>
+                                    <directory>${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/inputs/bin</directory>
+                                    <filtering>false</filtering>
                                 </resource>
                             </resources>
                         </configuration>
                     </execution>
-
-                    <!-- Execution 2: Debug -->
                     <execution>
-                        <id>copy-log4j-debug</id>
+                        <id>fix-debug-launcher</id>
                         <phase>package[2]</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
                             <skip>${skip.image.debug}</skip>
-                            <outputDirectory>${project.build.directory}/kometDebugRuntimeImage/conf</outputDirectory>
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-debug/jlink/${jreleaser.platform.work}/kometDebugRuntimeImage-${jreleaser.platform.suffix}/bin</outputDirectory>
+                            <overwrite>true</overwrite>
                             <resources>
                                 <resource>
-                                    <directory>src/main/resources</directory>
-                                    <includes>
-                                        <include>log4j2.xml</include>
-                                    </includes>
+                                    <directory>${project.build.directory}/jreleaser-jlink/assemble/komet-debug/jlink/inputs/bin</directory>
+                                    <filtering>false</filtering>
                                 </resource>
                             </resources>
                         </configuration>
                     </execution>
-
-                    <!-- Execution 3: Profile -->
                     <execution>
-                        <id>copy-log4j-profile</id>
+                        <id>fix-profile-launcher</id>
                         <phase>package[2]</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
                             <skip>${skip.image.profile}</skip>
-                            <outputDirectory>${project.build.directory}/kometProfileRuntimeImage/conf</outputDirectory>
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-profile/jlink/${jreleaser.platform.work}/kometProfileRuntimeImage-${jreleaser.platform.suffix}/bin</outputDirectory>
+                            <overwrite>true</overwrite>
                             <resources>
                                 <resource>
-                                    <directory>src/main/resources</directory>
-                                    <includes>
-                                        <include>log4j2.xml</include>
-                                    </includes>
+                                    <directory>${project.build.directory}/jreleaser-jlink/assemble/komet-profile/jlink/inputs/bin</directory>
+                                    <filtering>false</filtering>
                                 </resource>
                             </resources>
                         </configuration>
@@ -616,6 +521,19 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
+                    <!-- Stage all dependency jars for JReleaser jlink module-path resolution -->
+                    <execution>
+                        <id>stage-dependencies-for-jlink</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/jlink-module-path</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                            <excludeGroupIds>org.apfloat</excludeGroupIds>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>copy-standard-module-dependencies</id>
                         <phase>package[3]</phase>
@@ -624,7 +542,7 @@
                         </goals>
                         <configuration>
                             <skip>${skip.image.standard}</skip>
-                            <outputDirectory>${project.build.directory}/kometRuntimeImage/module-jars</outputDirectory>
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}/module-jars</outputDirectory>
                             <!-- artifactItems are INHERITED from pluginManagement! -->
                         </configuration>
                     </execution>
@@ -636,7 +554,7 @@
                         </goals>
                         <configuration>
                             <skip>${skip.image.debug}</skip>
-                            <outputDirectory>${project.build.directory}/kometDebugRuntimeImage/module-jars
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-debug/jlink/${jreleaser.platform.work}/kometDebugRuntimeImage-${jreleaser.platform.suffix}/module-jars
                             </outputDirectory>
                             <!-- artifactItems are INHERITED from pluginManagement! -->
                         </configuration>
@@ -649,7 +567,7 @@
                         </goals>
                         <configuration>
                             <skip>${skip.image.profile}</skip>
-                            <outputDirectory>${project.build.directory}/kometProfileRuntimeImage/module-jars
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-profile/jlink/${jreleaser.platform.work}/kometProfileRuntimeImage-${jreleaser.platform.suffix}/module-jars
                             </outputDirectory>
                             <!-- artifactItems are INHERITED from pluginManagement! -->
                         </configuration>
@@ -662,7 +580,7 @@
                         </goals>
                         <configuration>
                             <skip>${skip.image.standard}</skip>
-                            <outputDirectory>${project.build.directory}/kometRuntimeImage/plugins</outputDirectory>
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}/plugins</outputDirectory>
                         </configuration>
                     </execution>
                     <execution>
@@ -673,7 +591,7 @@
                         </goals>
                         <configuration>
                             <skip>${skip.image.debug}</skip>
-                            <outputDirectory>${project.build.directory}/kometDebugRuntimeImage/plugins</outputDirectory>
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-debug/jlink/${jreleaser.platform.work}/kometDebugRuntimeImage-${jreleaser.platform.suffix}/plugins</outputDirectory>
                         </configuration>
                     </execution>
                     <execution>
@@ -684,7 +602,7 @@
                         </goals>
                         <configuration>
                             <skip>${skip.image.profile}</skip>
-                            <outputDirectory>${project.build.directory}/kometProfileRuntimeImage/plugins
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-profile/jlink/${jreleaser.platform.work}/kometProfileRuntimeImage-${jreleaser.platform.suffix}/plugins
                             </outputDirectory>
                         </configuration>
                     </execution>
@@ -1003,6 +921,28 @@
                     </dependency>
                 </dependencies>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.jreleaser</groupId>
+                <artifactId>jreleaser-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jlink-images</id>
+                        <phase>package[1]</phase>
+                        <goals>
+                            <goal>assemble</goal>
+                        </goals>
+                        <configuration>
+                            <configFile>${project.build.directory}/jreleaser-config/jreleaser-jlink.yml</configFile>
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -1036,11 +976,6 @@
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-            <properties>
-                <jpackage.app.dest>target/dist/installer</jpackage.app.dest>
-                <!-- Ensure the standard image is generated for the installer to consume -->
-                <skip.image.standard>false</skip.image.standard>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -1053,6 +988,199 @@
                                 <goals>
                                     <goal>assemble</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!-- Platform properties for JReleaser jlink output paths -->
+        <profile>
+            <id>mac-aarch64-platform</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <jreleaser.platform.work>work-osx-aarch_64</jreleaser.platform.work>
+                <jreleaser.platform.suffix>osx-aarch64</jreleaser.platform.suffix>
+            </properties>
+        </profile>
+        <profile>
+            <id>mac-x86_64-platform</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>x86_64</arch>
+                </os>
+            </activation>
+            <properties>
+                <jreleaser.platform.work>work-osx-x86_64</jreleaser.platform.work>
+                <jreleaser.platform.suffix>osx-x86_64</jreleaser.platform.suffix>
+            </properties>
+        </profile>
+        <profile>
+            <id>linux-x86_64-platform</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>Linux</name>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <jreleaser.platform.work>work-linux-x86_64</jreleaser.platform.work>
+                <jreleaser.platform.suffix>linux-x86_64</jreleaser.platform.suffix>
+            </properties>
+        </profile>
+        <profile>
+            <id>windows-x86_64-platform</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <jreleaser.platform.work>work-windows-x86_64</jreleaser.platform.work>
+                <jreleaser.platform.suffix>windows-x86_64</jreleaser.platform.suffix>
+            </properties>
+        </profile>
+        <!-- Create symlinks from short paths to JReleaser jlink output -->
+        <profile>
+            <id>unix-jlink-symlinks</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>symlink-standard-image</id>
+                                <phase>package[2]</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${skip.image.standard}</skip>
+                                    <executable>ln</executable>
+                                    <arguments>
+                                        <argument>-sfn</argument>
+                                        <argument>jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}</argument>
+                                        <argument>${project.build.directory}/kometRuntimeImage</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>symlink-debug-image</id>
+                                <phase>package[2]</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${skip.image.debug}</skip>
+                                    <executable>ln</executable>
+                                    <arguments>
+                                        <argument>-sfn</argument>
+                                        <argument>jreleaser-jlink/assemble/komet-debug/jlink/${jreleaser.platform.work}/kometDebugRuntimeImage-${jreleaser.platform.suffix}</argument>
+                                        <argument>${project.build.directory}/kometDebugRuntimeImage</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>symlink-profile-image</id>
+                                <phase>package[2]</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${skip.image.profile}</skip>
+                                    <executable>ln</executable>
+                                    <arguments>
+                                        <argument>-sfn</argument>
+                                        <argument>jreleaser-jlink/assemble/komet-profile/jlink/${jreleaser.platform.work}/kometProfileRuntimeImage-${jreleaser.platform.suffix}</argument>
+                                        <argument>${project.build.directory}/kometProfileRuntimeImage</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>windows-jlink-symlinks</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>symlink-standard-image</id>
+                                <phase>package[2]</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${skip.image.standard}</skip>
+                                    <executable>cmd</executable>
+                                    <arguments>
+                                        <argument>/c</argument>
+                                        <argument>mklink</argument>
+                                        <argument>/D</argument>
+                                        <argument>${project.build.directory}\kometRuntimeImage</argument>
+                                        <argument>${project.build.directory}\jreleaser-jlink\assemble\komet-standard\jlink\${jreleaser.platform.work}\kometRuntimeImage-${jreleaser.platform.suffix}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>symlink-debug-image</id>
+                                <phase>package[2]</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${skip.image.debug}</skip>
+                                    <executable>cmd</executable>
+                                    <arguments>
+                                        <argument>/c</argument>
+                                        <argument>mklink</argument>
+                                        <argument>/D</argument>
+                                        <argument>${project.build.directory}\kometDebugRuntimeImage</argument>
+                                        <argument>${project.build.directory}\jreleaser-jlink\assemble\komet-debug\jlink\${jreleaser.platform.work}\kometDebugRuntimeImage-${jreleaser.platform.suffix}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>symlink-profile-image</id>
+                                <phase>package[2]</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${skip.image.profile}</skip>
+                                    <executable>cmd</executable>
+                                    <arguments>
+                                        <argument>/c</argument>
+                                        <argument>mklink</argument>
+                                        <argument>/D</argument>
+                                        <argument>${project.build.directory}\kometProfileRuntimeImage</argument>
+                                        <argument>${project.build.directory}\jreleaser-jlink\assemble\komet-profile\jlink\${jreleaser.platform.work}\kometProfileRuntimeImage-${jreleaser.platform.suffix}</argument>
+                                    </arguments>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -1150,6 +1278,7 @@
             </activation>
             <properties>
                 <skip.image.profile>false</skip.image.profile>
+                <jreleaser.jlink.profile.active>ALWAYS</jreleaser.jlink.profile.active>
             </properties>
         </profile>
         <profile>
@@ -1159,15 +1288,7 @@
             </activation>
             <properties>
                 <skip.image.debug>false</skip.image.debug>
-            </properties>
-        </profile>
-        <profile>
-            <id>jlink-standard</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <skip.image.standard>false</skip.image.standard>
+                <jreleaser.jlink.debug.active>ALWAYS</jreleaser.jlink.debug.active>
             </properties>
         </profile>
     </profiles>

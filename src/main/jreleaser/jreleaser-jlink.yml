@@ -1,0 +1,126 @@
+project:
+  name: komet-desktop
+  stereotype: DESKTOP
+  versionPattern: CUSTOM
+  description: Knowledge Management Environment Toolkit
+
+platform:
+  replacements:
+    aarch_64: aarch64
+
+assemble:
+  jlink:
+    komet-standard:
+      active: '${jreleaser.jlink.standard.active}'
+      exported: false
+      imageName: kometRuntimeImage
+      executable: launchKomet
+      mainJar:
+        path: ${project.build.directory}/${project.build.finalName}.jar
+      jars:
+        - pattern: ${project.build.directory}/jlink-module-path/*.jar
+      java:
+        mainModule: dev.ikm.komet.desktop
+        mainClass: dev.ikm.komet.desktop.App
+        jvmOptions:
+          universal:
+            - --enable-preview
+            - -Xmx42g
+            - -Dlog4j.configurationFile=$APPDIR/conf/log4j2.xml
+            - --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls
+            - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
+            - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
+            - -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer
+      jdeps:
+        multiRelease: base
+        ignoreMissingDeps: true
+      args:
+        - --no-header-files
+        - --no-man-pages
+        - --compress
+        - zip-2
+        - --bind-services
+        - --ignore-signing-information
+      fileSets:
+        - input: ${project.basedir}/src/main/resources
+          output: conf
+          includes:
+            - log4j2.xml
+
+    komet-profile:
+      active: '${jreleaser.jlink.profile.active}'
+      exported: false
+      imageName: kometProfileRuntimeImage
+      executable: profileKomet
+      mainJar:
+        path: ${project.build.directory}/${project.build.finalName}.jar
+      jars:
+        - pattern: ${project.build.directory}/jlink-module-path/*.jar
+      java:
+        mainModule: dev.ikm.komet.desktop
+        mainClass: dev.ikm.komet.desktop.App
+        jvmOptions:
+          universal:
+            - --enable-preview
+            - -Xmx42g
+            - -Dlog4j.configurationFile=$APPDIR/conf/log4j2.xml
+            - --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls
+            - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
+            - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
+            - -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer
+            - -agentpath:${jprofiler.agent.path}=port=8849,nowait
+            - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+      jdeps:
+        multiRelease: base
+        ignoreMissingDeps: true
+      args:
+        - --no-header-files
+        - --no-man-pages
+        - --compress
+        - zip-2
+        - --bind-services
+        - --ignore-signing-information
+      fileSets:
+        - input: ${project.basedir}/src/main/resources
+          output: conf
+          includes:
+            - log4j2.xml
+
+    komet-debug:
+      active: '${jreleaser.jlink.debug.active}'
+      exported: false
+      imageName: kometDebugRuntimeImage
+      executable: debugKomet
+      mainJar:
+        path: ${project.build.directory}/${project.build.finalName}.jar
+      jars:
+        - pattern: ${project.build.directory}/jlink-module-path/*.jar
+      java:
+        mainModule: dev.ikm.komet.desktop
+        mainClass: dev.ikm.komet.desktop.App
+        jvmOptions:
+          universal:
+            - --enable-preview
+            - -Xmx42g
+            - -Dlog4j.configurationFile=$APPDIR/conf/log4j2.xml
+            - --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls
+            - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
+            - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
+            - -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer
+            - -Xms24g
+            - -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000
+      jdeps:
+        multiRelease: base
+        ignoreMissingDeps: true
+      args:
+        - --no-header-files
+        - --no-man-pages
+        - --compress
+        - zip-2
+        - --bind-services
+        - --ignore-signing-information
+      fileSets:
+        - input: ${project.basedir}/src/main/resources
+          output: conf
+          includes:
+            - log4j2.xml
