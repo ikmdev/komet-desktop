@@ -1,10 +1,7 @@
 package dev.ikm.komet.desktop;
 
 import com.sun.management.OperatingSystemMXBean;
-import de.jangassen.MenuToolkit;
-import de.jangassen.model.AppearanceMode;
 import dev.ikm.komet.desktop.aboutdialog.AboutDialog;
-import dev.ikm.komet.framework.graphics.Icon;
 import dev.ikm.komet.framework.preferences.KometPreferencesStage;
 import dev.ikm.komet.framework.window.WindowSettings;
 import dev.ikm.komet.kview.mvvm.view.changeset.ExportController;
@@ -24,7 +21,6 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
@@ -57,7 +53,6 @@ public class AppMenu {
     private final App app;
     KometPreferencesStage kometPreferencesStage;
 
-    private static long windowCount = 1;
     private Stage overlayStage;
     private Timeline resourceUsageTimeline;
 
@@ -236,27 +231,17 @@ public class AppMenu {
 
 
     void setupMenus(Parent parent) {
-        Menu kometAppMenu;
-
-        if (IS_MAC_AND_NOT_TESTFX_TEST) {
-            MenuToolkit menuToolkit = MenuToolkit.toolkit();
-            kometAppMenu = menuToolkit.createDefaultApplicationMenu("Komet");
-        } else {
-            kometAppMenu = new Menu("Komet");
-        }
+        Menu kometAppMenu = new Menu("Komet");
 
         MenuItem prefsItem = new MenuItem("Komet preferences...");
         prefsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN));
         prefsItem.setOnAction(event -> kometPreferencesStage.showPreferences());
 
-        if (IS_MAC_AND_NOT_TESTFX_TEST) {
-            kometAppMenu.getItems().add(2, prefsItem);
-            kometAppMenu.getItems().add(3, new SeparatorMenuItem());
-            MenuItem appleQuit = kometAppMenu.getItems().getLast();
-            appleQuit.setOnAction(event -> app.quit());
-        } else {
-            kometAppMenu.getItems().addAll(prefsItem, new SeparatorMenuItem());
-        }
+        MenuItem quitItem = new MenuItem("Quit");
+        quitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.META_DOWN));
+        quitItem.setOnAction(event -> app.quit());
+
+        kometAppMenu.getItems().addAll(prefsItem, new SeparatorMenuItem(), quitItem);
 
         MenuBar menuBar = new MenuBar(kometAppMenu);
 
@@ -265,20 +250,6 @@ public class AppMenu {
             Menu editMenu = createEditMenu();
             Menu viewMenu = createViewMenu();
             menuBar.getMenus().addAll(fileMenu, editMenu, viewMenu);
-        }
-
-        if (IS_MAC_AND_NOT_TESTFX_TEST) {
-            MenuToolkit menuToolkit = MenuToolkit.toolkit();
-            menuToolkit.setApplicationMenu(kometAppMenu);
-            menuToolkit.setAppearanceMode(AppearanceMode.AUTO);
-            menuToolkit.setDockIconMenu(createDockMenu());
-            Menu windowMenu = createWindowMenuOnMacOS();
-            menuToolkit.autoAddWindowMenuItems(windowMenu);
-            menuToolkit.setGlobalMenuBar(menuBar);
-            menuToolkit.setTrayMenu(createSampleMenu());
-
-            // Add the window menu to the menu bar
-            menuBar.getMenus().add(windowMenu);
         }
 
         // Create and add the exchange menu to the menu bar
@@ -305,13 +276,6 @@ public class AppMenu {
 
         // Add menu items to the File menu
         fileMenu.getItems().addAll(importDatasetMenuItem, exportDatasetMenuItem);
-
-        if (IS_MAC_AND_NOT_TESTFX_TEST) {
-            // Close Window Menu Item
-            MenuToolkit tk = MenuToolkit.toolkit();
-            MenuItem closeWindowMenuItem = tk.createCloseWindowMenuItem();
-            fileMenu.getItems().addAll(new SeparatorMenuItem(), closeWindowMenuItem);
-        }
 
         return fileMenu;
     }
@@ -344,18 +308,6 @@ public class AppMenu {
         return viewMenu;
     }
 
-    private Menu createWindowMenuOnMacOS() {
-        MenuToolkit menuToolkit = MenuToolkit.toolkit();
-        Menu windowMenu = new Menu("Window");
-        windowMenu.getItems().addAll(
-                menuToolkit.createMinimizeMenuItem(),
-                menuToolkit.createZoomMenuItem(),
-                menuToolkit.createCycleWindowsItem(),
-                new SeparatorMenuItem(),
-                menuToolkit.createBringAllToFrontItem());
-        return windowMenu;
-    }
-
     private Menu createHelpMenu() {
         Menu helpMenu = new Menu("Help");
         helpMenu.getItems().add(new MenuItem("Getting started"));
@@ -369,43 +321,11 @@ public class AppMenu {
         return menuItem;
     }
 
-    private Menu createDockMenu() {
-        Menu dockMenu = createSampleMenu();
-        MenuItem open = new MenuItem("New Window");
-        open.setGraphic(Icon.OPEN.makeIcon());
-        open.setOnAction(e -> createNewStage());
-        dockMenu.getItems().addAll(new SeparatorMenuItem(), open);
-        return dockMenu;
-    }
-
-    private Menu createSampleMenu() {
-        Menu trayMenu = new Menu();
-        trayMenu.setGraphic(Icon.TEMPORARY_FIX.makeIcon());
-        MenuItem reload = new MenuItem("Reload");
-        reload.setGraphic(Icon.SYNCHRONIZE_WITH_STREAM.makeIcon());
-        reload.setOnAction(this::handleEvent);
-        MenuItem print = new MenuItem("Print");
-        print.setOnAction(this::handleEvent);
-
-        Menu share = new Menu("Share");
-        MenuItem mail = new MenuItem("Mail");
-        mail.setOnAction(this::handleEvent);
-        share.getItems().add(mail);
-
-        trayMenu.getItems().addAll(reload, print, new SeparatorMenuItem(), share);
-        return trayMenu;
-    }
 
     private void handleEvent(ActionEvent actionEvent) {
         LOG.debug("clicked " + actionEvent.getSource());  // NOSONAR
     }
 
-    private static void createNewStage() {
-        Stage stage = new Stage();
-        stage.setScene(new Scene(new StackPane()));
-        stage.setTitle("New stage" + " " + (windowCount++));
-        stage.show();
-    }
 
 
     public void openImport(Stage owner) {

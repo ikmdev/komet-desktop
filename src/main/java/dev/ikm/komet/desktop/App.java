@@ -132,7 +132,6 @@ public class App extends Application {
     static final boolean IS_BROWSER = WebAPI.isBrowser();
     static final boolean IS_DESKTOP = !IS_BROWSER && PlatformUtils.isDesktop();
     static final boolean IS_MAC = !IS_BROWSER && PlatformUtils.isMac();
-    static final boolean IS_MAC_AND_NOT_TESTFX_TEST = IS_MAC && !isTestFXTest();
     final StackPane rootPane = createRootPane();
     Image appIcon;
     LandingPageController landingPageController;
@@ -495,15 +494,6 @@ public class App extends Application {
         };
     }
 
-    /**
-     * Checks if the application is being tested using TestFX Framework.
-     *
-     * @return {@code true} if testing mode; {@code false} otherwise.
-     */
-    private static boolean isTestFXTest() {
-        String testFxTest = System.getProperty("testfx.headless");
-        return testFxTest != null && !testFxTest.isBlank();
-    }
 
 
     private void addEventFilters(Stage stage) {

@@ -51,7 +51,6 @@ module dev.ikm.komet.desktop {
 
     requires javafx.controls;
     requires javafx.fxml;
-    requires nsmenufx;
     requires fr.brouillard.oss.cssfx;
     requires org.carlfx.cognitive;
 

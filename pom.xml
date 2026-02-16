@@ -103,20 +103,6 @@
             <artifactId>component</artifactId>
         </dependency>
         <dependency>
-            <groupId>de.jangassen</groupId>
-            <artifactId>nsmenufx</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>net.java.dev.jna</groupId>
-                    <artifactId>jna</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>net.java.dev.jna</groupId>
-                    <artifactId>jna-platform</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>org.carlfx</groupId>
             <artifactId>cognitive</artifactId>
         </dependency>
@@ -639,6 +625,7 @@
                 <version>3.5.0</version>
                 <executions>
                     <!-- Create timestamp parts for version -->
+                    <!-- CFBundleVersion segments must each be <= 32767, so use yy.MMdd.HHmm -->
                     <execution>
                         <id>timestamp-property-date</id>
                         <phase>initialize</phase>
@@ -648,6 +635,32 @@
                         <configuration>
                             <name>build.date</name>
                             <pattern>yyyyMMdd</pattern>
+                            <locale>en_US</locale>
+                            <timeZone>UTC</timeZone>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>timestamp-property-year</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>timestamp-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>build.year</name>
+                            <pattern>yy</pattern>
+                            <locale>en_US</locale>
+                            <timeZone>UTC</timeZone>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>timestamp-property-monthday</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>timestamp-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>build.monthday</name>
+                            <pattern>MMdd</pattern>
                             <locale>en_US</locale>
                             <timeZone>UTC</timeZone>
                         </configuration>
@@ -717,6 +730,52 @@
                             <pattern>HHmm</pattern>
                             <locale>en_US</locale>
                             <timeZone>UTC</timeZone>
+                        </configuration>
+                    </execution>
+
+                    <!-- CFBundleVersion segments cannot have leading zeros.
+                         Strip leading zeros from monthday (e.g. 0215 -> 215) and time (e.g. 0418 -> 418).
+                         Also handle midnight (0000 -> 1) since zero segments are rejected. -->
+                    <execution>
+                        <id>strip-monthday-leading-zeros</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>regex-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>build.monthday</name>
+                            <value>${build.monthday}</value>
+                            <regex>^0+(.+)$</regex>
+                            <replacement>$1</replacement>
+                            <failIfNoMatch>false</failIfNoMatch>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>strip-time-leading-zeros</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>regex-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>build.time</name>
+                            <value>${build.time}</value>
+                            <regex>^0+(.+)$</regex>
+                            <replacement>$1</replacement>
+                            <failIfNoMatch>false</failIfNoMatch>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>fix-midnight-build-time</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>regex-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>build.time</name>
+                            <value>${build.time}</value>
+                            <regex>^0+$</regex>
+                            <replacement>1</replacement>
+                            <failIfNoMatch>false</failIfNoMatch>
                         </configuration>
                     </execution>
 
@@ -805,7 +864,7 @@
                         </goals>
                         <configuration>
                             <name>jpackage.app.version</name>
-                            <value>${build.date}.${build.time}.${build.qualifier}</value>
+                            <value>${build.year}.${build.monthday}.${build.time}</value>
                             <regex>^(.+)$</regex>
                             <replacement>$1</replacement>
                         </configuration>
