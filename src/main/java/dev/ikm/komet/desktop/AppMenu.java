@@ -260,7 +260,15 @@ public class AppMenu {
         Menu helpMenu = createHelpMenu();
         menuBar.getMenus().add(helpMenu);
 
-        // menuBar.getMenus().add(createDevMenu(parent));
+        // On macOS, use the native system menu bar
+        menuBar.setUseSystemMenuBar(true);
+
+        // Add the menu bar to the scene graph
+        if (parent instanceof BorderPane borderPane) {
+            borderPane.setTop(menuBar);
+        } else if (parent instanceof Pane pane) {
+            pane.getChildren().addFirst(menuBar);
+        }
     }
 
     private Menu createFileMenu() {
