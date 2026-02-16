@@ -99,10 +99,7 @@ public class AppClassicKomet {
         Scene kometScene = new Scene(kometRoot, 1800, 1024);
         addStylesheets(kometScene, KOMET_CSS);
 
-        // if NOT on macOS
-        if (!IS_MAC) {
-            app.appMenu.generateMsWindowsMenu(kometRoot, classicKometStage);
-        }
+        app.appMenu.generateMsWindowsMenu(kometRoot, classicKometStage);
 
         classicKometStage.setScene(kometScene);
 

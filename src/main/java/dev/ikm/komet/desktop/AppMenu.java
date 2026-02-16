@@ -123,6 +123,7 @@ public class AppMenu {
         menuBar.getMenus().add(editMenu);
         menuBar.getMenus().add(windowMenu);
         //menuBar.getMenus().add(createDevMenu(kometRoot));
+        menuBar.setUseSystemMenuBar(true);
         if (topBarVBox != null) {
             // add MS Windows menu to the classic komet menu
             Platform.runLater(() -> topBarVBox.getChildren().addFirst(menuBar));
@@ -210,6 +211,7 @@ public class AppMenu {
         menuBar.getMenus().add(windowMenu);
         menuBar.getMenus().add(exchangeMenu);
         //menuBar.getMenus().add(createDevMenu(landingPageRoot));
+        menuBar.setUseSystemMenuBar(true);
         landingPageRoot.setTop(menuBar);
     }
 

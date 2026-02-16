@@ -1,7 +1,6 @@
 package dev.ikm.komet.desktop;
 
 import static dev.ikm.komet.desktop.App.IS_BROWSER;
-import static dev.ikm.komet.desktop.App.IS_MAC;
 import static dev.ikm.komet.desktop.AppState.SHUTDOWN;
 import static dev.ikm.komet.desktop.util.CssFile.ICONS;
 import static dev.ikm.komet.desktop.util.CssFile.KLCORE_CSS;
@@ -217,9 +216,7 @@ public class AppPages {
             FXMLLoader landingPageLoader = LandingPageViewFactory.createFXMLLoader();
             BorderPane landingPageBorderPane = landingPageLoader.load();
 
-            if (!IS_MAC) {
-                app.appMenu.createMenuOptions(landingPageBorderPane);
-            }
+            app.appMenu.createMenuOptions(landingPageBorderPane);
 
             String username = windowSettings.getView().calculator().getPreferredDescriptionTextWithFallbackOrNid(loggedInUser.nid());
             app.landingPageController = landingPageLoader.getController();
@@ -283,9 +280,7 @@ public class AppPages {
         journalStage.getIcons().setAll(app.appIcon);
         journalStage.setScene(sourceScene);
 
-        if (!IS_MAC) {
-            app.appMenu.generateMsWindowsMenu(journalBorderPane, journalStage);
-        }
+        app.appMenu.generateMsWindowsMenu(journalBorderPane, journalStage);
 
         // load journal specific window settings
         final String journalName = journalWindowSettings.getValue(JOURNAL_TITLE);
