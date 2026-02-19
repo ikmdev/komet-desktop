@@ -24,7 +24,6 @@
         <ike-bom.version>3.0.7-kec-jan-19-SNAPSHOT</ike-bom.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
-
         <compiler.args>--enable-preview</compiler.args>
         <surefire.args>--enable-preview</surefire.args>
         <failsafe.args>--enable-preview</failsafe.args>
@@ -779,146 +778,57 @@
                         </configuration>
                     </execution>
 
-                    <!-- Detect if this is a SNAPSHOT build -->
-                    <execution>
-                        <id>detect-snapshot</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>is.snapshot</name>
-                            <value>${project.version}</value>
-                            <regex>.*-SNAPSHOT$</regex>
-                            <replacement>true</replacement>
-                            <failIfNoMatch>false</failIfNoMatch>
-                        </configuration>
-                    </execution>
-
-                    <!-- Set build qualifier to 777 if snapshot, 0 otherwise -->
-                    <execution>
-                        <id>set-qualifier-snapshot</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>build.qualifier</name>
-                            <value>${is.snapshot}</value>
-                            <regex>^true$</regex>
-                            <replacement>777</replacement>
-                            <failIfNoMatch>false</failIfNoMatch>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>set-qualifier-release</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>build.qualifier</name>
-                            <value>${build.qualifier}</value>
-                            <regex>^$</regex>
-                            <replacement>0</replacement>
-                            <failIfNoMatch>false</failIfNoMatch>
-                        </configuration>
-                    </execution>
-
-                    <!-- Set Windows version revision (same as build.qualifier) -->
-                    <execution>
-                        <id>set-win-revision</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>win.version.revision</name>
-                            <value>${build.qualifier}</value>
-                            <regex>^(.+)$</regex>
-                            <replacement>$1</replacement>
-                        </configuration>
-                    </execution>
-
-                    <!-- Create Windows-specific version string (Major.Minor.Build.Revision) -->
-                    <execution>
-                        <id>set-win-version</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>win.app.version</name>
-                            <value>${win.version.major}.${win.version.minor}.${win.version.build}.${win.version.revision}</value>
-                            <regex>^(.+)$</regex>
-                            <replacement>$1</replacement>
-                        </configuration>
-                    </execution>
-
-                    <!-- Create jpackage.app.version -->
-                    <execution>
-                        <id>set-app-version</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>jpackage.app.version</name>
-                            <value>${build.year}.${build.monthday}.${build.time}</value>
-                            <regex>^(.+)$</regex>
-                            <replacement>$1</replacement>
-                        </configuration>
-                    </execution>
-
-                    <!-- Create jpackage.app.name with date and time suffix -->
-                    <execution>
-                        <id>set-app-name-snapshot</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>jpackage.app.name</name>
-                            <value>${is.snapshot}</value>
-                            <regex>^true$</regex>
-                            <replacement>Komet Desktop ${build.display.date} ${build.time}s</replacement>
-                            <failIfNoMatch>false</failIfNoMatch>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>set-app-name-release</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>jpackage.app.name</name>
-                            <value>${jpackage.app.name}</value>
-                            <regex>^$</regex>
-                            <replacement>Komet Desktop ${build.display.date} ${build.time}</replacement>
-                            <failIfNoMatch>false</failIfNoMatch>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
-            <!-- Optional: Echo the values to verify -->
+            <!-- Set derived build properties using Ant conditions.
+                 build-helper regex-property cannot chain properties in Maven 4,
+                 so we use antrun with exportAntProperties instead. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>3.1.0</version>
                 <executions>
                     <execution>
-                        <id>echo-properties</id>
+                        <id>set-build-properties</id>
                         <phase>initialize</phase>
                         <goals>
                             <goal>run</goal>
                         </goals>
                         <configuration>
+                            <exportAntProperties>true</exportAntProperties>
                             <target>
+                                <!-- Detect SNAPSHOT -->
+                                <condition property="is.snapshot" value="true" else="false">
+                                    <matches string="${project.version}" pattern=".*-SNAPSHOT$$"/>
+                                </condition>
+
+                                <!-- Build qualifier: 777 for SNAPSHOT, 0 for release -->
+                                <condition property="build.qualifier" value="777" else="0">
+                                    <matches string="${project.version}" pattern=".*-SNAPSHOT$$"/>
+                                </condition>
+
+                                <!-- Windows version revision (same as build.qualifier) -->
+                                <property name="win.version.revision" value="${build.qualifier}"/>
+
+                                <!-- Windows version string -->
+                                <property name="win.app.version" value="${win.version.major}.${win.version.minor}.${win.version.build}.${win.version.revision}"/>
+
+                                <!-- JPackage app version from timestamp parts -->
+                                <property name="jpackage.app.version" value="${build.year}.${build.monthday}.${build.time}"/>
+
+                                <!-- JPackage app name: add "s" suffix for SNAPSHOT -->
+                                <condition property="jpackage.app.name"
+                                           value="Komet Desktop ${build.display.date} ${build.time}s"
+                                           else="Komet Desktop ${build.display.date} ${build.time}">
+                                    <matches string="${project.version}" pattern=".*-SNAPSHOT$$"/>
+                                </condition>
+
+                                <!-- Echo to verify -->
+                                <echo message="Is Snapshot: ${is.snapshot}"/>
+                                <echo message="Build Qualifier: ${build.qualifier}"/>
                                 <echo message="JPackage App Name: ${jpackage.app.name}"/>
                                 <echo message="JPackage App Version: ${jpackage.app.version}"/>
                                 <echo message="Windows App Version: ${win.app.version}"/>
-                                <echo message="Is Snapshot: ${is.snapshot}"/>
                             </target>
                         </configuration>
                     </execution>
