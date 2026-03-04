@@ -31,6 +31,7 @@ assemble:
             - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
             - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
             - -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer
+            - --add-modules jdk.incubator.vector
       jdeps:
         multiRelease: base
         ignoreMissingDeps: true
@@ -41,6 +42,7 @@ assemble:
         - zip-2
         - --bind-services
         - --ignore-signing-information
+        - --add-modules=jdk.incubator.vector
       fileSets:
         - input: ${project.basedir}/src/main/resources
           output: conf
@@ -68,6 +70,7 @@ assemble:
             - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
             - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
             - -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer
+            - --add-modules jdk.incubator.vector
             - -agentpath:${jprofiler.agent.path}=port=8849,nowait
             - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
       jdeps:
@@ -80,6 +83,7 @@ assemble:
         - zip-2
         - --bind-services
         - --ignore-signing-information
+        - --add-modules=jdk.incubator.vector
       fileSets:
         - input: ${project.basedir}/src/main/resources
           output: conf
@@ -107,6 +111,7 @@ assemble:
             - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
             - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
             - -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer
+            - --add-modules jdk.incubator.vector
             - -Xms24g
             - -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000
       jdeps:
@@ -119,6 +124,7 @@ assemble:
         - zip-2
         - --bind-services
         - --ignore-signing-information
+        - --add-modules=jdk.incubator.vector
       fileSets:
         - input: ${project.basedir}/src/main/resources
           output: conf

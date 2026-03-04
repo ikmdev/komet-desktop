@@ -2,34 +2,28 @@
 <Configuration status="WARN">
     <Properties>
         <!-- Define reusable properties -->
-        <Property name="LOG_PATTERN">%d{ABSOLUTE} [%-6p] %40.40c - %m%n</Property>
+        <Property name="LOG_PATTERN">%d{HH:mm:ss,SSS} [%-5p] %c{1.} - %m%n</Property>
         <Property name="LOG_BASE_PATH">${sys:user.home}/Solor/komet/logs</Property>
         <Property name="FILE_SIZE_LIMIT">100MB</Property>
         <Property name="LOG_RETENTION_DAYS">P30D</Property>
-        <Property name="ROOT_LOG_LEVEL">INFO</Property>
     </Properties>
 
     <Appenders>
-        <!-- Console is a ConsoleAppender -->
         <Console name="console" target="SYSTEM_OUT">
             <PatternLayout pattern="${LOG_PATTERN}"/>
         </Console>
 
-        <!-- Root RollingFileAppender -->
         <RollingFile name="rollingFile"
                      filePattern="${LOG_BASE_PATH}/%d{ISO8601_BASIC}.log"
                      ignoreExceptions="false">
             <PatternLayout pattern="${LOG_PATTERN}"/>
             <DirectWriteRolloverStrategy>
-                <!-- Delete log files older than specified age (i.e., 30 days) -->
                 <Delete basePath="${LOG_BASE_PATH}" maxDepth="1">
                     <IfLastModified age="${LOG_RETENTION_DAYS}"/>
                 </Delete>
             </DirectWriteRolloverStrategy>
-            <!-- Create a new log file when Komet starts or the file becomes too large -->
             <Policies>
                 <SizeBasedTriggeringPolicy size="${FILE_SIZE_LIMIT}"/>
-                <!-- OnStartupTrigger minsize must be set to zero to execute the Delete action defined above -->
                 <OnStartupTriggeringPolicy minSize="0"/>
             </Policies>
         </RollingFile>
@@ -54,19 +48,31 @@
     </Appenders>
 
     <Loggers>
-        <!-- Set root logger level to INFO and log to console and file -->
-        <Root level="${ROOT_LOG_LEVEL}">
+        <Root level="INFO">
             <AppenderRef ref="console"/>
             <AppenderRef ref="rollingFile"/>
         </Root>
 
-        <!-- Logger for ChangeSetWriterProvider set to TRACE level with dedicated file -->
-        <Logger name="dev.ikm.tinkar.provider.changeset.ChangeSetWriterProvider" level="ALL" additivity="false">
-            <AppenderRef ref="changeSetWriterFile"/>
+        <!-- Reasoner tracking - INFO level shows key events only -->
+        <Logger name="dev.ikm.komet.framework.EditedConceptTracker" level="INFO" additivity="false">
             <AppenderRef ref="console"/>
-            <AppenderRef ref="rollingFile">
-                <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
-            </AppenderRef>
+            <AppenderRef ref="rollingFile"/>
+        </Logger>
+        
+        <Logger name="dev.ikm.komet.reasoner.ui" level="INFO" additivity="false">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="rollingFile"/>
+        </Logger>
+
+        <!-- Reduce noise from verbose providers -->
+        <Logger name="dev.ikm.tinkar.provider.entity.EntityProvider" level="WARN" additivity="false">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="rollingFile"/>
+        </Logger>
+        
+        <Logger name="dev.ikm.tinkar.provider.changeset.ChangeSetWriterProvider" level="WARN" additivity="false">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="rollingFile"/>
         </Logger>
     </Loggers>
 </Configuration>

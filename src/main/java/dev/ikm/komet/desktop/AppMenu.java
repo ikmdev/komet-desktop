@@ -78,57 +78,43 @@ public class AppMenu {
      */
     void generateMsWindowsMenu(BorderPane kometRoot, Stage stage, VBox topBarVBox) {
         MenuBar menuBar = new MenuBar();
-        Menu fileMenu = new Menu("File");
 
+        Menu fileMenu = new Menu("File");
         MenuItem about = new MenuItem("About");
         about.setOnAction(_ -> showAboutDialog());
         fileMenu.getItems().add(about);
-
-        // Importing data
         MenuItem importMenuItem = new MenuItem("Import Dataset");
         importMenuItem.setOnAction(actionEvent -> openImport(stage));
         fileMenu.getItems().add(importMenuItem);
-
-        // Exporting data
         MenuItem exportDatasetMenuItem = new MenuItem("Export Dataset");
         exportDatasetMenuItem.setOnAction(actionEvent -> openExport(stage));
         fileMenu.getItems().add(exportDatasetMenuItem);
-
         MenuItem menuItemQuit = new MenuItem("Quit");
-        KeyCombination quitKeyCombo = new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN);
+        menuItemQuit.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
         menuItemQuit.setOnAction(actionEvent -> app.quit());
-        menuItemQuit.setAccelerator(quitKeyCombo);
         fileMenu.getItems().add(menuItemQuit);
 
         Menu editMenu = new Menu("Edit");
         MenuItem landingPage = new MenuItem("Landing Page");
-        KeyCombination landingPageKeyCombo = new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN);
+        landingPage.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN));
         landingPage.setOnAction(actionEvent -> app.appPages.launchLandingPage(App.primaryStage, userProperty.get()));
-        landingPage.setAccelerator(landingPageKeyCombo);
         landingPage.setDisable(IS_BROWSER);
         editMenu.getItems().add(landingPage);
 
-        Menu windowMenu = new Menu("Window");
-        MenuItem minimizeWindow = new MenuItem("Minimize");
-        KeyCombination minimizeKeyCombo = new KeyCodeCombination(KeyCode.M, KeyCombination.CONTROL_DOWN);
-        minimizeWindow.setOnAction(event -> {
-            Stage obj = (Stage) kometRoot.getScene().getWindow();
-            obj.setIconified(true);
-        });
-        minimizeWindow.setAccelerator(minimizeKeyCombo);
-        minimizeWindow.setDisable(IS_BROWSER);
-        windowMenu.getItems().add(minimizeWindow);
+        Menu helpMenu = new Menu("Help");
+        helpMenu.getItems().add(new MenuItem("Getting started"));
 
-        menuBar.getMenus().add(fileMenu);
-        menuBar.getMenus().add(editMenu);
-        menuBar.getMenus().add(windowMenu);
-        //menuBar.getMenus().add(createDevMenu(kometRoot));
+        menuBar.getMenus().addAll(fileMenu, editMenu, helpMenu);
         menuBar.setUseSystemMenuBar(true);
+
+        // Register with WindowMenuManager — inserts a "Window" menu before "Help"
+        WindowMenuManager.addStage(stage, menuBar);
+
         if (topBarVBox != null) {
-            // add MS Windows menu to the classic komet menu
+            // add menu to the classic komet top bar
             Platform.runLater(() -> topBarVBox.getChildren().addFirst(menuBar));
         } else {
-            // add MS Windows menu to the journal window
+            // add menu to the journal window
             Platform.runLater(() -> kometRoot.setTop(menuBar));
         }
     }
@@ -174,103 +160,49 @@ public class AppMenu {
         aboutDialog.showAndWait();
     }
 
-    public void createMenuOptions(BorderPane landingPageRoot) {
-        MenuBar menuBar = new MenuBar();
-
-        Menu fileMenu = new Menu("File");
-        MenuItem about = new MenuItem("About");
-        about.setOnAction(_ -> showAboutDialog());
-        fileMenu.getItems().add(about);
-
-        MenuItem menuItemQuit = new MenuItem("Quit");
-        KeyCombination quitKeyCombo = new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN);
-        menuItemQuit.setOnAction(actionEvent -> app.quit());
-        menuItemQuit.setAccelerator(quitKeyCombo);
-        fileMenu.getItems().add(menuItemQuit);
-
-        Menu viewMenu = new Menu("View");
-        MenuItem classicKometMenuItem = createClassicKometMenuItem();
-        MenuItem resourceUsageMenuItem = createResourceUsageItem();
-        viewMenu.getItems().addAll(classicKometMenuItem, resourceUsageMenuItem);
-
-        Menu windowMenu = new Menu("Window");
-        MenuItem minimizeWindow = new MenuItem("Minimize");
-        KeyCombination minimizeKeyCombo = new KeyCodeCombination(KeyCode.M, KeyCombination.CONTROL_DOWN);
-        minimizeWindow.setOnAction(event -> {
-            Stage obj = (Stage) landingPageRoot.getScene().getWindow();
-            obj.setIconified(true);
-        });
-        minimizeWindow.setAccelerator(minimizeKeyCombo);
-        minimizeWindow.setDisable(IS_BROWSER);
-        windowMenu.getItems().add(minimizeWindow);
-
-        Menu exchangeMenu = createExchangeMenu();
-
-        menuBar.getMenus().add(fileMenu);
-        menuBar.getMenus().add(viewMenu);
-        menuBar.getMenus().add(windowMenu);
-        menuBar.getMenus().add(exchangeMenu);
-        //menuBar.getMenus().add(createDevMenu(landingPageRoot));
-        menuBar.setUseSystemMenuBar(true);
-        landingPageRoot.setTop(menuBar);
-    }
-
-    private MenuItem createClassicKometMenuItem() {
-        MenuItem classicKometMenuItem = new MenuItem("Classic Komet");
-        KeyCombination classicKometKeyCombo = new KeyCodeCombination(KeyCode.K, KeyCombination.CONTROL_DOWN);
-        classicKometMenuItem.setOnAction(actionEvent -> {
-            try {
-                app.appClassicKomet.launchClassicKomet();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (BackingStoreException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        classicKometMenuItem.setAccelerator(classicKometKeyCombo);
-        return classicKometMenuItem;
-    }
-
-
+    /**
+     * Builds and attaches a menu bar to the given parent without stage tracking.
+     * Used for transient pages (login, data source selection) that don't need a Window menu.
+     */
     void setupMenus(Parent parent) {
-        Menu kometAppMenu = new Menu("Komet");
-
-        MenuItem prefsItem = new MenuItem("Komet preferences...");
-        prefsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN));
-        prefsItem.setOnAction(event -> kometPreferencesStage.showPreferences());
-
-        MenuItem quitItem = new MenuItem("Quit");
-        quitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.META_DOWN));
-        quitItem.setOnAction(event -> app.quit());
-
-        kometAppMenu.getItems().addAll(prefsItem, new SeparatorMenuItem(), quitItem);
-
-        MenuBar menuBar = new MenuBar(kometAppMenu);
-
-        if (App.state.get() == RUNNING) {
-            Menu fileMenu = createFileMenu();
-            Menu editMenu = createEditMenu();
-            Menu viewMenu = createViewMenu();
-            menuBar.getMenus().addAll(fileMenu, editMenu, viewMenu);
-        }
-
-        // Create and add the exchange menu to the menu bar
-        Menu exchangeMenu = createExchangeMenu();
-        menuBar.getMenus().add(exchangeMenu);
-
-        // Create and add the help menu to the menu bar
-        Menu helpMenu = createHelpMenu();
-        menuBar.getMenus().add(helpMenu);
-
-        // On macOS, use the native system menu bar
+        MenuBar menuBar = buildMenuBar();
         menuBar.setUseSystemMenuBar(true);
-
-        // Add the menu bar to the scene graph
         if (parent instanceof BorderPane borderPane) {
             borderPane.setTop(menuBar);
         } else if (parent instanceof Pane pane) {
             pane.getChildren().addFirst(menuBar);
         }
+    }
+
+    /**
+     * Builds and attaches a menu bar to the given border pane, then registers the stage with
+     * {@link WindowMenuManager} so that a "Window" menu (listing all open windows) is
+     * automatically inserted before "Help" and kept up to date.
+     */
+    void setupMenus(BorderPane borderPane, Stage stage) {
+        MenuBar menuBar = buildMenuBar();
+        menuBar.setUseSystemMenuBar(true);
+        borderPane.setTop(menuBar);
+        WindowMenuManager.addStage(stage, menuBar);
+    }
+
+    private MenuBar buildMenuBar() {
+        Menu kometAppMenu = new Menu("Komet");
+        MenuItem prefsItem = new MenuItem("Komet preferences...");
+        prefsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN));
+        prefsItem.setOnAction(event -> kometPreferencesStage.showPreferences());
+        MenuItem quitItem = new MenuItem("Quit");
+        quitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.META_DOWN));
+        quitItem.setOnAction(event -> app.quit());
+        kometAppMenu.getItems().addAll(prefsItem, new SeparatorMenuItem(), quitItem);
+
+        MenuBar menuBar = new MenuBar(kometAppMenu);
+        if (App.state.get() == RUNNING) {
+            menuBar.getMenus().addAll(createFileMenu(), createEditMenu(), createViewMenu());
+        }
+        menuBar.getMenus().add(createExchangeMenu());
+        menuBar.getMenus().add(createHelpMenu());
+        return menuBar;
     }
 
     private Menu createFileMenu() {
@@ -314,7 +246,7 @@ public class AppMenu {
                 throw new RuntimeException(e);
             }
         });
-        viewMenu.getItems().add(classicKometMenuItem);
+        viewMenu.getItems().addAll(classicKometMenuItem, createResourceUsageItem());
         return viewMenu;
     }
 

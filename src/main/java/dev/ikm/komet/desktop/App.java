@@ -29,6 +29,7 @@ import dev.ikm.komet.kview.mvvm.view.landingpage.LandingPageController;
 import dev.ikm.komet.preferences.KometPreferences;
 import dev.ikm.komet.preferences.KometPreferencesImpl;
 import dev.ikm.komet.preferences.Preferences;
+import dev.ikm.komet.executor.AlertDialogSubscriber;
 import dev.ikm.tinkar.common.alert.AlertObject;
 import dev.ikm.tinkar.common.alert.AlertStreams;
 import dev.ikm.tinkar.common.service.PrimitiveData;
@@ -125,6 +126,8 @@ public class App extends Application {
     private static final Object SHUTDOWN_LOCK = new Object();
     static volatile boolean shutdownInProgress = false;
     private static volatile boolean primitiveDataStopped = false;
+
+    private static AlertDialogSubscriber alertDialogSubscriber;
 
     static Stage primaryStage;
 
@@ -379,8 +382,16 @@ public class App extends Application {
 
         try {
             App.primaryStage = stage;
-            Thread.currentThread().setUncaughtExceptionHandler((thread, exception) ->
-                    AlertStreams.getRoot().dispatch(AlertObject.makeError(exception)));
+            // Show error dialogs for uncaught exceptions on any thread
+            alertDialogSubscriber = new AlertDialogSubscriber();
+            Thread.setDefaultUncaughtExceptionHandler((thread, exception) -> {
+                AlertStreams.getRoot().dispatch(AlertObject.makeError(exception));
+                LOG.error("Uncaught exception in thread {}", thread.getName(), exception);
+            });
+            Thread.currentThread().setUncaughtExceptionHandler((thread, exception) -> {
+                AlertStreams.getRoot().dispatch(AlertObject.makeError(exception));
+                LOG.error("Uncaught exception in thread {}", thread.getName(), exception);
+            });
 
             // Initialize the JPro WebAPI
             if (IS_BROWSER) {

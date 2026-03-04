@@ -216,16 +216,16 @@ public class AppPages {
             FXMLLoader landingPageLoader = LandingPageViewFactory.createFXMLLoader();
             BorderPane landingPageBorderPane = landingPageLoader.load();
 
-            app.appMenu.createMenuOptions(landingPageBorderPane);
-
             String username = windowSettings.getView().calculator().getPreferredDescriptionTextWithFallbackOrNid(loggedInUser.nid());
             app.landingPageController = landingPageLoader.getController();
-            app.landingPageController.getWelcomeTitleLabel().setText("Welcome " + username);
+            app.landingPageController.getWelcomeTitleLabel().setText("User: " + username);
             app.landingPageController.setSelectedDatasetTitle(PrimitiveData.get().name());
             app.landingPageController.getGithubStatusHyperlink().setOnAction(_ -> app.appGithub.connectToGithub());
 
             stage.setTitle("Landing Page");
-            stage.setMaximized(true);
+            stage.setMaximized(false);  // Change from true to false
+            stage.setWidth(1035);       // Match the prefWidth from landing-page.fxml
+            stage.setHeight(850);       // Match the prefHeight from landing-page.fxml
             stage.setOnCloseRequest(windowEvent -> {
                 // This is called only when the user clicks the close button on the window
                 App.state.set(SHUTDOWN);
@@ -234,7 +234,7 @@ public class AppPages {
 
             app.rootPane.getChildren().add(landingPageBorderPane);
 
-            app.appMenu.setupMenus(app.rootPane);
+            app.appMenu.setupMenus(landingPageBorderPane, stage);
         } catch (IOException e) {
             LOG.error("Failed to initialize the landing page window", e);
         }
@@ -280,11 +280,12 @@ public class AppPages {
         journalStage.getIcons().setAll(app.appIcon);
         journalStage.setScene(sourceScene);
 
-        app.appMenu.generateMsWindowsMenu(journalBorderPane, journalStage);
-
-        // load journal specific window settings
+        // load journal specific window settings — title must be set before registering with
+        // WindowMenuManager so that the Window menu can sort stages by title without NPE
         final String journalName = journalWindowSettings.getValue(JOURNAL_TITLE);
         journalStage.setTitle(journalName);
+
+        app.appMenu.generateMsWindowsMenu(journalBorderPane, journalStage);
 
         // Get the UUID-based directory name from preferences
         String journalDirName = journalWindowSettings.getValue(JOURNAL_DIR_NAME);

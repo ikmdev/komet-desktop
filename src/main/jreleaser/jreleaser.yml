@@ -26,6 +26,7 @@ assemble:
           - --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls
           - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
           - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
+          - --add-modules jdk.incubator.vector
       java:
         mainModule: dev.ikm.komet.desktop
         mainClass: dev.ikm.komet.desktop.App
