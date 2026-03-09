@@ -500,6 +500,32 @@
                             </resources>
                         </configuration>
                     </execution>
+                    <!-- Copy installer artifacts (*.pkg, *.dmg, *.exe, *.msi, *.deb, *.rpm)
+                         directly into target/ for easy access -->
+                    <execution>
+                        <id>copy-installers</id>
+                        <phase>verify[2]</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/jreleaser/assemble/komet/jpackage</directory>
+                                    <includes>
+                                        <include>*.pkg</include>
+                                        <include>*.dmg</include>
+                                        <include>*.exe</include>
+                                        <include>*.msi</include>
+                                        <include>*.deb</include>
+                                        <include>*.rpm</include>
+                                    </includes>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
