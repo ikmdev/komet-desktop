@@ -214,14 +214,14 @@ public class AppPages {
 
             WindowSettings windowSettings = new WindowSettings(windowPreferences);
 
-            // Set the logged-in user as the author on the shared root coordinate
-            windowSettings.getView().editCoordinate().authorForChangesProperty().setValue(loggedInUser);
-
             FXMLLoader landingPageLoader = LandingPageViewFactory.createFXMLLoader();
             BorderPane landingPageBorderPane = landingPageLoader.load();
 
             String username = windowSettings.getView().calculator().getPreferredDescriptionTextWithFallbackOrNid(loggedInUser.nid());
             app.landingPageController = landingPageLoader.getController();
+
+            // Set the logged-in user as author on the controller's single edit coordinate
+            app.landingPageController.editCoordinate().authorForChangesProperty().setValue(loggedInUser);
             app.landingPageController.getWelcomeTitleLabel().setText("User: " + username);
             app.landingPageController.setSelectedDatasetTitle(PrimitiveData.get().name());
             app.landingPageController.getGithubStatusHyperlink().setOnAction(_ -> app.appGithub.connectToGithub());
