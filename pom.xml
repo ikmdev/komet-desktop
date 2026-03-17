@@ -6,13 +6,13 @@
     <modelVersion>4.1.0</modelVersion>
 
     <parent>
-        <groupId>dev.ikm.build</groupId>
-        <artifactId>java-parent</artifactId>
-        <version>1.73.0</version>
+        <groupId>network.ike</groupId>
+        <artifactId>ike-parent</artifactId>
+        <version>20</version>
     </parent>
 
     <artifactId>komet-desktop</artifactId>
-    <version>3.0.0-kec-jan-19-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
 
     <name>Komet Desktop</name>
 
@@ -21,7 +21,7 @@
         <!-- Configure build timestamp -->
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <asm.version>9.9</asm.version>
-        <ike-bom.version>3.0.7-kec-jan-19-SNAPSHOT</ike-bom.version>
+        <ike-bom.version>3.0.7</ike-bom.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
         <compiler.args>--enable-preview</compiler.args>
@@ -50,7 +50,7 @@
             <dependency>
                 <groupId>dev.ikm.ike</groupId>
                 <artifactId>ike-bom</artifactId>
-                <version>3.0.7-kec-jan-19-SNAPSHOT</version>
+                <version>3.0.7-SNAPSHOT</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -495,6 +495,32 @@
                             <resources>
                                 <resource>
                                     <directory>${project.build.directory}/jreleaser-jlink/assemble/komet-profile/jlink/inputs/bin</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <!-- Copy installer artifacts (*.pkg, *.dmg, *.exe, *.msi, *.deb, *.rpm)
+                         directly into target/ for easy access -->
+                    <execution>
+                        <id>copy-installers</id>
+                        <phase>verify[2]</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/jreleaser/assemble/komet/jpackage</directory>
+                                    <includes>
+                                        <include>*.pkg</include>
+                                        <include>*.dmg</include>
+                                        <include>*.exe</include>
+                                        <include>*.msi</include>
+                                        <include>*.deb</include>
+                                        <include>*.rpm</include>
+                                    </includes>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>
