@@ -690,11 +690,6 @@ public class App extends Application {
         shutdownInProgress = true;
     }
 
-    // Save root view coordinates (including logged-in author)
-    if (landingPageController != null) {
-        landingPageController.saveWindowSettings();
-    }
-
     saveJournalWindowsToPreferences();
     LOG.info(">>> Saved journal windows to preferences");
 

@@ -222,7 +222,6 @@ public class AppPages {
 
             String username = windowSettings.getView().calculator().getPreferredDescriptionTextWithFallbackOrNid(loggedInUser.nid());
             app.landingPageController = landingPageLoader.getController();
-            app.landingPageController.setWindowSettings(windowSettings);
             app.landingPageController.getWelcomeTitleLabel().setText("User: " + username);
             app.landingPageController.setSelectedDatasetTitle(PrimitiveData.get().name());
             app.landingPageController.getGithubStatusHyperlink().setOnAction(_ -> app.appGithub.connectToGithub());

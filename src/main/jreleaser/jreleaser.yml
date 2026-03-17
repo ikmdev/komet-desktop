@@ -3,6 +3,7 @@ project:
   stereotype: DESKTOP
   versionPattern: CUSTOM
   description: Knowledge Management Environment Toolkit
+  copyright: 2015-2026 Integrated Knowledge Management
 
 platform:
   replacements:
