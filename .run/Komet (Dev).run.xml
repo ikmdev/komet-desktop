@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Komet (Dev)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="dev.ikm.komet.desktop.App" />
+    <module name="dev.ikm.komet.desktop" />
+    <option name="VM_PARAMETERS"
+            value="--enable-preview -Xmx42g --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer --add-modules jdk.incubator.vector" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/komet-desktop" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
