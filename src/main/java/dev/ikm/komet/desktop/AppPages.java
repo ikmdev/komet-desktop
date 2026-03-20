@@ -40,6 +40,7 @@ import dev.ikm.komet.framework.window.WindowSettings;
 import dev.ikm.komet.kleditorapp.view.KLEditorMainScreenController;
 import dev.ikm.komet.kview.events.JournalTileEvent;
 import dev.ikm.komet.kview.mvvm.model.ViewCoordinateHelper;
+import dev.ikm.komet.kview.mvvm.view.KViewResources;
 import dev.ikm.komet.kview.mvvm.view.journal.JournalController;
 import dev.ikm.komet.kview.mvvm.view.landingpage.LandingPageViewFactory;
 import dev.ikm.komet.kview.mvvm.view.login.LoginPageController;
@@ -264,13 +265,14 @@ public class AppPages {
         ObservableEditCoordinate editCoordinate = windowSettings.getView().editCoordinate();
         editCoordinate.authorForChangesProperty().setValue(loggedInUser);
 
-        Config journalConfig = new Config(JournalController.class.getResource("journal.fxml"))
+        Config journalConfig = new Config(KViewResources.journalFxml())
                 .updateViewModel("journalViewModel", journalViewModel -> {
                     journalViewModel.setPropertyValue(CURRENT_JOURNAL_WINDOW_TOPIC, journalTopic);
                     journalViewModel.setPropertyValue(WINDOW_SETTINGS, windowSettings);
                     journalViewModel.setPropertyValue(JournalViewModel.PARENT_VIEW_COORDINATES, parentViewCoordinates);
                     journalViewModel.setPropertyValue(JOURNAL_NAME, journalWindowSettings.getValue(JOURNAL_TITLE));
                 });
+
         JFXNode<BorderPane, JournalController> journalJFXNode = FXMLMvvmLoader.make(journalConfig);
         BorderPane journalBorderPane = journalJFXNode.node();
         JournalController journalController = journalJFXNode.controller();
