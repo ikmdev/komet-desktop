@@ -713,7 +713,7 @@
                             <goal>timestamp-property</goal>
                         </goals>
                         <configuration>
-                            <name>build.time</name>
+                            <name>build.hhmm</name>
                             <pattern>HHmm</pattern>
                             <locale>en_US</locale>
                             <timeZone>UTC</timeZone>
@@ -798,8 +798,8 @@
                             <goal>regex-property</goal>
                         </goals>
                         <configuration>
-                            <name>build.time</name>
-                            <value>${build.time}</value>
+                            <name>build.hhmm</name>
+                            <value>${build.hhmm}</value>
                             <regex>^0+(.+)$</regex>
                             <replacement>$1</replacement>
                             <failIfNoMatch>false</failIfNoMatch>
@@ -812,8 +812,8 @@
                             <goal>regex-property</goal>
                         </goals>
                         <configuration>
-                            <name>build.time</name>
-                            <value>${build.time}</value>
+                            <name>build.hhmm</name>
+                            <value>${build.hhmm}</value>
                             <regex>^0+$</regex>
                             <replacement>1</replacement>
                             <failIfNoMatch>false</failIfNoMatch>
@@ -856,12 +856,12 @@
                                 <property name="win.app.version" value="${win.version.major}.${win.version.minor}.${win.version.build}.${win.version.revision}"/>
 
                                 <!-- JPackage app version from timestamp parts -->
-                                <property name="jpackage.app.version" value="${build.year}.${build.monthday}.${build.time}"/>
+                                <property name="jpackage.app.version" value="${build.year}.${build.monthday}.${build.hhmm}"/>
 
                                 <!-- JPackage app name: add "s" suffix for SNAPSHOT -->
                                 <condition property="jpackage.app.name"
-                                           value="Komet Desktop ${build.display.date} ${build.time}s"
-                                           else="Komet Desktop ${build.display.date} ${build.time}">
+                                           value="Komet Desktop ${build.display.date} ${build.hhmm}s"
+                                           else="Komet Desktop ${build.display.date} ${build.hhmm}">
                                     <matches string="${project.version}" pattern=".*-SNAPSHOT$$"/>
                                 </condition>
 
