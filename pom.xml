@@ -8,7 +8,7 @@
     <parent>
         <groupId>network.ike</groupId>
         <artifactId>ike-parent</artifactId>
-        <version>23</version>
+        <version>34</version>
     </parent>
 
     <artifactId>komet-desktop</artifactId>

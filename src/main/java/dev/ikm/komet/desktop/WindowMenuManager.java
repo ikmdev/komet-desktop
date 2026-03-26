@@ -19,8 +19,7 @@ import java.util.stream.Collectors;
 /**
  * Tracks application windows and keeps each window's "Window" menu synchronized with
  * the list of open stages. Automatically removes stages when their windows close.
- * <p>
- * Usage: call {@link #addStage(Stage, MenuBar)} after creating each tracked window's menu bar.
+ * <p>Usage: call {@link #addStage(Stage, MenuBar)} after creating each tracked window's menu bar.
  * The Window menu is inserted before "Help" (or appended if no Help menu exists).
  */
 public class WindowMenuManager implements ListChangeListener<Window> {
