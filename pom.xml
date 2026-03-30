@@ -226,11 +226,11 @@
             <groupId>one.jpro.platform</groupId>
             <artifactId>jpro-utils</artifactId>
         </dependency>
-        <!-- Override provided scope from ike-parent — jpro-utils requires this module at runtime/jlink -->
+        <!-- jpro-utils requires org.jetbrains.annotations at runtime/jlink -->
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <scope>compile</scope>
+            <version>26.0.2</version>
         </dependency>
         <!--        testing -->
         <dependency>
