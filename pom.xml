@@ -22,7 +22,7 @@
         <!-- Configure build timestamp -->
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <asm.version>9.9</asm.version>
-        <ike-bom.version>3.0.7-SNAPSHOT</ike-bom.version>
+        <ike-bom.version>3.0.7-feature-test-v67-SNAPSHOT</ike-bom.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
         <compiler.args>--enable-preview</compiler.args>
