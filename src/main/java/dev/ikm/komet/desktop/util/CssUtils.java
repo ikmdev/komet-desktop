@@ -89,13 +89,14 @@ public final class CssUtils {
         }
 
         final Path workingDirPath = Paths.get(System.getProperty("user.dir"));
-        LOG.info("Working directory: {}", workingDirPath);
+        Path desiredPath = workingDirPath.getParent().resolve("komet");
+        LOG.info("Working directory for CSS monitoring: {}", desiredPath);
 
         final List<String> cssUris = new ArrayList<>();
         final List<CssFile> loadedFromFileSystemList = new ArrayList<>();
 
         for (CssFile cssFile : cssFiles) {
-            Path cssPath = cssFile.resolveAbsolutePath(workingDirPath);
+            Path cssPath = cssFile.resolveAbsolutePath(desiredPath);
             LOG.debug("Attempting to load CSS '{}' from path: {}", cssFile.getFileName(), cssPath);
 
             if (Files.exists(cssPath)) {
@@ -117,7 +118,7 @@ public final class CssUtils {
         }
 
         if (!loadedFromFileSystemList.isEmpty()) {
-            setupCssMonitor(loadedFromFileSystemList.toArray(new CssFile[0]), workingDirPath);
+            setupCssMonitor(loadedFromFileSystemList.toArray(new CssFile[0]), desiredPath);
         }
     }
 
