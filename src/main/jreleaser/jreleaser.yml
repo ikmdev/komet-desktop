@@ -33,13 +33,7 @@ assemble:
         mainClass: dev.ikm.komet.desktop.App
       runtimeImages:
         - path: ${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}
-          platform: osx-aarch_64
-        - path: ${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}
-          platform: osx-x86_64
-        - path: ${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}
-          platform: linux-x86_64
-        - path: ${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}
-          platform: windows-x86_64
+          platform: ${jreleaser.platform}
       osx:
         types: [pkg]
         icon: ${project.basedir}/src/main/resources/icons/KOMET.icns

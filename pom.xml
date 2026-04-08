@@ -38,7 +38,8 @@
         <skip.image.standard>false</skip.image.standard>
         <skip.image.profile>true</skip.image.profile>
         <skip.image.debug>true</skip.image.debug>
-        <!-- Platform-specific JReleaser jlink work directory name (set by OS profiles) -->
+        <!-- Platform-specific JReleaser properties (set by OS profiles) -->
+        <jreleaser.platform>unknown</jreleaser.platform>
         <jreleaser.platform.work>work-unknown</jreleaser.platform.work>
         <jreleaser.platform.suffix>unknown</jreleaser.platform.suffix>
         <jreleaser.jlink.standard.active>ALWAYS</jreleaser.jlink.standard.active>
@@ -1050,6 +1051,7 @@
                 </os>
             </activation>
             <properties>
+                <jreleaser.platform>osx-aarch_64</jreleaser.platform>
                 <jreleaser.platform.work>work-osx-aarch_64</jreleaser.platform.work>
                 <jreleaser.platform.suffix>osx-aarch64</jreleaser.platform.suffix>
             </properties>
@@ -1063,6 +1065,7 @@
                 </os>
             </activation>
             <properties>
+                <jreleaser.platform>osx-x86_64</jreleaser.platform>
                 <jreleaser.platform.work>work-osx-x86_64</jreleaser.platform.work>
                 <jreleaser.platform.suffix>osx-x86_64</jreleaser.platform.suffix>
             </properties>
@@ -1077,6 +1080,7 @@
                 </os>
             </activation>
             <properties>
+                <jreleaser.platform>linux-x86_64</jreleaser.platform>
                 <jreleaser.platform.work>work-linux-x86_64</jreleaser.platform.work>
                 <jreleaser.platform.suffix>linux-x86_64</jreleaser.platform.suffix>
             </properties>
@@ -1090,6 +1094,7 @@
                 </os>
             </activation>
             <properties>
+                <jreleaser.platform>windows-x86_64</jreleaser.platform>
                 <jreleaser.platform.work>work-windows-x86_64</jreleaser.platform.work>
                 <jreleaser.platform.suffix>windows-x86_64</jreleaser.platform.suffix>
             </properties>
