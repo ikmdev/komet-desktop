@@ -1,6 +1,6 @@
-# Komet Desktop
+# komet-desktop
 
-Desktop packaging and installer for Komet using jlink/jpackage via JReleaser.
+komet-desktop component.
 
 ## Build Standards
 
@@ -14,9 +14,17 @@ mvn clean verify -DskipTests -T4
 
 ## Key Facts
 
-- GroupId: `dev.ikm.komet`
-- ArtifactId: `komet-desktop`
-- Uses Maven 4 with POM 4.1.0 (root="true", no parent inheritance for version)
-- JReleaser assembles jlink image and native installers
-- App version derived from build timestamp: `build.year.build.monthday.build.hhmm`
-- `build.hhmm` (not `build.time`) is the numeric HHmm component — `build.time` is the human-readable timestamp from the parent
+- GroupId: `dev.ikm.ike`
+- Version: `3.0.0-SNAPSHOT`
+- Uses `--enable-preview` (Java 25)
+- BOM: imports `dev.ikm.ike:ike-bom` for dependency version management
+
+## Prohibited Patterns
+
+- **Never use `maven-antrun-plugin`** — use a proper Maven goal or `exec-maven-plugin`
+- **Never use `build-helper-maven-plugin` for multi-execution property chaining** —
+  write a proper Maven goal in `ike-maven-plugin`
+- **Never embed shell commands inline in POM** — extract to a named script
+
+See `.claude/standards/` (after `mvn validate`) for full standards.
+See `CLAUDE-komet-desktop.md` for project-specific notes.
