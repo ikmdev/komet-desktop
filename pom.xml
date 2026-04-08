@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.1.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.1.0 https://maven.apache.org/xsd/maven-4.1.0.xsd"
-         root="true">
+         >
     <modelVersion>4.1.0</modelVersion>
 
     <parent>
@@ -38,9 +38,6 @@
         <skip.image.standard>false</skip.image.standard>
         <skip.image.profile>true</skip.image.profile>
         <skip.image.debug>true</skip.image.debug>
-        <!-- Platform-specific JReleaser jlink work directory name (set by OS profiles) -->
-        <jreleaser.platform.work>work-unknown</jreleaser.platform.work>
-        <jreleaser.platform.suffix>unknown</jreleaser.platform.suffix>
         <jreleaser.jlink.standard.active>ALWAYS</jreleaser.jlink.standard.active>
         <jreleaser.jlink.profile.active>NEVER</jreleaser.jlink.profile.active>
         <jreleaser.jlink.debug.active>NEVER</jreleaser.jlink.debug.active>
@@ -665,224 +662,21 @@
                 </executions>
             </plugin>
 
-            <!-- Create numeric date/time parts -->
-            <!-- Detect if this build is a -SNAPSHOT without CI flags -->
+            <!-- Compute build timestamp, platform, and JPackage version properties -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.5.0</version>
-                <executions>
-                    <!-- Create timestamp parts for version -->
-                    <!-- CFBundleVersion segments must each be <= 32767, so use yy.MMdd.HHmm -->
-                    <execution>
-                        <id>timestamp-property-date</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>timestamp-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>build.date</name>
-                            <pattern>yyyyMMdd</pattern>
-                            <locale>en_US</locale>
-                            <timeZone>UTC</timeZone>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>timestamp-property-year</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>timestamp-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>build.year</name>
-                            <pattern>yy</pattern>
-                            <locale>en_US</locale>
-                            <timeZone>UTC</timeZone>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>timestamp-property-monthday</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>timestamp-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>build.monthday</name>
-                            <pattern>MMdd</pattern>
-                            <locale>en_US</locale>
-                            <timeZone>UTC</timeZone>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>timestamp-property-time</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>timestamp-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>build.hhmm</name>
-                            <pattern>HHmm</pattern>
-                            <locale>en_US</locale>
-                            <timeZone>UTC</timeZone>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>timestamp-property-display-date</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>timestamp-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>build.display.date</name>
-                            <pattern>yyyy-MM-dd</pattern>
-                            <locale>en_US</locale>
-                            <timeZone>UTC</timeZone>
-                        </configuration>
-                    </execution>
-
-                    <!-- Windows-specific version components (Major.Minor.Build.Revision) -->
-                    <execution>
-                        <id>timestamp-property-win-major</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>timestamp-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>win.version.major</name>
-                            <pattern>yy</pattern>
-                            <locale>en_US</locale>
-                            <timeZone>UTC</timeZone>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>timestamp-property-win-minor</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>timestamp-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>win.version.minor</name>
-                            <pattern>MMdd</pattern>
-                            <locale>en_US</locale>
-                            <timeZone>UTC</timeZone>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>timestamp-property-win-build</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>timestamp-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>win.version.build</name>
-                            <pattern>HHmm</pattern>
-                            <locale>en_US</locale>
-                            <timeZone>UTC</timeZone>
-                        </configuration>
-                    </execution>
-
-                    <!-- CFBundleVersion segments cannot have leading zeros.
-                         Strip leading zeros from monthday (e.g. 0215 -> 215) and time (e.g. 0418 -> 418).
-                         Also handle midnight (0000 -> 1) since zero segments are rejected. -->
-                    <execution>
-                        <id>strip-monthday-leading-zeros</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>build.monthday</name>
-                            <value>${build.monthday}</value>
-                            <regex>^0+(.+)$</regex>
-                            <replacement>$1</replacement>
-                            <failIfNoMatch>false</failIfNoMatch>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>strip-time-leading-zeros</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>build.hhmm</name>
-                            <value>${build.hhmm}</value>
-                            <regex>^0+(.+)$</regex>
-                            <replacement>$1</replacement>
-                            <failIfNoMatch>false</failIfNoMatch>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>fix-midnight-build-time</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>build.hhmm</name>
-                            <value>${build.hhmm}</value>
-                            <regex>^0+$</regex>
-                            <replacement>1</replacement>
-                            <failIfNoMatch>false</failIfNoMatch>
-                        </configuration>
-                    </execution>
-
-                </executions>
-            </plugin>
-            <!-- Set derived build properties using Ant conditions.
-                 build-helper regex-property cannot chain properties in Maven 4,
-                 so we use antrun with exportAntProperties instead. -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
+                <groupId>network.ike.tooling</groupId>
+                <artifactId>ike-maven-plugin</artifactId>
+                <version>78</version>
                 <executions>
                     <execution>
-                        <id>set-build-properties</id>
-                        <phase>initialize</phase>
+                        <id>jpackage-props</id>
                         <goals>
-                            <goal>run</goal>
+                            <goal>jpackage-props</goal>
                         </goals>
-                        <configuration>
-                            <exportAntProperties>true</exportAntProperties>
-                            <target>
-                                <!-- Detect SNAPSHOT -->
-                                <condition property="is.snapshot" value="true" else="false">
-                                    <matches string="${project.version}" pattern=".*-SNAPSHOT$$"/>
-                                </condition>
-
-                                <!-- Build qualifier: 777 for SNAPSHOT, 0 for release -->
-                                <condition property="build.qualifier" value="777" else="0">
-                                    <matches string="${project.version}" pattern=".*-SNAPSHOT$$"/>
-                                </condition>
-
-                                <!-- Windows version revision (same as build.qualifier) -->
-                                <property name="win.version.revision" value="${build.qualifier}"/>
-
-                                <!-- Windows version string -->
-                                <property name="win.app.version" value="${win.version.major}.${win.version.minor}.${win.version.build}.${win.version.revision}"/>
-
-                                <!-- JPackage app version from timestamp parts -->
-                                <property name="jpackage.app.version" value="${build.year}.${build.monthday}.${build.hhmm}"/>
-
-                                <!-- JPackage app name: add "s" suffix for SNAPSHOT -->
-                                <condition property="jpackage.app.name"
-                                           value="Komet Desktop ${build.display.date} ${build.hhmm}s"
-                                           else="Komet Desktop ${build.display.date} ${build.hhmm}">
-                                    <matches string="${project.version}" pattern=".*-SNAPSHOT$$"/>
-                                </condition>
-
-                                <!-- Echo to verify -->
-                                <echo message="Is Snapshot: ${is.snapshot}"/>
-                                <echo message="Build Qualifier: ${build.qualifier}"/>
-                                <echo message="JPackage App Name: ${jpackage.app.name}"/>
-                                <echo message="JPackage App Version: ${jpackage.app.version}"/>
-                                <echo message="Windows App Version: ${win.app.version}"/>
-                            </target>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
+            <!-- REPLACED: build-helper-maven-plugin + maven-antrun-plugin by ike:jpackage-props above -->
             <!-- Ensure Surefire can parse Java 25 class files by upgrading ASM in the plugin realm -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -1012,60 +806,7 @@
                 </plugins>
             </build>
         </profile>
-        <!-- Platform properties for JReleaser jlink output paths -->
-        <profile>
-            <id>mac-aarch64-platform</id>
-            <activation>
-                <os>
-                    <family>mac</family>
-                    <arch>aarch64</arch>
-                </os>
-            </activation>
-            <properties>
-                <jreleaser.platform.work>work-osx-aarch_64</jreleaser.platform.work>
-                <jreleaser.platform.suffix>osx-aarch64</jreleaser.platform.suffix>
-            </properties>
-        </profile>
-        <profile>
-            <id>mac-x86_64-platform</id>
-            <activation>
-                <os>
-                    <family>mac</family>
-                    <arch>x86_64</arch>
-                </os>
-            </activation>
-            <properties>
-                <jreleaser.platform.work>work-osx-x86_64</jreleaser.platform.work>
-                <jreleaser.platform.suffix>osx-x86_64</jreleaser.platform.suffix>
-            </properties>
-        </profile>
-        <profile>
-            <id>linux-x86_64-platform</id>
-            <activation>
-                <os>
-                    <family>unix</family>
-                    <name>Linux</name>
-                    <arch>amd64</arch>
-                </os>
-            </activation>
-            <properties>
-                <jreleaser.platform.work>work-linux-x86_64</jreleaser.platform.work>
-                <jreleaser.platform.suffix>linux-x86_64</jreleaser.platform.suffix>
-            </properties>
-        </profile>
-        <profile>
-            <id>windows-x86_64-platform</id>
-            <activation>
-                <os>
-                    <family>windows</family>
-                    <arch>amd64</arch>
-                </os>
-            </activation>
-            <properties>
-                <jreleaser.platform.work>work-windows-x86_64</jreleaser.platform.work>
-                <jreleaser.platform.suffix>windows-x86_64</jreleaser.platform.suffix>
-            </properties>
-        </profile>
+        <!-- Platform properties (jreleaser.platform, .work, .suffix) now set by ike:jpackage-props -->
         <!-- Create symlinks from short paths to JReleaser jlink output -->
         <profile>
             <id>unix-jlink-symlinks</id>
@@ -1267,8 +1008,7 @@
                 </os>
             </activation>
             <properties>
-                <!-- Override jpackage.app.version for Windows with proper format -->
-                <jpackage.app.version>${win.app.version}</jpackage.app.version>
+                <!-- Platform properties and version computed by ike:jpackage-props -->
             </properties>
             <dependencies>
                 <dependency>
