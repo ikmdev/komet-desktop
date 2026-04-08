@@ -702,6 +702,19 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>timestamp-property-month</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>timestamp-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>build.month</name>
+                            <pattern>M</pattern>
+                            <locale>en_US</locale>
+                            <timeZone>UTC</timeZone>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>timestamp-property-monthday</id>
                         <phase>initialize</phase>
                         <goals>
@@ -891,7 +904,14 @@
                                 <!-- Windows version string -->
                                 <property name="win.app.version" value="${win.version.major}.${win.version.minor}.${win.version.build}.${win.version.revision}"/>
 
-                                <!-- JPackage app version from timestamp parts -->
+                                <!-- JPackage app version: Windows MSI requires Minor <= 255,
+                                     so use YY.month.HHmm on Windows (e.g., 26.4.1901).
+                                     Ant properties are immutable: first set wins. -->
+                                <condition property="jpackage.app.version"
+                                           value="${build.year}.${build.month}.${build.hhmm}">
+                                    <os family="windows"/>
+                                </condition>
+                                <!-- Default (Mac/Linux): YY.monthday.HHmm (e.g., 26.408.1901) -->
                                 <property name="jpackage.app.version" value="${build.year}.${build.monthday}.${build.hhmm}"/>
 
                                 <!-- JPackage app name: add "s" suffix for SNAPSHOT -->
