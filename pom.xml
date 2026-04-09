@@ -22,7 +22,7 @@
         <!-- Configure build timestamp -->
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <asm.version>9.9</asm.version>
-        <ike-bom.version>3.0.7-SNAPSHOT</ike-bom.version>
+        <komet-bom.version>3.0.7-SNAPSHOT</komet-bom.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
         <compiler.args>--enable-preview</compiler.args>
@@ -46,8 +46,8 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>dev.ikm.ike</groupId>
-                <artifactId>ike-bom</artifactId>
+                <groupId>dev.ikm.komet</groupId>
+                <artifactId>komet-bom</artifactId>
                 <version>3.0.7-SNAPSHOT</version>
                 <type>pom</type>
                 <scope>import</scope>
