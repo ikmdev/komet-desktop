@@ -13,7 +13,7 @@
     </parent>
 
     <artifactId>komet-desktop</artifactId>
-    <version>3.0.0-checkpoint.20260408.334aed4</version>
+    <version>3.0.0-SNAPSHOT</version>
 
     <name>Komet Desktop</name>
 
