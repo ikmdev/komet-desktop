@@ -88,24 +88,27 @@ public final class CssUtils {
             return;
         }
 
-        final Path workingDirPath = Paths.get(System.getProperty("user.dir"));
-        Path desiredPath = workingDirPath.getParent().resolve("komet");
-        LOG.info("Working directory for CSS monitoring: {}", desiredPath);
+        final Path workingDirPath = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        LOG.info("Initializing CSS stylesheets. user.dir='{}', os='{}', java='{}'",
+                workingDirPath,
+                System.getProperty("os.name"),
+                System.getProperty("java.version"));
 
         final List<String> cssUris = new ArrayList<>();
         final List<CssFile> loadedFromFileSystemList = new ArrayList<>();
 
         for (CssFile cssFile : cssFiles) {
-            Path cssPath = cssFile.resolveAbsolutePath(desiredPath);
-            LOG.debug("Attempting to load CSS '{}' from path: {}", cssFile.getFileName(), cssPath);
+            Path cssPath = cssFile.resolveAbsolutePath(workingDirPath);
+            LOG.debug("Resolved CSS file '{}' to local path '{}'", cssFile.getFileName(), cssPath);
 
-            if (Files.exists(cssPath)) {
+            if (cssPath != null && Files.exists(cssPath)) {
                 String cssUri = cssPath.toUri().toString();
                 cssUris.add(cssUri);
                 loadedFromFileSystemList.add(cssFile);
                 LOG.info("Loaded CSS '{}' from local file system: {}", cssFile.getFileName(), cssUri);
             } else {
-                LOG.warn("CSS file '{}' not found at local file system path '{}'", cssFile.getFileName(), cssPath);
+                LOG.warn("CSS file '{}' not found on local file system at '{}'. Falling back to classpath resource '{}'",
+                        cssFile.getFileName(), cssPath, cssFile.getResourcePath());
                 loadFromResource(cssFile, cssUris);
             }
         }
@@ -118,50 +121,36 @@ public final class CssUtils {
         }
 
         if (!loadedFromFileSystemList.isEmpty()) {
-            setupCssMonitor(loadedFromFileSystemList.toArray(new CssFile[0]), desiredPath);
+            setupCssMonitor(loadedFromFileSystemList.toArray(new CssFile[0]), workingDirPath);
+        } else {
+            LOG.debug("CSSFX live-reload not started because no CSS files were loaded from the local file system.");
         }
     }
 
-    /**
-     * Loads the specified CSS file from the class loader resources and adds its URI to the provided list.
-     * This method is used as a fallback when the CSS file is not found in the local file system.
-     *
-     * @param cssFile the {@link CssFile} enum representing the CSS file to load
-     * @param cssUris the list to which the CSS URI will be added if the resource is found
-     */
     private static void loadFromResource(CssFile cssFile, List<String> cssUris) {
         String resourcePath = cssFile.getResourcePath();
-
-        // Attempt to retrieve the resource URL using the class loader
         URL resourceUrl = CssUtils.class.getClassLoader().getResource(resourcePath);
+
         if (resourceUrl != null) {
             String cssResourceUri = resourceUrl.toExternalForm();
             cssUris.add(cssResourceUri);
-            LOG.info("Loaded CSS '{}' from class loader resource: {}", cssFile.getFileName(), cssResourceUri);
+            LOG.info("Loaded CSS '{}' from classpath resource: {}", cssFile.getFileName(), cssResourceUri);
         } else {
-            LOG.error("CSS resource '{}' not found in class loader.", resourcePath);
+            LOG.error("CSS resource not found on classpath: '{}' (file='{}', module='{}')",
+                    resourcePath, cssFile.getFileName(), cssFile.getModuleName());
         }
     }
 
-    /**
-     * Sets up CSSFX to monitor changes in the specified CSS files that were loaded from the local file system.
-     * This enables live-reloading of CSS stylesheets during development, allowing for immediate visual feedback
-     * when CSS files are modified.
-     *
-     * @param cssFiles   the array of {@link CssFile} enums that were loaded from the file system
-     * @param workingDir the working directory {@link Path} used to resolve the CSS file paths
-     */
     private static void setupCssMonitor(CssFile[] cssFiles, Path workingDir) {
         final URIToPathConverter myCssConverter = uri -> {
             for (CssFile cssFile : cssFiles) {
-                if (uri.endsWith(cssFile.getFileName())) { // More precise matching
+                if (uri != null && uri.endsWith(cssFile.getFileName())) {
                     Path cssPath = cssFile.resolvePathForMonitoring(workingDir);
                     if (Files.exists(cssPath)) {
-                        LOG.debug("CSSFX will monitor changes for: {}", cssPath);
+                        LOG.debug("CSSFX will monitor changes for '{}'", cssPath);
                         return cssPath;
-                    } else {
-                        LOG.warn("CSSFX could not find the path to monitor for CSS file '{}': {}", cssFile.getFileName(), cssPath);
                     }
+                    LOG.warn("CSSFX could not find path for monitoring '{}': {}", cssFile.getFileName(), cssPath);
                 }
             }
             return null;
@@ -169,9 +158,10 @@ public final class CssUtils {
 
         try {
             CSSFX.addConverter(myCssConverter).start();
-            LOG.info("CSSFX has been initialized for live-reloading of CSS files.");
+            LOG.info("CSSFX live-reload initialized for {} stylesheet(s).", cssFiles.length);
         } catch (Exception e) {
-            LOG.error("Failed to initialize CSSFX: {}", e.getMessage(), e);
+            LOG.error("Failed to initialize CSSFX live-reload for CSS files {}: {}", 
+                    java.util.Arrays.toString(cssFiles), e.getMessage(), e);
         }
     }
 }
