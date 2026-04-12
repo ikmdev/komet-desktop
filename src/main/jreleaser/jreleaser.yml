@@ -39,6 +39,10 @@ assemble:
         icon: ${project.basedir}/src/main/resources/icons/KOMET.icns
         resourceDir: ${project.basedir}/src/main/resources/installer/resourceDir_unix
         packageName: Komet Desktop
+        sign: true
+        signingKeyUsername: "Keith Eugene Campbell (8WUE5BZ4BP)"
+        packageIdentifier: dev.ikm.komet.desktop
+        packageSigningPrefix: dev.ikm.komet.
       linux:
         types: [rpm]
         icon: ${project.basedir}/src/main/resources/icons/Komet.png

@@ -8,7 +8,7 @@
     <parent>
         <groupId>network.ike.pipeline</groupId>
         <artifactId>ike-parent</artifactId>
-        <version>73</version>
+        <version>83</version>
         <relativePath/>
     </parent>
 
@@ -35,6 +35,10 @@
         <!-- JProfiler agent path (auto-detected by platform) -->
         <jprofiler.agent.path>/Applications/JProfiler.app/Contents/Resources/app/bin/macos/libjprofilerti.jnilib
         </jprofiler.agent.path>
+        <!-- macOS codesigning identity for native libraries (used by ike:codesign-natives).
+             Must match the signingKeyUsername in jreleaser.yml.
+             Blank on non-macOS or unsigned builds — the goal skips gracefully. -->
+        <codesign.identity>Developer ID Application: Keith Eugene Campbell (8WUE5BZ4BP)</codesign.identity>
         <skip.image.standard>false</skip.image.standard>
         <skip.image.profile>true</skip.image.profile>
         <skip.image.debug>true</skip.image.debug>
@@ -674,6 +678,45 @@
                             <goal>jpackage-props</goal>
                         </goals>
                     </execution>
+                    <!-- Sign native libs (.jnilib, .dylib) inside JARs so jpackage
+                         output passes Apple notarization. Runs after jlink + module-jar
+                         copy + plugin fetch (package[4]) but before jpackage (verify). -->
+                    <execution>
+                        <id>codesign-standard-natives</id>
+                        <phase>package[5]</phase>
+                        <goals>
+                            <goal>codesign-natives</goal>
+                        </goals>
+                        <configuration>
+                            <runtimeImageDir>${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}</runtimeImageDir>
+                            <signingIdentity>${codesign.identity}</signingIdentity>
+                            <skip>${skip.image.standard}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>codesign-debug-natives</id>
+                        <phase>package[5]</phase>
+                        <goals>
+                            <goal>codesign-natives</goal>
+                        </goals>
+                        <configuration>
+                            <runtimeImageDir>${project.build.directory}/jreleaser-jlink/assemble/komet-debug/jlink/${jreleaser.platform.work}/kometDebugRuntimeImage-${jreleaser.platform.suffix}</runtimeImageDir>
+                            <signingIdentity>${codesign.identity}</signingIdentity>
+                            <skip>${skip.image.debug}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>codesign-profile-natives</id>
+                        <phase>package[5]</phase>
+                        <goals>
+                            <goal>codesign-natives</goal>
+                        </goals>
+                        <configuration>
+                            <runtimeImageDir>${project.build.directory}/jreleaser-jlink/assemble/komet-profile/jlink/${jreleaser.platform.work}/kometProfileRuntimeImage-${jreleaser.platform.suffix}</runtimeImageDir>
+                            <signingIdentity>${codesign.identity}</signingIdentity>
+                            <skip>${skip.image.profile}</skip>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <!-- REPLACED: build-helper-maven-plugin + maven-antrun-plugin by ike:jpackage-props above -->
@@ -799,6 +842,30 @@
                                 <phase>verify</phase>
                                 <goals>
                                     <goal>assemble</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>network.ike.tooling</groupId>
+                        <artifactId>ike-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>codesign-pkg-entitlements</id>
+                                <phase>verify[1]</phase>
+                                <goals>
+                                    <goal>codesign-pkg</goal>
+                                </goals>
+                                <configuration>
+                                    <entitlementsFile>${project.basedir}/src/main/resources/installer/resourceDir_unix/default.plist</entitlementsFile>
+                                    <signingIdentity>${codesign.identity}</signingIdentity>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>notarize-installer</id>
+                                <phase>verify[2]</phase>
+                                <goals>
+                                    <goal>notarize</goal>
                                 </goals>
                             </execution>
                         </executions>
