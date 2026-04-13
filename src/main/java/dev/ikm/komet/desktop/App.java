@@ -95,12 +95,12 @@ import static dev.ikm.tinkar.events.FrameworkTopics.IMPORT_TOPIC;
  * which is a JavaFX-based application supporting both desktop and web platforms via JPro.
  * It manages initialization, startup, and shutdown processes, and handles various application states
  * such as starting, login, data source selection, running, and shutdown.
- * <p><p><b>Platform-Specific Features:</b></p>
+ * <p><b>Platform-Specific Features:</b></p>
  * <ul>
  *   <li><strong>Web Support:</strong> Utilizes JPro's {@link WebAPI} to support running the application in a web browser.</li>
  *   <li><strong>macOS Integration:</strong> Configures macOS-specific properties and menus.</li>
  * </ul>
- * <p><p><b>Event Bus and Subscriptions:</b></p>
+ * <p><b>Event Bus and Subscriptions:</b></p>
  * The application uses an event bus ({@link EvtBus}) for inter-component communication. It subscribes to various events like
  * {@code CreateJournalEvent} and {@code SignInUserEvent} to handle user actions and state changes.
  *
@@ -111,9 +111,23 @@ import static dev.ikm.tinkar.events.FrameworkTopics.IMPORT_TOPIC;
  */
 public class App extends Application {
 
+    /**
+     * Constructs a new {@code App} instance. JavaFX requires a public no-arg constructor
+     * so the {@link Application#launch} infrastructure can reflectively instantiate it.
+     */
+    public App() {
+        // default constructor required by JavaFX Application.launch()
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(App.class);
+
+    /** Classpath location of the Komet application icon. */
     public static final String ICON_LOCATION = "/icons/Komet.png";
+
+    /** Observable property tracking the current {@link AppState} of the application lifecycle. */
     public static final SimpleObjectProperty<AppState> state = new SimpleObjectProperty<>(STARTING);
+
+    /** Observable property holding the currently signed-in user, or {@code null} if no user is authenticated. */
     public static final SimpleObjectProperty<ConceptFacade> userProperty = new SimpleObjectProperty<>();
 
     // Shutdown coordination flags - using AtomicBoolean for thread-safe check-and-set
@@ -218,6 +232,11 @@ public class App extends Application {
         }
     }, "Komet-Shutdown-Hook"));
 }
+    /**
+     * Initializes Log4j2 from an external {@code log4j2.xml} configuration file located
+     * in the {@code ../conf/} directory relative to the application working directory.
+     * This must be called before any logger is used to ensure proper logging setup.
+     */
     public static void initLog4J2FromConf() {
         // Resolve <bin directory>/../conf/xml (or your app’s working dir/../conf)
         Path cfg = Path.of("..", "conf", "log4j2.xml").toAbsolutePath();
@@ -670,6 +689,11 @@ public class App extends Application {
         }
     }
 
+    /**
+     * Initiates an orderly shutdown of the application. This method is re-entrance safe;
+     * duplicate calls while a shutdown is already in progress are ignored. Shutdown includes
+     * stopping data services, saving preferences, and releasing platform resources.
+     */
     public void quit() {
     LOG.info(">>> quit() called - thread: {}", Thread.currentThread().getName());
 
@@ -766,7 +790,9 @@ public class App extends Application {
         }
     }
 
+    /** Keys used for storing application-level preferences. */
     public enum AppKeys {
+        /** Indicates whether the application has completed its first-run initialization. */
         APP_INITIALIZED
     }
 }

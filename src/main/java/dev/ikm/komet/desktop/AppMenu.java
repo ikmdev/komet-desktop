@@ -46,6 +46,10 @@ import static dev.ikm.komet.kview.mvvm.view.changeset.exchange.GitTask.Operation
 import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.VIEW_PROPERTIES;
 import static dev.ikm.komet.preferences.JournalWindowPreferences.MAIN_KOMET_WINDOW;
 
+/**
+ * Constructs and manages the application menu bar, including File, Edit, View,
+ * Exchange, and Help menus across all Komet windows.
+ */
 public class AppMenu {
 
     private static final Logger LOG = LoggerFactory.getLogger(AppMenu.class);
@@ -56,6 +60,11 @@ public class AppMenu {
     private Stage overlayStage;
     private Timeline resourceUsageTimeline;
 
+    /**
+     * Constructs an {@code AppMenu} instance associated with the given application.
+     *
+     * @param app the parent application instance
+     */
     public AppMenu(App app) {
         this.app = app;
     }
@@ -155,6 +164,9 @@ public class AppMenu {
         return devMenu;
     }*/
 
+    /**
+     * Displays the About dialog showing application version and attribution information.
+     */
     public void showAboutDialog() {
         AboutDialog aboutDialog = new AboutDialog();
         aboutDialog.showAndWait();
@@ -270,6 +282,11 @@ public class AppMenu {
 
 
 
+    /**
+     * Opens the dataset import dialog as a transparent stage owned by the specified window.
+     *
+     * @param owner the parent stage that owns the import dialog
+     */
     public void openImport(Stage owner) {
         KometPreferences appPreferences = KometPreferencesImpl.getConfigurationRootPreferences();
         KometPreferences windowPreferences = appPreferences.node(MAIN_KOMET_WINDOW);
@@ -289,6 +306,11 @@ public class AppMenu {
         importStage.show();
     }
 
+    /**
+     * Opens the dataset export dialog as a transparent stage owned by the specified window.
+     *
+     * @param owner the parent stage that owns the export dialog
+     */
     public void openExport(Stage owner) {
         KometPreferences appPreferences = KometPreferencesImpl.getConfigurationRootPreferences();
         KometPreferences windowPreferences = appPreferences.node(MAIN_KOMET_WINDOW);

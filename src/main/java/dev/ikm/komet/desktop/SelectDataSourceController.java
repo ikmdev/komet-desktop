@@ -52,7 +52,14 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.ResourceBundle;
 
+/**
+ * FXML controller for the data source selection screen, allowing the user to choose
+ * a data service provider and data directory before the application loads its data.
+ */
 public class SelectDataSourceController {
+
+    /** Creates this controller instance. */
+    public SelectDataSourceController() {}
 
     private File rootFolder = new File(System.getProperty("user.home"), "Solor");
 
@@ -211,6 +218,8 @@ public class SelectDataSourceController {
 
     /**
      * Returns the cancel button.
+     *
+     * @return the cancel button used to abort data source selection
      */
     public Button getCancelButton() {
         return cancelButton;

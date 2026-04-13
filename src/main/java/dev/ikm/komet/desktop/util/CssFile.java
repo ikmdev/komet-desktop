@@ -29,6 +29,7 @@ import java.nio.file.Paths;
  */
 public enum CssFile {
 
+    /** The main Komet framework stylesheet. */
     KOMET_CSS(
             "komet.css",
             "dev.ikm.komet.framework",
@@ -36,6 +37,7 @@ public enum CssFile {
             Paths.get("framework", "src", "main", "resources")
     ),
 
+    /** The KView module stylesheet. */
     KVIEW_CSS(
             "kview.css",
             "dev.ikm.komet.kview",
@@ -51,12 +53,14 @@ public enum CssFile {
             Paths.get("knowledge-layout-editor", "src", "main", "resources")
     ),
 
+    /** The Knowledge Layout core stylesheet. */
     KLCORE_CSS(
             "kl-core.css",
                     "dev.ikm.komet.kleditorapp",
                     "dev/ikm/komet/kleditorapp/view/",
             Paths.get("knowledge-layout-editor", "src", "main", "resources")
     ),
+    /** The Knowledge Layout editor window stylesheet. */
     KLEDITOR_WINDOW_CSS(
             "kl-editor-window.css",
             "dev.ikm.komet.kleditorapp",
@@ -64,6 +68,7 @@ public enum CssFile {
             Paths.get("knowledge-layout-editor", "src", "main", "resources")
     ),
 
+    /** The icon font stylesheet for the Knowledge Layout editor. */
     ICONS("icons.css",
           "dev.ikm.komet.kleditorapp",
           "dev/ikm/komet/kleditorapp/view/",

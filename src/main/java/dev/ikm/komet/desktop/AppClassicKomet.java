@@ -50,6 +50,10 @@ import static dev.ikm.komet.framework.window.WindowSettings.Keys.*;
 import static dev.ikm.komet.preferences.JournalWindowPreferences.JOURNALS;
 import static dev.ikm.komet.preferences.JournalWindowPreferences.MAIN_KOMET_WINDOW;
 
+/**
+ * Manages the classic Komet window, providing the traditional multi-pane layout
+ * with navigation, details, and search tabs.
+ */
 public class AppClassicKomet {
 
     private static final Logger LOG = LoggerFactory.getLogger(AppClassicKomet.class);
@@ -63,6 +67,11 @@ public class AppClassicKomet {
      */
     private MenuItem createJournalViewMenuItem;
 
+    /**
+     * Constructs an {@code AppClassicKomet} instance associated with the given application.
+     *
+     * @param app the parent application instance
+     */
     public AppClassicKomet(App app) {
         this.app = app;
     }

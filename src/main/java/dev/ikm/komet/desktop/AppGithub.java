@@ -26,6 +26,10 @@ import static dev.ikm.komet.kview.mvvm.view.changeset.exchange.GitPropertyName.*
 import static dev.ikm.komet.kview.mvvm.view.changeset.exchange.GitPropertyName.GIT_STATUS;
 import static dev.ikm.komet.kview.mvvm.view.changeset.exchange.GitTask.OperationMode.CONNECT;
 
+/**
+ * Manages GitHub integration for the Komet application, including connection,
+ * disconnection, changeset synchronization, and repository information display.
+ */
 public class AppGithub {
 
     private static final Logger LOG = LoggerFactory.getLogger(AppGithub.class);
@@ -33,6 +37,11 @@ public class AppGithub {
 
     private final App app;
 
+    /**
+     * Constructs an {@code AppGithub} instance associated with the given application.
+     *
+     * @param app the parent application instance
+     */
     public AppGithub(App app) {
         this.app = app;
     }

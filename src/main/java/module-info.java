@@ -24,6 +24,11 @@ import dev.ikm.tinkar.entity.ChangeSetWriterService;
 import dev.ikm.tinkar.entity.EntityService;
 import dev.ikm.tinkar.entity.StampService;
 
+/**
+ * The Komet desktop application module, providing the JavaFX-based UI for browsing,
+ * editing, and managing terminology data through journal windows, classic Komet views,
+ * and Knowledge Layout editors.
+ */
 module dev.ikm.komet.desktop {
 
     exports dev.ikm.komet.desktop;

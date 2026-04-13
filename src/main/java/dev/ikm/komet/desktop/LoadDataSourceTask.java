@@ -22,10 +22,20 @@ import dev.ikm.tinkar.common.service.TrackingCallable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A background task that loads and initializes the selected data source, transitioning
+ * the application state to {@link AppState#SELECT_USER} upon successful completion.
+ */
 public class LoadDataSourceTask extends TrackingCallable<Void> {
     private static final Logger LOG = LoggerFactory.getLogger(LoadDataSourceTask.class);
     final SimpleObjectProperty<AppState> state;
 
+    /**
+     * Constructs a {@code LoadDataSourceTask} that will update the given state property
+     * upon completion.
+     *
+     * @param state the application state property to transition when loading completes
+     */
     public LoadDataSourceTask(SimpleObjectProperty<AppState> state) {
         super(false, true);
         this.state = state;

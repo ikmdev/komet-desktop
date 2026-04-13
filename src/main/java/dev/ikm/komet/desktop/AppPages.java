@@ -72,6 +72,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Manages page navigation within the Komet application, including the login page,
+ * data source selection, author login, landing page, and journal/editor windows.
+ */
 public class AppPages {
     private static final Logger LOG = LoggerFactory.getLogger(AppPages.class);
 
@@ -84,6 +88,11 @@ public class AppPages {
      */
     private final static String DEV_AUTHOR = "dev_author";
 
+    /**
+     * Constructs an {@code AppPages} instance associated with the given application.
+     *
+     * @param app the parent application instance
+     */
     public AppPages(App app) {
         this.app = app;
     }
@@ -206,6 +215,13 @@ public class AppPages {
         return false;
     }
 
+    /**
+     * Launches the landing page for the authenticated user, displaying the main dashboard
+     * with journal tiles and GitHub connection status.
+     *
+     * @param stage the primary stage to host the landing page
+     * @param loggedInUser the concept representing the currently logged-in user
+     */
     public void launchLandingPage(Stage stage, ConceptFacade loggedInUser) {
         try {
             app.rootPane.getChildren().clear(); // Clear the root pane before adding new content

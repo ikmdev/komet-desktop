@@ -48,7 +48,7 @@ public enum AppState {
     LOADING_DATA_SOURCE,
 
     /**
-     *
+     * The application is prompting the user to select their author identity.
      */
     SELECT_USER,
 

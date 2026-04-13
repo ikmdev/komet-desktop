@@ -33,6 +33,11 @@ public class WindowMenuManager implements ListChangeListener<Window> {
         Window.getWindows().addListener(this);
     }
 
+    /**
+     * Returns the singleton instance of the window menu manager.
+     *
+     * @return the singleton {@code WindowMenuManager} instance
+     */
     public static WindowMenuManager getInstance() {
         return INSTANCE;
     }
@@ -40,6 +45,9 @@ public class WindowMenuManager implements ListChangeListener<Window> {
     /**
      * Registers a stage and its menu bar. Triggers a rebuild of Window menus across all
      * registered stages to include the newly added stage.
+     *
+     * @param stage the stage to register
+     * @param menuBar the menu bar associated with the stage
      */
     public static void addStage(Stage stage, MenuBar menuBar) {
         INSTANCE.managedMenus.put(stage, menuBar);
