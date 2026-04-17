@@ -1,5 +1,3 @@
-dev.ikm.ds.rocks.RocksProvider$OpenController
-dev.ikm.ds.rocks.RocksProvider$NewController
 dev.ikm.tinkar.provider.spinedarray.SpinedArrayProvider$OpenController
 dev.ikm.tinkar.provider.spinedarray.SpinedArrayProvider$NewController
 dev.ikm.tinkar.provider.mvstore.MVStoreProvider$OpenController

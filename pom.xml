@@ -45,6 +45,22 @@
         <jreleaser.jlink.standard.active>ALWAYS</jreleaser.jlink.standard.active>
         <jreleaser.jlink.profile.active>NEVER</jreleaser.jlink.profile.active>
         <jreleaser.jlink.debug.active>NEVER</jreleaser.jlink.debug.active>
+
+        <!--
+            Build-stage skip properties. Settable directly via -Dname=true, or
+            in bulk via the fast-dev / skip-codesign / skip-notarize profiles
+            (see <profiles> below).
+
+            codesign.{standard,debug,profile}.skip default to the per-image-variant
+            skip so existing behavior is preserved; skip-codesign / fast-dev override
+            them bulk-style to disable signing regardless of which images were built.
+        -->
+        <skip.installer>false</skip.installer>
+        <codesign.standard.skip>${skip.image.standard}</codesign.standard.skip>
+        <codesign.debug.skip>${skip.image.debug}</codesign.debug.skip>
+        <codesign.profile.skip>${skip.image.profile}</codesign.profile.skip>
+        <codesign.pkg.skip>false</codesign.pkg.skip>
+        <notarize.skip>false</notarize.skip>
     </properties>
 
     <dependencyManagement>
@@ -284,10 +300,11 @@
             <groupId>dev.ikm.komet</groupId>
             <artifactId>sync</artifactId>
         </dependency>
-        <dependency>
-            <groupId>dev.ikm.ike</groupId>
-            <artifactId>rocks-kb-engine</artifactId>
-        </dependency>
+        <!--
+            rocks-kb-engine is NOT a compile dependency — it is loaded at runtime
+            via the plugin layer (see IkeServiceManager and the fetch-*-application-extensions
+            executions that stage it into plugins/). First real-world test of the plugin system.
+        -->
         <!-- rocksdbjni-jpms moved to OS-specific profiles below -->
         <dependency>
             <groupId>dev.ikm.jpms</groupId>
@@ -641,6 +658,66 @@
                             </outputDirectory>
                         </configuration>
                     </execution>
+                    <!--
+                        Stage the plugin-service-loader JAR into its own sibling directory.
+                        IkeServiceManager.resolvePluginServiceLoaderPath() probes here (parent-of-bin
+                        for jlink images). Must NOT land in module-jars/ — the service loader must
+                        live in its own ModuleLayer, not the application boot modulepath.
+
+                        Uses explicit <artifactItems> rather than inheriting from pluginManagement
+                        (which lists native-lib deps for a different purpose).
+                    -->
+                    <execution>
+                        <id>fetch-standard-plugin-service-loader</id>
+                        <phase>package[4]</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skip.image.standard}</skip>
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}/plugin-service-loader</outputDirectory>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>dev.ikm.tinkar</groupId>
+                                    <artifactId>plugin-service-loader</artifactId>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>fetch-debug-plugin-service-loader</id>
+                        <phase>package[4]</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skip.image.debug}</skip>
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-debug/jlink/${jreleaser.platform.work}/kometDebugRuntimeImage-${jreleaser.platform.suffix}/plugin-service-loader</outputDirectory>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>dev.ikm.tinkar</groupId>
+                                    <artifactId>plugin-service-loader</artifactId>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>fetch-profile-plugin-service-loader</id>
+                        <phase>package[4]</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skip.image.profile}</skip>
+                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-profile/jlink/${jreleaser.platform.work}/kometProfileRuntimeImage-${jreleaser.platform.suffix}/plugin-service-loader</outputDirectory>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>dev.ikm.tinkar</groupId>
+                                    <artifactId>plugin-service-loader</artifactId>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -666,7 +743,16 @@
                 </executions>
             </plugin>
 
-            <!-- Compute build timestamp, platform, and JPackage version properties -->
+            <!-- Compute build timestamp, platform, and JPackage version properties.
+
+                 Also signs native libs (.jnilib, .dylib) inside JARs so jpackage
+                 output passes Apple notarization. Runs after jlink + module-jar
+                 copy + plugin fetch (package[4]) but before jpackage (verify).
+
+                 Each codesign-*-natives execution has <skip>${codesign.X.skip}</skip>
+                 which defaults to the per-image-variant skip (skip.image.X) — set
+                 via the 'skip-codesign' or 'fast-dev' profiles (or -D flags) to
+                 bulk-disable signing. -->
             <plugin>
                 <groupId>network.ike.tooling</groupId>
                 <artifactId>ike-maven-plugin</artifactId>
@@ -678,9 +764,6 @@
                             <goal>jpackage-props</goal>
                         </goals>
                     </execution>
-                    <!-- Sign native libs (.jnilib, .dylib) inside JARs so jpackage
-                         output passes Apple notarization. Runs after jlink + module-jar
-                         copy + plugin fetch (package[4]) but before jpackage (verify). -->
                     <execution>
                         <id>codesign-standard-natives</id>
                         <phase>package[5]</phase>
@@ -690,7 +773,7 @@
                         <configuration>
                             <runtimeImageDir>${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}</runtimeImageDir>
                             <signingIdentity>${codesign.identity}</signingIdentity>
-                            <skip>${skip.image.standard}</skip>
+                            <skip>${codesign.standard.skip}</skip>
                         </configuration>
                     </execution>
                     <execution>
@@ -702,7 +785,7 @@
                         <configuration>
                             <runtimeImageDir>${project.build.directory}/jreleaser-jlink/assemble/komet-debug/jlink/${jreleaser.platform.work}/kometDebugRuntimeImage-${jreleaser.platform.suffix}</runtimeImageDir>
                             <signingIdentity>${codesign.identity}</signingIdentity>
-                            <skip>${skip.image.debug}</skip>
+                            <skip>${codesign.debug.skip}</skip>
                         </configuration>
                     </execution>
                     <execution>
@@ -714,7 +797,36 @@
                         <configuration>
                             <runtimeImageDir>${project.build.directory}/jreleaser-jlink/assemble/komet-profile/jlink/${jreleaser.platform.work}/kometProfileRuntimeImage-${jreleaser.platform.suffix}</runtimeImageDir>
                             <signingIdentity>${codesign.identity}</signingIdentity>
-                            <skip>${skip.image.profile}</skip>
+                            <skip>${codesign.profile.skip}</skip>
+                        </configuration>
+                    </execution>
+                    <!--
+                        Sign the .pkg installer + notarize with Apple. Formerly in
+                        the 'create-desktop-installer' profile. Each execution has
+                        its own skip property so -Pskip-notarize can disable just
+                        the ~10 min Apple round-trip while still signing the
+                        installer, and -Pskip-codesign disables signing entirely.
+                    -->
+                    <execution>
+                        <id>codesign-pkg-entitlements</id>
+                        <phase>verify[1]</phase>
+                        <goals>
+                            <goal>codesign-pkg</goal>
+                        </goals>
+                        <configuration>
+                            <entitlementsFile>${project.basedir}/src/main/resources/installer/resourceDir_unix/default.plist</entitlementsFile>
+                            <signingIdentity>${codesign.identity}</signingIdentity>
+                            <skip>${codesign.pkg.skip}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>notarize-installer</id>
+                        <phase>verify[2]</phase>
+                        <goals>
+                            <goal>notarize</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${notarize.skip}</skip>
                         </configuration>
                     </execution>
                 </executions>
@@ -796,6 +908,22 @@
                             <outputDirectory>${project.build.directory}/jreleaser-jlink</outputDirectory>
                         </configuration>
                     </execution>
+                    <!--
+                        Build the JPackage installer(s). Formerly inside the
+                        'create-desktop-installer' profile with activeByDefault=true;
+                        inlined here with <skip> on the execution so fast-dev /
+                        skip-installer can opt out cleanly.
+                    -->
+                    <execution>
+                        <id>Installer</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>assemble</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skip.installer}</skip>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
@@ -825,53 +953,68 @@
                 </dependency>
             </dependencies>
         </profile>
-        <!-- Profile to run JPackage to create installer(s), this profile can only be run with release versions-->
+        <!--
+            The former 'create-desktop-installer' and 'codesign-natives' profiles
+            have been inlined into the main <build> above. Two reasons:
+
+              1. activeByDefault profiles get silently deactivated when ANY other
+                 profile is explicitly activated — a common Maven gotcha that
+                 would have fired for any user activating fast-dev/skip-notarize.
+
+              2. Maven evaluates all profile activations in ONE pass against CLI
+                 input only. Properties set by one profile (e.g. fast-dev setting
+                 skip.installer=true) are NOT visible to another profile's
+                 <activation><property> check — so !skip.installer activation
+                 doesn't work for propagating fast-dev's intent.
+
+            Instead, each execution now has <skip>${property}</skip> referencing
+            a property whose default value preserves current behavior, and which
+            the user-facing profiles below override to disable the step.
+        -->
+
+        <!--
+            User-facing opt-in profiles. Selectable from IntelliJ's Maven
+            Profiles panel, or via -P<name> on the CLI. Each sets underlying
+            skip properties.
+
+              fast-dev       Fast iteration: skip installer, codesign, notarize.
+                             Produces a runnable jlink image at
+                             target/kometRuntimeImage/ without the Apple round-trip.
+
+              skip-codesign  Skip all code signing (natives + pkg) and, by
+                             necessity, notarization. The installer still
+                             builds but is unsigned.
+
+              skip-notarize  Sign everything but skip the notarize step (the
+                             wait on Apple's notary service). Useful for local
+                             testing of signed output without the ~10min wait.
+        -->
         <profile>
-            <id>create-desktop-installer</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jreleaser</groupId>
-                        <artifactId>jreleaser-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>Installer</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>assemble</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>network.ike.tooling</groupId>
-                        <artifactId>ike-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>codesign-pkg-entitlements</id>
-                                <phase>verify[1]</phase>
-                                <goals>
-                                    <goal>codesign-pkg</goal>
-                                </goals>
-                                <configuration>
-                                    <entitlementsFile>${project.basedir}/src/main/resources/installer/resourceDir_unix/default.plist</entitlementsFile>
-                                    <signingIdentity>${codesign.identity}</signingIdentity>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>notarize-installer</id>
-                                <phase>verify[2]</phase>
-                                <goals>
-                                    <goal>notarize</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
+            <id>fast-dev</id>
+            <properties>
+                <skip.installer>true</skip.installer>
+                <codesign.standard.skip>true</codesign.standard.skip>
+                <codesign.debug.skip>true</codesign.debug.skip>
+                <codesign.profile.skip>true</codesign.profile.skip>
+                <codesign.pkg.skip>true</codesign.pkg.skip>
+                <notarize.skip>true</notarize.skip>
+            </properties>
+        </profile>
+        <profile>
+            <id>skip-codesign</id>
+            <properties>
+                <codesign.standard.skip>true</codesign.standard.skip>
+                <codesign.debug.skip>true</codesign.debug.skip>
+                <codesign.profile.skip>true</codesign.profile.skip>
+                <codesign.pkg.skip>true</codesign.pkg.skip>
+                <notarize.skip>true</notarize.skip>
+            </properties>
+        </profile>
+        <profile>
+            <id>skip-notarize</id>
+            <properties>
+                <notarize.skip>true</notarize.skip>
+            </properties>
         </profile>
         <!-- Platform properties (jreleaser.platform, .work, .suffix) now set by ike:jpackage-props -->
         <!-- Create symlinks from short paths to JReleaser jlink output -->

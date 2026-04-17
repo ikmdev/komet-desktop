@@ -34,6 +34,7 @@ import dev.ikm.tinkar.common.alert.AlertObject;
 import dev.ikm.tinkar.common.alert.AlertStreams;
 import dev.ikm.tinkar.common.service.PrimitiveData;
 import dev.ikm.tinkar.common.service.TinkExecutor;
+import dev.ikm.tinkar.common.service.plugin.IkeServiceManager;
 import dev.ikm.tinkar.events.Evt;
 import dev.ikm.tinkar.events.EvtBus;
 import dev.ikm.tinkar.events.EvtBusFactory;
@@ -249,42 +250,97 @@ public class App extends Application {
         logModuleJars();
     }
 
-    private static void logModuleJars() {
+    /**
+     * System property that, when set to {@code true}, disables initialization
+     * of the plugin service loader. Useful for debugging or restricted-environment
+     * launches.
+     */
+    private static final String PLUGINS_DISABLED_PROPERTY = "ike.plugins.disabled";
+
+    /**
+     * Resolves a runtime-image sibling directory by probing, in order:
+     * <ol>
+     *   <li>{@code ./<name>} relative to user.dir</li>
+     *   <li>{@code ../<name>} (typical when launched from {@code bin/})</li>
+     *   <li>{@code $JAVA_HOME/<name>} and two parent levels above</li>
+     * </ol>
+     *
+     * @param name the directory name to find (e.g. {@code module-jars}, {@code plugins})
+     * @return the first matching directory that exists, or {@code null} if none found
+     */
+    private static Path resolveRuntimeDirectory(String name) {
         List<Path> candidates = new ArrayList<>();
-        candidates.add(Path.of("module-jars"));
-        candidates.add(Path.of("..", "module-jars"));
+        candidates.add(Path.of(name));
+        candidates.add(Path.of("..", name));
 
         String javaHome = System.getProperty("java.home");
         if (javaHome != null && !javaHome.isBlank()) {
             Path javaHomePath = Path.of(javaHome);
-            candidates.add(javaHomePath.resolve("module-jars"));
-            candidates.add(javaHomePath.resolve("..").resolve("module-jars"));
-            candidates.add(javaHomePath.resolve("..").resolve("..").resolve("module-jars"));
+            candidates.add(javaHomePath.resolve(name));
+            candidates.add(javaHomePath.resolve("..").resolve(name));
+            candidates.add(javaHomePath.resolve("..").resolve("..").resolve(name));
         }
 
         for (Path dir : candidates) {
-            if (!Files.isDirectory(dir)) {
-                continue;
+            if (Files.isDirectory(dir)) {
+                return dir;
             }
+        }
+        return null;
+    }
 
-            LOG.info("module-jars directory: {}", dir.toAbsolutePath());
-            try (Stream<Path> stream = Files.list(dir)) {
-                List<String> jarNames = stream
-                        .map(path -> path.getFileName().toString())
-                        .sorted()
-                        .collect(Collectors.toList());
-                if (jarNames.isEmpty()) {
-                    LOG.info("module-jars is empty");
-                } else {
-                    LOG.info("module-jars contents ({}): {}", jarNames.size(), String.join(", ", jarNames));
-                }
-            } catch (IOException e) {
-                LOG.warn("Failed to list module-jars contents from {}", dir.toAbsolutePath(), e);
-            }
+    private static void logModuleJars() {
+        Path dir = resolveRuntimeDirectory("module-jars");
+        if (dir == null) {
+            LOG.info("module-jars directory not found in working directory or parent");
             return;
         }
+        LOG.info("module-jars directory: {}", dir.toAbsolutePath());
+        try (Stream<Path> stream = Files.list(dir)) {
+            List<String> jarNames = stream
+                    .map(path -> path.getFileName().toString())
+                    .sorted()
+                    .collect(Collectors.toList());
+            if (jarNames.isEmpty()) {
+                LOG.info("module-jars is empty");
+            } else {
+                LOG.info("module-jars contents ({}): {}", jarNames.size(), String.join(", ", jarNames));
+            }
+        } catch (IOException e) {
+            LOG.warn("Failed to list module-jars contents from {}", dir.toAbsolutePath(), e);
+        }
+    }
 
-        LOG.info("module-jars directory not found in working directory or parent");
+    /**
+     * Initializes the IKE plugin service loader. Resolves a {@code plugins/}
+     * directory adjacent to the runtime image (or the working directory during
+     * local runs), then hands it to {@link IkeServiceManager#setPluginDirectory(Path)}.
+     *
+     * <p>Honors the {@value #PLUGINS_DISABLED_PROPERTY} system property as a
+     * kill switch. If no {@code plugins/} directory is found, startup continues
+     * without plugins.
+     *
+     * <p>Must run before any code that relies on
+     * {@link dev.ikm.tinkar.common.service.PluggableService#load(Class)} seeing
+     * plugin-provided services — in particular, before any FXML controller
+     * that touches {@code ServiceLifecycleManager}.
+     */
+    private static void initializePluginSystem() {
+        if (Boolean.getBoolean(PLUGINS_DISABLED_PROPERTY)) {
+            LOG.info("Plugin system disabled via -D{}=true", PLUGINS_DISABLED_PROPERTY);
+            return;
+        }
+        Path pluginsDir = resolveRuntimeDirectory("plugins");
+        if (pluginsDir == null) {
+            LOG.info("No plugins directory found; continuing without plugins");
+            return;
+        }
+        LOG.info("Initializing plugin system from: {}", pluginsDir.toAbsolutePath());
+        try {
+            IkeServiceManager.setPluginDirectory(pluginsDir);
+        } catch (RuntimeException e) {
+            LOG.error("Plugin system initialization failed; continuing without plugins", e);
+        }
     }
 
     @Override
@@ -293,6 +349,11 @@ public class App extends Application {
 
         LOG.info("Starting Komet");
         logStartupInfo();
+
+        // Plugin init must run before any FXML controller (e.g. SelectDataSourceController)
+        // that calls ServiceLifecycleManager.discoverServices() — otherwise plugin-provided
+        // service implementations won't be in the discovered set.
+        initializePluginSystem();
 
         // Set system properties for macOS look and feel and application name in the menu bar
         configureMacOSProperties();
