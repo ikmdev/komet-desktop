@@ -569,6 +569,49 @@
                     </execution>
                 </executions>
             </plugin>
+            <!--
+                Wipe the jlink staging directories before copy-dependencies /
+                copy populate them. Without this, stale version-qualified JARs
+                from a prior build (e.g. a feature branch before feature-finish)
+                accumulate alongside the current-version JARs, and jlink rejects
+                the module path with a silent exit-1 because it sees multiple
+                versions of the same module. `mvn clean` works around it, but
+                that is a big hammer for an iterative build. This plugin-clean
+                execution runs before the dependency staging within the same
+                prepare-package phase (Maven executes plugins in declaration
+                order, and this plugin is declared ahead of maven-dependency-plugin
+                below).
+
+                excludeDefaultDirectories=true prevents the clean goal from
+                wiping all of target/ — we only want the two jlink-related
+                subtrees gone.
+
+                See IKE-Network/ike-issues#161.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>clean-jlink-staging</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.build.directory}/jlink-module-path</directory>
+                                </fileset>
+                                <fileset>
+                                    <directory>${project.build.directory}/jreleaser-jlink</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
