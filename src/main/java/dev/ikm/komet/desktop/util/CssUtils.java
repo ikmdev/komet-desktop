@@ -94,14 +94,17 @@ public final class CssUtils {
         }
 
         final Path workingDirPath = Paths.get(System.getProperty("user.dir"));
-        Path desiredPath = workingDirPath.getParent().resolve(KOMET_PROJECT_DIRECTORY);
+        final Path workingDirParent = workingDirPath.getParent();
+        // getParent() is null when user.dir is a filesystem root (e.g. "/" at installer launch)
+        Path desiredPath = (workingDirParent != null)
+                ? workingDirParent.resolve(KOMET_PROJECT_DIRECTORY) : null;
         LOG.info("Working directory for CSS monitoring: {}", desiredPath);
 
         final List<String> cssUris = new ArrayList<>();
         final List<CssFile> loadedFromFileSystemList = new ArrayList<>();
 
         for (CssFile cssFile : cssFiles) {
-            Path cssPath = cssFile.resolveAbsolutePath(desiredPath);
+            Path cssPath = (desiredPath != null) ? cssFile.resolveAbsolutePath(desiredPath) : null;
             LOG.debug("Attempting to load CSS '{}' from path: {}", cssFile.getFileName(), cssPath);
 
             if (cssPath != null && Files.exists(cssPath)) {
