@@ -2,6 +2,7 @@ package dev.ikm.komet.desktop;
 
 import com.sun.management.OperatingSystemMXBean;
 import dev.ikm.komet.desktop.aboutdialog.AboutDialog;
+import dev.ikm.komet.desktop.maintenance.DuplicateSemanticWithdrawerDialog;
 import dev.ikm.komet.framework.preferences.KometPreferencesStage;
 import dev.ikm.komet.framework.window.WindowSettings;
 import dev.ikm.komet.kview.mvvm.view.changeset.ExportController;
@@ -198,11 +199,28 @@ public class AppMenu {
 
         MenuBar menuBar = new MenuBar(kometAppMenu);
         if (App.state.get() == RUNNING) {
-            menuBar.getMenus().addAll(createFileMenu(), createEditMenu(), createViewMenu());
+            menuBar.getMenus().addAll(createFileMenu(), createEditMenu(), createViewMenu(), createToolsMenu());
         }
         menuBar.getMenus().add(createExchangeMenu());
         menuBar.getMenus().add(createHelpMenu());
         return menuBar;
+    }
+
+    private Menu createToolsMenu() {
+        Menu toolsMenu = new Menu("Tools");
+        MenuItem withdrawDuplicatesItem = new MenuItem("Validate Single-Semantic Patterns…");
+        withdrawDuplicatesItem.setOnAction(actionEvent -> openDuplicateSemanticWithdrawer());
+        toolsMenu.getItems().add(withdrawDuplicatesItem);
+        return toolsMenu;
+    }
+
+    private void openDuplicateSemanticWithdrawer() {
+        KometPreferences appPreferences = KometPreferencesImpl.getConfigurationRootPreferences();
+        KometPreferences windowPreferences = appPreferences.node(MAIN_KOMET_WINDOW);
+        WindowSettings windowSettings = new WindowSettings(windowPreferences);
+        DuplicateSemanticWithdrawerDialog dialog =
+                new DuplicateSemanticWithdrawerDialog(windowSettings.getView());
+        dialog.show();
     }
 
     private Menu createFileMenu() {
