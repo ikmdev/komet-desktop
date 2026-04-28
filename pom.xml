@@ -25,10 +25,6 @@
         <komet-bom.version>3.0.7-reasoner-SNAPSHOT</komet-bom.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
-        <compiler.args>--enable-preview</compiler.args>
-        <surefire.args>--enable-preview</surefire.args>
-        <failsafe.args>--enable-preview</failsafe.args>
-        <javadoc.args>--enable-preview</javadoc.args>
 
         <!-- JPackage output destination (used by create-desktop-installer profile) -->
         <jpackage.app.dest>target/dist/installer</jpackage.app.dest>
@@ -881,7 +877,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.3</version>
                 <configuration>
-                    <useModulePath>false</useModulePath>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>dev.ikm.komet:executor</classpathDependencyExclude>
                     </classpathDependencyExcludes>
@@ -908,10 +903,6 @@
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>3.5.3</version>
-                <configuration>
-                    <useModulePath>false</useModulePath>
-                    <argLine>@{failsafeArgLine}</argLine>
-                </configuration>
                 <dependencies>
                     <!-- ASM in plugin realm; pick a release that supports classfile major 69 (Java 25) -->
                     <dependency>
