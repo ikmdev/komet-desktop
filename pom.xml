@@ -21,7 +21,7 @@
         <java.version>25</java.version>
         <!-- Configure build timestamp -->
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-        <asm.version>9.9</asm.version>
+        <!-- asm.version inherited from ike-parent:14 (9.9.1, see #283) -->
         <komet-bom.version>3.0.7-reasoner-SNAPSHOT</komet-bom.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
