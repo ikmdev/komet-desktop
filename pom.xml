@@ -871,56 +871,15 @@
                 </executions>
             </plugin>
             <!-- REPLACED: build-helper-maven-plugin + maven-antrun-plugin by ike:jpackage-props above -->
-            <!-- Ensure Surefire can parse Java 25 class files by upgrading ASM in the plugin realm -->
+            <!-- ASM plugin-realm injection moved to ike-parent:13 (#282) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.3</version>
                 <configuration>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>dev.ikm.komet:executor</classpathDependencyExclude>
                     </classpathDependencyExcludes>
                 </configuration>
-                <dependencies>
-                    <!-- ASM in plugin realm; pick a release that supports classfile major 69 (Java 25) -->
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm-tree</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm-commons</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>3.5.3</version>
-                <dependencies>
-                    <!-- ASM in plugin realm; pick a release that supports classfile major 69 (Java 25) -->
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm-tree</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm-commons</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
