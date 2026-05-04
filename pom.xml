@@ -5,10 +5,10 @@
          >
     <modelVersion>4.1.0</modelVersion>
 
-    <parent>
-        <groupId>network.ike.pipeline</groupId>
+ <parent>
+        <groupId>network.ike.platform</groupId>
         <artifactId>ike-parent</artifactId>
-        <version>111</version>
+        <version>14</version>
         <relativePath/>
     </parent>
 
@@ -21,14 +21,10 @@
         <java.version>25</java.version>
         <!-- Configure build timestamp -->
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-        <asm.version>9.9</asm.version>
+        <!-- asm.version inherited from ike-parent:14 (9.9.1, see #283) -->
         <komet-bom.version>3.0.7-SNAPSHOT</komet-bom.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
-        <compiler.args>--enable-preview</compiler.args>
-        <surefire.args>--enable-preview</surefire.args>
-        <failsafe.args>--enable-preview</failsafe.args>
-        <javadoc.args>--enable-preview</javadoc.args>
 
         <!-- JPackage output destination (used by create-desktop-installer profile) -->
         <jpackage.app.dest>target/dist/installer</jpackage.app.dest>
@@ -242,6 +238,26 @@
         <dependency>
             <groupId>one.jpro.platform</groupId>
             <artifactId>jpro-utils</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>jfx-incubator-richtext</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-tables</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-strikethrough</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>network.ike.platform</groupId>
+            <artifactId>ike-commonmark-attributes</artifactId>
         </dependency>
         <!-- jpro-utils requires org.jetbrains.annotations at runtime/jlink -->
         <dependency>
@@ -875,61 +891,15 @@
                 </executions>
             </plugin>
             <!-- REPLACED: build-helper-maven-plugin + maven-antrun-plugin by ike:jpackage-props above -->
-            <!-- Ensure Surefire can parse Java 25 class files by upgrading ASM in the plugin realm -->
+            <!-- ASM plugin-realm injection moved to ike-parent:13 (#282) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.3</version>
                 <configuration>
-                    <useModulePath>false</useModulePath>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>dev.ikm.komet:executor</classpathDependencyExclude>
                     </classpathDependencyExcludes>
                 </configuration>
-                <dependencies>
-                    <!-- ASM in plugin realm; pick a release that supports classfile major 69 (Java 25) -->
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm-tree</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm-commons</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>3.5.3</version>
-                <configuration>
-                    <useModulePath>false</useModulePath>
-                    <argLine>@{failsafeArgLine}</argLine>
-                </configuration>
-                <dependencies>
-                    <!-- ASM in plugin realm; pick a release that supports classfile major 69 (Java 25) -->
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm-tree</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm-commons</artifactId>
-                        <version>${asm.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

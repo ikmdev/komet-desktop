@@ -2,6 +2,13 @@ package dev.ikm.komet.desktop;
 
 import com.sun.management.OperatingSystemMXBean;
 import dev.ikm.komet.desktop.aboutdialog.AboutDialog;
+import dev.ikm.komet.desktop.maintenance.ChangeSetSummaryWindow;
+import dev.ikm.komet.desktop.maintenance.DuplicateSemanticWithdrawerDialog;
+import dev.ikm.komet.desktop.maintenance.LuceneIndexAnalysisWindow;
+import dev.ikm.tinkar.provider.search.Indexer;
+import dev.ikm.tinkar.provider.search.RecreateIndex;
+import dev.ikm.tinkar.common.service.ServiceKeys;
+import dev.ikm.tinkar.common.service.ServiceProperties;
 import dev.ikm.komet.framework.preferences.KometPreferencesStage;
 import dev.ikm.komet.framework.window.WindowSettings;
 import dev.ikm.komet.kview.mvvm.view.changeset.ExportController;
@@ -23,6 +30,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -34,8 +42,10 @@ import org.carlfx.cognitive.loader.JFXNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.util.Optional;
 import java.util.prefs.BackingStoreException;
 
 import static dev.ikm.komet.desktop.App.*;
@@ -43,7 +53,7 @@ import static dev.ikm.komet.desktop.AppState.RUNNING;
 import static dev.ikm.komet.kview.fxutils.FXUtils.getFocusedWindow;
 import static dev.ikm.komet.kview.mvvm.view.changeset.exchange.GitTask.OperationMode.PULL;
 import static dev.ikm.komet.kview.mvvm.view.changeset.exchange.GitTask.OperationMode.SYNC;
-import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.VIEW_PROPERTIES;
+import static dev.ikm.komet.kview.mvvm.viewmodel.ViewModelKey.VIEW_PROPERTIES;
 import static dev.ikm.komet.preferences.JournalWindowPreferences.MAIN_KOMET_WINDOW;
 
 public class AppMenu {
@@ -198,11 +208,88 @@ public class AppMenu {
 
         MenuBar menuBar = new MenuBar(kometAppMenu);
         if (App.state.get() == RUNNING) {
-            menuBar.getMenus().addAll(createFileMenu(), createEditMenu(), createViewMenu());
+            menuBar.getMenus().addAll(createFileMenu(), createEditMenu(), createViewMenu(), createToolsMenu());
         }
         menuBar.getMenus().add(createExchangeMenu());
         menuBar.getMenus().add(createHelpMenu());
         return menuBar;
+    }
+
+    private Menu createToolsMenu() {
+        Menu toolsMenu = new Menu("Tools");
+        MenuItem withdrawDuplicatesItem = new MenuItem("Validate Single-Semantic Patterns…");
+        withdrawDuplicatesItem.setOnAction(actionEvent -> openDuplicateSemanticWithdrawer());
+        MenuItem summarizeChangeSetItem = new MenuItem("Summarize Change Set…");
+        summarizeChangeSetItem.setOnAction(actionEvent -> openChangeSetSummary());
+        MenuItem analyzeLuceneItem = new MenuItem("Analyze Lucene Index…");
+        analyzeLuceneItem.setOnAction(actionEvent -> openLuceneIndexAnalysis());
+        toolsMenu.getItems().addAll(withdrawDuplicatesItem, summarizeChangeSetItem, analyzeLuceneItem);
+        return toolsMenu;
+    }
+
+    private void openLuceneIndexAnalysis() {
+        // The analyzer operates on the live Indexer.indexWriter() — the running
+        // search provider's writer. We pass the data store root so the report
+        // can show the full lucene/ path, plus a rebuild callback that the
+        // user can invoke via the "Wipe & Rebuild" choice in the confirmation
+        // dialog. The window itself decides which option to pass to the analyzer.
+        Optional<File> dataStoreRoot = ServiceProperties.get(ServiceKeys.DATA_STORE_ROOT);
+        Stage owner = (Stage) getFocusedWindow();
+        LuceneIndexAnalysisWindow.openWithConfirmation(
+                dataStoreRoot.orElse(null), owner, AppMenu::rebuildLuceneFromEntityStore);
+    }
+
+    /**
+     * Default Lucene rebuild callback for the desktop app: wraps the active
+     * static {@link Indexer} state and runs {@link RecreateIndex}, which walks
+     * every entity in parallel and indexes via the existing per-entity logic.
+     *
+     * <p>{@code Indexer.wrapActiveState()} returns a transient handle pointing
+     * at the same singleton state the search provider initialized at startup —
+     * we are not opening a second writer or replacing the static fields. The
+     * writer the analyzer wiped is the same writer this rebuild populates.
+     */
+    private static void rebuildLuceneFromEntityStore(
+            org.apache.lucene.index.IndexWriter writer,
+            dev.ikm.tinkar.provider.search.maintenance.LuceneIndexAnalyzer.ProgressCallback progress) throws Exception {
+        progress.update("Walking entity store for parallel reindex", -1);
+        Indexer activeHandle = Indexer.wrapActiveState();
+        RecreateIndex task = new RecreateIndex(activeHandle);
+        // TrackingCallable implements Callable; call() runs the task
+        // synchronously on this thread (we're already on a background
+        // analyzer thread, not the JavaFX UI thread).
+        task.call();
+    }
+
+    private void openDuplicateSemanticWithdrawer() {
+        KometPreferences appPreferences = KometPreferencesImpl.getConfigurationRootPreferences();
+        KometPreferences windowPreferences = appPreferences.node(MAIN_KOMET_WINDOW);
+        WindowSettings windowSettings = new WindowSettings(windowPreferences);
+        DuplicateSemanticWithdrawerDialog dialog =
+                new DuplicateSemanticWithdrawerDialog(windowSettings.getView());
+        dialog.show();
+    }
+
+    private void openChangeSetSummary() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Open Change Set");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Change Set ZIP", "*.zip"));
+        // Default to the directory the change-set writer uses, so the most recent
+        // exports are one open away. Falls through to FileChooser's default
+        // (last-used directory) when the data store root isn't set or the
+        // changeSets path doesn't exist yet.
+        Optional<File> dataStoreRoot = ServiceProperties.get(ServiceKeys.DATA_STORE_ROOT);
+        dataStoreRoot.ifPresent(root -> {
+            File changeSetsDir = root.toPath().resolve("changeSets")
+                    .resolve("src").resolve("main").resolve("resources").toFile();
+            if (changeSetsDir.isDirectory()) {
+                chooser.setInitialDirectory(changeSetsDir);
+            }
+        });
+        Stage owner = (Stage) getFocusedWindow();
+        File selected = chooser.showOpenDialog(owner);
+        if (selected == null) return;
+        ChangeSetSummaryWindow.openFor(selected, owner);
     }
 
     private Menu createFileMenu() {
