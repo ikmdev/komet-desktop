@@ -49,6 +49,16 @@ module dev.ikm.komet.desktop {
     requires one.jpro.platform.auth.core;
     requires one.jpro.platform.file;
     requires one.jpro.platform.utils;
+
+    // Markdown viewer for diagnostic reports — JavaFX 26 incubator RichTextArea
+    // driven by a flexmark AST. Replaces the previous JPro mdfx dependency,
+    // which transitively required javafx.web via jpro-youtube.
+    requires jfx.incubator.richtext;
+    requires org.commonmark;
+    requires org.commonmark.ext.gfm.tables;
+    requires org.commonmark.ext.gfm.strikethrough;
+    requires dev.ikm.markdown.attributes;
+    requires java.desktop;
     opens jpro.html;
 
     requires javafx.controls;
@@ -70,6 +80,8 @@ module dev.ikm.komet.desktop {
     requires dev.ikm.komet.preferences;
     requires dev.ikm.komet.progress;
     requires dev.ikm.komet.search;
+    requires dev.ikm.tinkar.provider.search;
+    requires org.apache.lucene.core;
     requires dev.ikm.tinkar.common;
     requires dev.ikm.tinkar.entity;
     requires dev.ikm.tinkar.provider.entity;

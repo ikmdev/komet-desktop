@@ -1,0 +1,153 @@
+/*
+ * Stylesheet for the RichTextArea-based Markdown viewer used by
+ * ChangeSetSummaryWindow and any other Komet Markdown previews.
+ *
+ * Block-level styles are keyed off classes set via
+ * RichParagraph.Builder.addWithStyleNames(...) in BlockRenderer.
+ *
+ * The .markdown-view class is applied to the RichTextArea itself by callers
+ * (e.g., ChangeSetSummaryWindow) so themes can scope these rules cleanly.
+ */
+
+.markdown-view {
+    -fx-font-size: 13px;
+    -fx-padding: 12;
+}
+
+.markdown-view .h1 {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-padding: 12 0 6 0;
+}
+.markdown-view .h2 {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 0 4 0;
+}
+.markdown-view .h3 {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 0 3 0;
+}
+.markdown-view .h4,
+.markdown-view .h5,
+.markdown-view .h6 {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 6 0 2 0;
+}
+
+.markdown-view .blockquote {
+    -fx-padding: 0 0 0 12;
+    -fx-border-color: #c8c8c8;
+    -fx-border-width: 0 0 0 3;
+    -fx-text-fill: #555555;
+}
+
+.markdown-view .code-block {
+    -fx-font-family: "Menlo", "Monaco", "Monospaced";
+    -fx-font-size: 12px;
+    -fx-background-color: #f6f6f6;
+    -fx-padding: 6 10 6 10;
+}
+
+.markdown-view .inline-code {
+    -fx-font-family: "Menlo", "Monaco", "Monospaced";
+    -fx-background-color: #f3f3f3;
+    -fx-padding: 0 3 0 3;
+}
+
+.markdown-view .thematic-break {
+    -fx-text-fill: #c8c8c8;
+}
+
+/* Tables — rendered as inline GridPane in BlockRenderer.buildTableNode */
+.md-table {
+    -fx-border-color: #d8d8d8;
+    -fx-border-width: 1;
+}
+.md-table-header {
+    -fx-font-weight: bold;
+    -fx-background-color: #efefef;
+    -fx-border-color: #d8d8d8;
+    -fx-border-width: 0 0 1 0;
+}
+.md-table-cell {
+    -fx-border-color: #ececec;
+    -fx-border-width: 0 0 1 0;
+}
+
+/* ----------------------------------------------------------------------
+ * State badges — applied via Pandoc-style attribute markers in source
+ * Markdown, e.g. `Active`{.state-active}. The same role names map to
+ * AsciiDoc [.state-active] roles so the same vocabulary drives both.
+ *
+ * Palette is muted (Bootstrap-ish) for readability against a light
+ * background; -fx-padding shapes the inline run into a rounded badge.
+ * --------------------------------------------------------------------*/
+.md-table-cell.state-active,
+.md-table-header.state-active,
+.markdown-view .state-active {
+    -fx-text-fill: #155724;
+    -fx-background-color: #d4edda;
+    -fx-padding: 1 6 1 6;
+    -fx-background-radius: 3;
+    -fx-font-family: "Menlo", "Monaco", "Monospaced";
+    -fx-font-size: 11px;
+}
+
+.md-table-cell.state-inactive,
+.md-table-header.state-inactive,
+.markdown-view .state-inactive {
+    -fx-text-fill: #5a4b1f;
+    -fx-background-color: #fff3cd;
+    -fx-padding: 1 6 1 6;
+    -fx-background-radius: 3;
+    -fx-font-family: "Menlo", "Monaco", "Monospaced";
+    -fx-font-size: 11px;
+}
+
+.md-table-cell.state-withdrawn,
+.md-table-header.state-withdrawn,
+.markdown-view .state-withdrawn {
+    -fx-text-fill: #721c24;
+    -fx-background-color: #f8d7da;
+    -fx-padding: 1 6 1 6;
+    -fx-background-radius: 3;
+    -fx-font-family: "Menlo", "Monaco", "Monospaced";
+    -fx-font-size: 11px;
+}
+
+.md-table-cell.state-canceled,
+.md-table-header.state-canceled,
+.markdown-view .state-canceled {
+    -fx-text-fill: #383d41;
+    -fx-background-color: #e2e3e5;
+    -fx-padding: 1 6 1 6;
+    -fx-background-radius: 3;
+    -fx-font-family: "Menlo", "Monaco", "Monospaced";
+    -fx-font-size: 11px;
+}
+
+.md-table-cell.state-primordial,
+.md-table-header.state-primordial,
+.markdown-view .state-primordial {
+    -fx-text-fill: #383d41;
+    -fx-background-color: #e2e3e5;
+    -fx-padding: 1 6 1 6;
+    -fx-background-radius: 3;
+    -fx-font-family: "Menlo", "Monaco", "Monospaced";
+    -fx-font-size: 11px;
+}
+
+.md-table-cell.state-uncommitted,
+.md-table-header.state-uncommitted,
+.markdown-view .state-uncommitted {
+    -fx-text-fill: #004085;
+    -fx-background-color: #cce5ff;
+    -fx-padding: 1 6 1 6;
+    -fx-background-radius: 3;
+    -fx-font-family: "Menlo", "Monaco", "Monospaced";
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}

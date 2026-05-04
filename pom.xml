@@ -239,6 +239,26 @@
             <groupId>one.jpro.platform</groupId>
             <artifactId>jpro-utils</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>jfx-incubator-richtext</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-tables</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-strikethrough</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>network.ike.platform</groupId>
+            <artifactId>ike-commonmark-attributes</artifactId>
+        </dependency>
         <!-- jpro-utils requires org.jetbrains.annotations at runtime/jlink -->
         <dependency>
             <groupId>org.jetbrains</groupId>
