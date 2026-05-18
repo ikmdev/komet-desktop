@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  IKE-Network — .mvn/extensions.xml
+
+  Maven build extensions registered at startup so they're available
+  to every plugin in the build. Provided to consuming projects via
+  the ike:scaffold-publish flow (ike-issues#338).
+
+  ──────────────────────────────────────────────────────────────────
+  wagon-ssh-external
+  ──────────────────────────────────────────────────────────────────
+  Implements the scpexe:// protocol used by mvn site:deploy when
+  ${site.deploy.url} starts with scpexe://. Required for the
+  internal-mirror site deploy to ike.komet.sh.
+
+  Without this extension on the Maven core classpath, site:deploy
+  fails with: "Cannot find wagon which supports the requested
+  protocol: scpexe". External consumers of ike-parent (doc-example,
+  example-project, ike-lab-documents, etc.) hit this in
+  ike-issues#338 because the wagon was previously only declared in
+  the upstream reactors' .mvn/extensions.xml — there's no inheritance
+  path from ike-parent's POM to consumer projects' .mvn/.
+
+  The wagon-ssh-external implementation calls native ssh/scp
+  commands (vs wagon-ssh/JSch which doesn't support ed25519 keys).
+-->
+<extensions>
+    <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-ssh-external</artifactId>
+        <version>3.5.3</version>
+    </extension>
+</extensions>

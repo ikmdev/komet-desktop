@@ -1,0 +1,20 @@
+schema: 1
+standards-version: '175'
+applied: '2026-05-18T04:10:28.628111Z'
+files:
+  .gitignore:
+    tier: tracked-block
+    template-sha: sha256:7492c8da4e0c180719203e280fdee3b22dae90ed3aece52b3fbd583690e41c02
+    applied-sha: sha256:7492c8da4e0c180719203e280fdee3b22dae90ed3aece52b3fbd583690e41c02
+  .mvn/extensions.xml:
+    tier: tracked
+    template-sha: sha256:07b12d4dc9aa7a23aee5e8412d9f7813572f7eb1521f57cbc8e47ac198c8adfc
+    applied-sha: sha256:07b12d4dc9aa7a23aee5e8412d9f7813572f7eb1521f57cbc8e47ac198c8adfc
+  .mvn/maven.config:
+    tier: tracked
+    template-sha: sha256:68a2d25b973da90ad13be24d89db4916f43709680ad8a0970c8f98c30c6881e9
+    applied-sha: sha256:68a2d25b973da90ad13be24d89db4916f43709680ad8a0970c8f98c30c6881e9
+  versions-upgrade-rules.yaml:
+    tier: tracked
+    template-sha: sha256:8abeed57639896a50c0c3cb75bf2478658b149a9ee41193065eb4dab6543fc2d
+    applied-sha: sha256:8abeed57639896a50c0c3cb75bf2478658b149a9ee41193065eb4dab6543fc2d
