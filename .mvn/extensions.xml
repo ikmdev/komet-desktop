@@ -16,7 +16,7 @@
   Without this extension on the Maven core classpath, site:deploy
   fails with: "Cannot find wagon which supports the requested
   protocol: scpexe". External consumers of ike-parent (doc-example,
-  example-project, ike-lab-documents, etc.) hit this in
+  project-example, ike-lab-documents, etc.) hit this in
   ike-issues#338 because the wagon was previously only declared in
   the upstream reactors' .mvn/extensions.xml — there's no inheritance
   path from ike-parent's POM to consumer projects' .mvn/.

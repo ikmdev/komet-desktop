@@ -1,6 +1,6 @@
 schema: 1
-standards-version: '186'
-applied: '2026-05-19T23:55:18.001389Z'
+standards-version: '212'
+applied: '2026-05-25T23:00:12.415171Z'
 files:
   .gitignore:
     tier: tracked-block
@@ -8,8 +8,8 @@ files:
     applied-sha: sha256:cb6eae8aac140a128fcc5bdc2949919776c7c84249b91eb085a3b7e62b9efaac
   .mvn/extensions.xml:
     tier: tracked
-    template-sha: sha256:07b12d4dc9aa7a23aee5e8412d9f7813572f7eb1521f57cbc8e47ac198c8adfc
-    applied-sha: sha256:07b12d4dc9aa7a23aee5e8412d9f7813572f7eb1521f57cbc8e47ac198c8adfc
+    template-sha: sha256:162442509bb80f54578da6340897c352bb1f9ad8e6f5dde9818ef3995ae7d438
+    applied-sha: sha256:162442509bb80f54578da6340897c352bb1f9ad8e6f5dde9818ef3995ae7d438
   .mvn/maven.config:
     tier: tracked
     template-sha: sha256:68a2d25b973da90ad13be24d89db4916f43709680ad8a0970c8f98c30c6881e9
