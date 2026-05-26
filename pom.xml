@@ -8,7 +8,7 @@
  <parent>
         <groupId>network.ike.platform</groupId>
         <artifactId>ike-parent</artifactId>
-        <version>90</version>
+        <version>91</version>
         <relativePath/>
     </parent>
 
