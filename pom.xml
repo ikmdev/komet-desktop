@@ -986,24 +986,45 @@
         -->
 
         <!--
-            User-facing opt-in profiles. Selectable from IntelliJ's Maven
-            Profiles panel, or via -P<name> on the CLI. Each sets underlying
-            skip properties.
+            Build-mode profiles.
 
-              fast-dev       Fast iteration: skip installer, codesign, notarize.
-                             Produces a runnable jlink image at
-                             target/kometRuntimeImage/ without the Apple round-trip.
+              fast-dev       AUTO-ACTIVE unless env var IKE_RELEASE is set.
+                             Skips installer, codesign, notarize. Produces a
+                             runnable jlink image at target/kometRuntimeImage/
+                             without the Apple/Windows signing round-trip.
+                             This is the default for IntelliJ, CLI dev builds,
+                             and contributors without signing credentials.
 
-              skip-codesign  Skip all code signing (natives + pkg) and, by
-                             necessity, notarization. The installer still
-                             builds but is unsigned.
+                             To opt out (i.e. build a signed installer), set
+                             IKE_RELEASE=1 in the environment. The release env
+                             file at ~/.config/ike/release.env provides this
+                             alongside the GPG passphrase, keychain password,
+                             and JReleaser deploy creds — typically loaded via
+                             `op run` with that file.
 
-              skip-notarize  Sign everything but skip the notarize step (the
-                             wait on Apple's notary service). Useful for local
-                             testing of signed output without the ~10min wait.
+              skip-codesign  Manual opt-in. Skip all code signing (natives +
+                             pkg) and, by necessity, notarization. The
+                             installer still builds but is unsigned. Use when
+                             IKE_RELEASE is set but you want to test the
+                             jpackage path without burning signing time.
+
+              skip-notarize  Manual opt-in. Sign everything but skip the
+                             notarize step (the wait on Apple's notary
+                             service). Useful for local testing of signed
+                             output without the ~10min Apple round-trip.
+
+            Activation note: fast-dev uses <property><name>!env.IKE_RELEASE</name>
+            instead of <activeByDefault>. The latter is silently deactivated
+            whenever ANY other profile (e.g. the OS-family profiles `mac`,
+            `linux`, `windows`) is active — see comment block above.
         -->
         <profile>
             <id>fast-dev</id>
+            <activation>
+                <property>
+                    <name>!env.IKE_RELEASE</name>
+                </property>
+            </activation>
             <properties>
                 <skip.installer>true</skip.installer>
                 <codesign.standard.skip>true</codesign.standard.skip>
