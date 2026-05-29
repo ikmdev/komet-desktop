@@ -995,35 +995,56 @@
         <!--
             Build-mode profiles.
 
-              fast-dev       AUTO-ACTIVE unless env var IKE_RELEASE is set.
-                             Skips installer, codesign, notarize. Produces a
-                             runnable jlink image at target/kometRuntimeImage/
-                             without the Apple/Windows signing round-trip.
-                             This is the default for IntelliJ, CLI dev builds,
-                             and contributors without signing credentials.
+              fast-dev          AUTO-ACTIVE unless env var IKE_RELEASE is set.
+                                Skips installer, codesign, notarize. Produces a
+                                runnable jlink image at target/kometRuntimeImage/
+                                without the Apple/Windows signing round-trip.
+                                The default for IntelliJ, CLI dev builds, and
+                                contributors without signing credentials.
 
-                             To opt out (i.e. build a signed installer), set
-                             IKE_RELEASE=1 in the environment. The release env
-                             file at ~/.config/ike/release.env provides this
-                             alongside the GPG passphrase, keychain password,
-                             and JReleaser deploy creds — typically loaded via
-                             `op run` with that file.
+              signed-installer  Opt-in: select with -P signed-installer, or
+                                tick the box in IntelliJ's Maven tool window's
+                                Profiles panel, or set env IKE_RELEASE=1
+                                (release.env / TeamCity). Runs the full
+                                jpackage + codesign + notarize + staple path.
 
-              skip-codesign  Manual opt-in. Skip all code signing (natives +
-                             pkg) and, by necessity, notarization. The
-                             installer still builds but is unsigned. Use when
-                             IKE_RELEASE is set but you want to test the
-                             jpackage path without burning signing time.
+              skip-codesign     Manual opt-in (composes with signed-installer).
+                                Skip all code signing (natives + pkg) and, by
+                                necessity, notarization. Installer still builds
+                                but is unsigned. Useful for testing the
+                                jpackage path without burning signing time.
 
-              skip-notarize  Manual opt-in. Sign everything but skip the
-                             notarize step (the wait on Apple's notary
-                             service). Useful for local testing of signed
-                             output without the ~10min Apple round-trip.
+              skip-notarize     Manual opt-in (composes with signed-installer).
+                                Sign everything but skip the notarize step
+                                (the wait on Apple's notary service). Useful
+                                for local testing of signed output without the
+                                ~10min Apple round-trip.
 
-            Activation note: fast-dev uses <property><name>!env.IKE_RELEASE</name>
-            instead of <activeByDefault>. The latter is silently deactivated
-            whenever ANY other profile (e.g. the OS-family profiles `mac`,
-            `linux`, `windows`) is active — see comment block above.
+            Activation strategy:
+
+              fast-dev uses <property><name>!env.IKE_RELEASE</name> instead
+              of <activeByDefault>true</activeByDefault>. The latter is
+              silently deactivated whenever ANY other profile (including the
+              OS-family profiles `mac`, `linux`, `windows`) is active — see
+              comment block above. fast-dev's env-property activation fires
+              independently of any other active profile.
+
+              signed-installer activates on env.IKE_RELEASE (so TeamCity
+              hidden params and release.env both continue to work unchanged)
+              OR on explicit `-P signed-installer` (the IntelliJ profile
+              checkbox / CLI flag). The two activation methods are unioned.
+
+              When the user does `-P signed-installer` without IKE_RELEASE
+              set, fast-dev and signed-installer are BOTH active. Maven
+              resolves the conflicting property values by profile declaration
+              order — the later-declared profile wins. signed-installer is
+              intentionally declared after fast-dev so it overrides the
+              skips back to false and the release path runs. See
+              IKE-Network/ike-issues#552 for the design rationale.
+
+              skip-codesign and skip-notarize are declared LAST so they
+              override both fast-dev and signed-installer when explicitly
+              selected.
         -->
         <profile>
             <id>fast-dev</id>
@@ -1039,6 +1060,27 @@
                 <codesign.profile.skip>true</codesign.profile.skip>
                 <codesign.pkg.skip>true</codesign.pkg.skip>
                 <notarize.skip>true</notarize.skip>
+            </properties>
+        </profile>
+        <profile>
+            <id>signed-installer</id>
+            <!-- DECLARATION ORDER MATTERS: this profile must come AFTER
+                 fast-dev so its property values win when both are active
+                 (see the comment block above for why). Do not reorder. -->
+            <activation>
+                <property>
+                    <name>env.IKE_RELEASE</name>
+                </property>
+            </activation>
+            <properties>
+                <skip.installer>false</skip.installer>
+                <codesign.standard.skip>false</codesign.standard.skip>
+                <!-- debug/profile image variants still default to skipped;
+                     they're only built when separately requested. -->
+                <codesign.debug.skip>true</codesign.debug.skip>
+                <codesign.profile.skip>true</codesign.profile.skip>
+                <codesign.pkg.skip>false</codesign.pkg.skip>
+                <notarize.skip>false</notarize.skip>
             </properties>
         </profile>
         <profile>
