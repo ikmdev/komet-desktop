@@ -561,7 +561,14 @@
                          directly into target/ for easy access -->
                     <execution>
                         <id>copy-installers</id>
-                        <phase>verify[2]</phase>
+                        <!-- verify[3]: sequence AFTER notarize-installer
+                             (verify[2]). At verify[2] the maven-resources
+                             copy would race ahead of ike:notarize in plugin
+                             declaration order, copying the pre-staple .pkg
+                             to target/ and leaving the stapled version only
+                             in target/jreleaser/.../jpackage/. See
+                             IKE-Network/ike-issues#551. -->
+                        <phase>verify[3]</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
