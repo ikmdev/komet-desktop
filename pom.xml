@@ -23,6 +23,11 @@
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <!-- asm.version inherited from ike-parent:14 (9.9.1, see #283) -->
         <komet-bom.version>3.0.7-claude-assistant-SNAPSHOT</komet-bom.version>
+        <!-- komet-claude-plugin is staged into the runtime plugins/ layer by the
+             maven-dependency-plugin fetch-*-application-extensions copy executions
+             (NOT a compile dependency — it loads via the plugin layer, exactly like
+             rocks-kb-engine). -->
+        <komet-claude-plugin.version>1-SNAPSHOT</komet-claude-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
@@ -438,6 +443,11 @@
                             <artifactItem>
                                 <groupId>dev.ikm.ike</groupId>
                                 <artifactId>rocks-kb-engine</artifactId>
+                            </artifactItem>
+                            <artifactItem>
+                                <groupId>network.ike.komet</groupId>
+                                <artifactId>komet-claude-plugin</artifactId>
+                                <version>${komet-claude-plugin.version}</version>
                             </artifactItem>
                             <artifactItem>
                                 <groupId>dev.ikm.jpms</groupId>
