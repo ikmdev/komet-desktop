@@ -239,6 +239,7 @@ public class App extends Application {
                 : mavenVersion;
 
         LOG.info("Komet version: {}", version);
+        LOG.info("Komet PID: {}", ProcessHandle.current().pid());
         LOG.info("Build time: {}", buildInfo.getBuildTime());
         LOG.info("Runtime: java={}, javafx={}, os={}, arch={}, platform={}",
                 System.getProperty("java.version"),

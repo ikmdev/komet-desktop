@@ -463,6 +463,21 @@
                             </artifactItem>
                         </artifactItems>
                     </configuration>
+                    <!-- Reactor-ordering edge ONLY (not a compile/module-path dependency):
+                         a plugin-level dependency on a reactor-built plugin makes Maven's
+                         reactor sort build it before this module's copy execution stages it,
+                         so a parallel `-T1C` build doesn't race the artifactItem copy. The
+                         plugin stays out of module-jars/ (boot layer) — staging is still the
+                         artifactItem copy into plugins/. Version shared with the artifactItem.
+                         (rocks-kb-engine wants the same edge, but its version is BOM-managed
+                         with no local property here — see ike-issues#583.) -->
+                    <dependencies>
+                        <dependency>
+                            <groupId>network.ike.komet</groupId>
+                            <artifactId>komet-claude-plugin</artifactId>
+                            <version>${komet-claude-plugin.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.jreleaser</groupId>
