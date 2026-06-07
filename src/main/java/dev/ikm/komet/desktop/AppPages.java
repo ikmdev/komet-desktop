@@ -359,9 +359,6 @@ public class AppPages {
         final KometPreferences klEditorAppPreferences = appPreferences.node(KL_EDITOR_APP);
         final WindowSettings windowSettings = new WindowSettings(klEditorAppPreferences);
 
-//        final UUID klTopic = klWindowSettings.getValue(KL_TOPIC);
-//        Objects.requireNonNull(klTopic, "klTopic cannot be null");
-
         ObservableEditCoordinate editCoordinate = windowSettings.getView().editCoordinate();
         editCoordinate.authorForChangesProperty().setValue(loggedInUser);
 
@@ -389,56 +386,9 @@ public class AppPages {
 
         app.appMenu.generateKLEditorMenu((BorderPane) root, klEditorWindowStage, klEditorMainScreenController);
 
-        // load journal specific window settings
-
-        // Get the UUID-based directory name from preferences
-//        String journalDirName = klWindowSettings.getValue(JOURNAL_DIR_NAME);
-
-        // For new journals (no UUID yet), generate one using the controller's UUID
-//        if (journalDirName == null) {
-//            journalDirName = journalController.getJournalDirName();
-//            klWindowSettings.setValue(JOURNAL_DIR_NAME, journalDirName);
-//        }
-
-//        if (klWindowSettings.getValue(JOURNAL_HEIGHT) != null) {
-//            klEditorWindowStage.setHeight(klWindowSettings.getValue(JOURNAL_HEIGHT));
-//            klEditorWindowStage.setWidth(klWindowSettings.getValue(JOURNAL_WIDTH));
-//            klEditorWindowStage.setX(klWindowSettings.getValue(JOURNAL_XPOS));
-//            klEditorWindowStage.setY(klWindowSettings.getValue(JOURNAL_YPOS));
-//            journalController.restoreWindows(windowSettings, klWindowSettings);
-//        } else {
-//            klEditorWindowStage.setMaximized(true);
-//        }
         klEditorWindowStage.setMaximized(true);
 
-        klEditorWindowStage.setOnHidden(windowEvent -> {
-            klEditorMainScreenController.shutdown();
-//            app.saveJournalWindowsToPreferences();
-//            journalController.shutdown();
-//            app.journalControllersList.remove(journalController);
-//
-//            klWindowSettings.setValue(CAN_DELETE, true);
-//            app.kViewEventBus.publish(JOURNAL_TOPIC,
-//                    new JournalTileEvent(this, UPDATE_JOURNAL_TILE, klWindowSettings));
-        });
-
-        klEditorWindowStage.setOnShown(windowEvent -> {
-//            KometNodeFactory navigatorNodeFactory = new GraphNavigatorNodeFactory();
-//            KometNodeFactory searchNodeFactory = new SearchNodeFactory();
-//
-//            journalController.launchKometFactoryNodes(
-//                    klWindowSettings.getValue(JOURNAL_TITLE),
-//                    navigatorNodeFactory,
-//                    searchNodeFactory);
-//            // load additional panels
-//            journalController.loadNextGenReasonerPanel();
-//            journalController.loadNextGenSearchPanel();
-        });
-
-        // disable the delete menu option for a Journal Card.
-//        klWindowSettings.setValue(CAN_DELETE, false);
-//        app.kViewEventBus.publish(JOURNAL_TOPIC, new JournalTileEvent(this, UPDATE_JOURNAL_TILE, klWindowSettings));
-//        app.journalControllersList.add(journalController);
+        klEditorWindowStage.setOnHidden(windowEvent -> klEditorMainScreenController.shutdown());
 
         if (IS_BROWSER) {
             app.webAPI.openStageAsTab(klEditorWindowStage, "KL Editor");

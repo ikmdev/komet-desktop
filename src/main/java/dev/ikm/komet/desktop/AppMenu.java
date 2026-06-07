@@ -104,19 +104,18 @@ public class AppMenu {
         exportDatasetMenuItem.setOnAction(actionEvent -> openExport(stage));
         fileMenu.getItems().add(exportDatasetMenuItem);
         MenuItem menuItemQuit = new MenuItem("Quit");
-        menuItemQuit.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
+        menuItemQuit.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.SHORTCUT_DOWN));
         menuItemQuit.setOnAction(actionEvent -> app.quit());
         fileMenu.getItems().add(menuItemQuit);
 
         Menu editMenu = new Menu("Edit");
         MenuItem landingPage = new MenuItem("Landing Page");
-        landingPage.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN));
+        landingPage.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.SHORTCUT_DOWN));
         landingPage.setOnAction(actionEvent -> app.appPages.launchLandingPage(App.primaryStage, userProperty.get()));
         landingPage.setDisable(IS_BROWSER);
         editMenu.getItems().add(landingPage);
 
-        Menu helpMenu = new Menu("Help");
-        helpMenu.getItems().add(new MenuItem("Getting started"));
+        Menu helpMenu = createHelpMenu();
 
         menuBar.getMenus().addAll(fileMenu, editMenu, helpMenu);
         menuBar.setUseSystemMenuBar(true);
@@ -247,10 +246,10 @@ public class AppMenu {
     private MenuBar buildMenuBar() {
         Menu kometAppMenu = new Menu("Komet");
         MenuItem prefsItem = new MenuItem("Komet preferences...");
-        prefsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN));
+        prefsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.SHORTCUT_DOWN));
         prefsItem.setOnAction(event -> kometPreferencesStage.showPreferences());
         MenuItem quitItem = new MenuItem("Quit");
-        quitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.META_DOWN));
+        quitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.SHORTCUT_DOWN));
         quitItem.setOnAction(event -> app.quit());
         kometAppMenu.getItems().addAll(prefsItem, new SeparatorMenuItem(), quitItem);
 
