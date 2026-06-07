@@ -449,6 +449,15 @@
                                 <artifactId>komet-claude-plugin</artifactId>
                                 <version>${komet-claude-plugin.version}</version>
                             </artifactItem>
+                            <!-- Shared Markdown renderer (#585) the plugin requires at runtime.
+                                 Staged into the plugins/ layer alongside the plugin (like
+                                 rocksdbjni/jna are for rocks-kb-engine); it reads commonmark +
+                                 the jfx richtext model from the boot image. Version BOM-managed
+                                 (komet-bom). Built before this copy via the plugin's own edge. -->
+                            <artifactItem>
+                                <groupId>dev.ikm.komet</groupId>
+                                <artifactId>komet-markdown-richtext</artifactId>
+                            </artifactItem>
                             <artifactItem>
                                 <groupId>dev.ikm.jpms</groupId>
                                 <artifactId>rocksdbjni</artifactId>
