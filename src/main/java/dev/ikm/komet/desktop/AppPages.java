@@ -382,13 +382,14 @@ public class AppPages {
         Stage klEditorWindowStage = new Stage();
         klEditorWindowStage.getIcons().setAll(app.appIcon);
         klEditorWindowStage.setScene(sourceScene);
+        // Set the title before generateKLEditorMenu(...) registers the stage with
+        // WindowMenuManager, so this window is labelled correctly in every window's Window menu
+        // (mirrors the journal window's setTitle-then-menu ordering).
+        klEditorWindowStage.setTitle("Knowledge Layout Editor");
 
-//        if (!IS_MAC) {
-//            app.appMenu.generateMsWindowsMenu(root, klEditorWindowStage);
-//        }
+        app.appMenu.generateKLEditorMenu((BorderPane) root, klEditorWindowStage, klEditorMainScreenController);
 
         // load journal specific window settings
-        klEditorWindowStage.setTitle("Knowledge Layout Editor");
 
         // Get the UUID-based directory name from preferences
 //        String journalDirName = klWindowSettings.getValue(JOURNAL_DIR_NAME);

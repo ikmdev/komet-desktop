@@ -128,7 +128,10 @@ public class WindowMenuManager implements ListChangeListener<Window> {
                         Comparator.nullsFirst(Comparator.naturalOrder())))
                 .forEach(entry -> {
                     Stage s = entry.getKey();
-                    CheckMenuItem item = new CheckMenuItem(s.getTitle());
+                    CheckMenuItem item = new CheckMenuItem();
+                    // Bind the label to the live stage title so the entry is correct even if the
+                    // title is set after the stage is registered, and tracks later title changes.
+                    item.textProperty().bind(s.titleProperty());
                     s.focusedProperty().addListener((obs, old, focused) -> item.setSelected(focused));
                     item.setSelected(s.isFocused());
                     item.setOnAction(e -> s.toFront());
