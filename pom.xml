@@ -313,6 +313,12 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
         </dependency>
+        <!-- JUL → log4j2 bridge so the Evrete engine's java.util.logging output lands in
+             the Komet log (ike-issues#627). Version managed by the BOM. -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-jul</artifactId>
+        </dependency>
         <dependency>
             <groupId>dev.ikm.jpms</groupId>
             <artifactId>jsr305</artifactId>

@@ -27,6 +27,7 @@ assemble:
             - --enable-preview
             - -Xmx42g
             - -Dlog4j.configurationFile=$APP_HOME/conf/log4j2.xml
+            - -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
             - --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls
             - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
             - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
@@ -72,6 +73,7 @@ assemble:
             - --enable-preview
             - -Xmx42g
             - -Dlog4j.configurationFile=$APP_HOME/conf/log4j2.xml
+            - -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
             - --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls
             - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
             - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
@@ -116,6 +118,7 @@ assemble:
             - --enable-preview
             - -Xmx42g
             - -Dlog4j.configurationFile=$APP_HOME/conf/log4j2.xml
+            - -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
             - --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls
             - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
             - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
