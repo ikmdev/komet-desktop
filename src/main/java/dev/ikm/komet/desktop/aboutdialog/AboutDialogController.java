@@ -39,4 +39,15 @@ public class AboutDialogController {
         publishedDateLabel.setText(buildTime);
     }
 
+    @FXML
+    public void openIkeNetwork() {
+        new Thread(() -> {
+            try {
+                java.awt.Desktop.getDesktop().browse(java.net.URI.create("https://ike.network"));
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(getClass()).warn("Could not open ike.network", e);
+            }
+        }, "open-ike-network").start();
+    }
+
 }
