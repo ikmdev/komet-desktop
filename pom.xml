@@ -458,6 +458,14 @@
                                 <groupId>dev.ikm.komet</groupId>
                                 <artifactId>komet-markdown-richtext</artifactId>
                             </artifactItem>
+                            <!-- tinkar-composer: required at runtime by the plugin's commit-narrator
+                                 (CommitNarratorLifecycle writes COMMENT_PATTERN semantics). Staged into
+                                 plugins/ alongside the plugin like the markdown renderer; reads tinkar
+                                 entity/terms from the boot image. Version BOM-managed (komet-bom). -->
+                            <artifactItem>
+                                <groupId>dev.ikm.tinkar</groupId>
+                                <artifactId>composer</artifactId>
+                            </artifactItem>
                             <artifactItem>
                                 <groupId>dev.ikm.jpms</groupId>
                                 <artifactId>rocksdbjni</artifactId>
@@ -686,44 +694,14 @@
                             <excludeGroupIds>org.apfloat</excludeGroupIds>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>copy-standard-module-dependencies</id>
-                        <phase>package[3]</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skip.image.standard}</skip>
-                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}/module-jars</outputDirectory>
-                            <!-- artifactItems are INHERITED from pluginManagement! -->
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-debug-module-dependencies</id>
-                        <phase>package[3]</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skip.image.debug}</skip>
-                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-debug/jlink/${jreleaser.platform.work}/kometDebugRuntimeImage-${jreleaser.platform.suffix}/module-jars
-                            </outputDirectory>
-                            <!-- artifactItems are INHERITED from pluginManagement! -->
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-profile-module-dependencies</id>
-                        <phase>package[3]</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skip.image.profile}</skip>
-                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-profile/jlink/${jreleaser.platform.work}/kometProfileRuntimeImage-${jreleaser.platform.suffix}/module-jars
-                            </outputDirectory>
-                            <!-- artifactItems are INHERITED from pluginManagement! -->
-                        </configuration>
-                    </execution>
+                    <!-- module-jars staging removed (ike-issues#626): these executions copied
+                         every runtime dependency jar into each image's module-jars/ to give the
+                         Evrete runtime compiler a readable classpath. That compiler is never
+                         invoked — EvreteRulesService runs with DISABLE_LITERAL_DATA=true and
+                         imports precompiled JAVA-CLASS rules — so the copy was ~80 MB of dead
+                         weight. Rules are added via the RuleProvider plugin SPI (plugins/) instead.
+                         The stage-dependencies-for-jlink execution above is kept: JReleaser needs
+                         jlink-module-path to BUILD the image. -->
                     <execution>
                         <id>fetch-standard-application-extensions</id>
                         <phase>package[4]</phase>
