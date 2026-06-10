@@ -8,7 +8,7 @@
  <parent>
         <groupId>network.ike.platform</groupId>
         <artifactId>ike-parent</artifactId>
-        <version>104</version>
+        <version>106</version>
         <relativePath/>
     </parent>
 
@@ -28,6 +28,10 @@
              (NOT a compile dependency — it loads via the plugin layer, exactly like
              rocks-kb-engine). -->
         <komet-claude-plugin.version>1-SNAPSHOT</komet-claude-plugin.version>
+        <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
+             same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
+             dependency. All its runtime deps are in the boot image or already staged (composer). -->
+        <complex-clause-plugin.version>1-SNAPSHOT</complex-clause-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
@@ -455,6 +459,14 @@
                                 <artifactId>komet-claude-plugin</artifactId>
                                 <version>${komet-claude-plugin.version}</version>
                             </artifactItem>
+                            <!-- complex-clause-plugin (#628): only the plugin jar is staged; its
+                                 runtime deps (komet layout/framework, tinkar, composer) are in the
+                                 boot image or already staged above. -->
+                            <artifactItem>
+                                <groupId>network.ike.komet</groupId>
+                                <artifactId>complex-clause-plugin</artifactId>
+                                <version>${complex-clause-plugin.version}</version>
+                            </artifactItem>
                             <!-- Shared Markdown renderer (#585) the plugin requires at runtime.
                                  Staged into the plugins/ layer alongside the plugin (like
                                  rocksdbjni/jna are for rocks-kb-engine); it reads commonmark +
@@ -499,6 +511,11 @@
                             <groupId>network.ike.komet</groupId>
                             <artifactId>komet-claude-plugin</artifactId>
                             <version>${komet-claude-plugin.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>network.ike.komet</groupId>
+                            <artifactId>complex-clause-plugin</artifactId>
+                            <version>${complex-clause-plugin.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
