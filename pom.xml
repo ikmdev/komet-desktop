@@ -13,7 +13,7 @@
     </parent>
 
     <artifactId>komet-desktop</artifactId>
-    <version>3.0.0-claude-assistant-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
 
     <name>Komet Desktop</name>
 
@@ -22,7 +22,7 @@
         <!-- Configure build timestamp -->
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <!-- asm.version inherited from ike-parent:14 (9.9.1, see #283) -->
-        <komet-bom.version>3.0.7-claude-assistant-SNAPSHOT</komet-bom.version>
+        <komet-bom.version>3.0.7-SNAPSHOT</komet-bom.version>
         <!-- komet-claude-plugin is staged into the runtime plugins/ layer by the
              maven-dependency-plugin fetch-*-application-extensions copy executions
              (NOT a compile dependency — it loads via the plugin layer, exactly like
@@ -73,7 +73,7 @@
             <dependency>
                 <groupId>dev.ikm.komet</groupId>
                 <artifactId>komet-bom</artifactId>
-                <version>3.0.7-claude-assistant-SNAPSHOT</version>
+                <version>3.0.7-SNAPSHOT</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
