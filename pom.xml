@@ -8,7 +8,7 @@
  <parent>
         <groupId>network.ike.platform</groupId>
         <artifactId>ike-parent</artifactId>
-        <version>98</version>
+        <version>106</version>
         <relativePath/>
     </parent>
 
@@ -23,6 +23,15 @@
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <!-- asm.version inherited from ike-parent:14 (9.9.1, see #283) -->
         <komet-bom.version>3.0.7-SNAPSHOT</komet-bom.version>
+        <!-- komet-claude-plugin is staged into the runtime plugins/ layer by the
+             maven-dependency-plugin fetch-*-application-extensions copy executions
+             (NOT a compile dependency — it loads via the plugin layer, exactly like
+             rocks-kb-engine). -->
+        <komet-claude-plugin.version>1-SNAPSHOT</komet-claude-plugin.version>
+        <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
+             same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
+             dependency. All its runtime deps are in the boot image or already staged (composer). -->
+        <complex-clause-plugin.version>1-SNAPSHOT</complex-clause-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
@@ -308,6 +317,12 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
         </dependency>
+        <!-- JUL → log4j2 bridge so the Evrete engine's java.util.logging output lands in
+             the Komet log (ike-issues#627). Version managed by the BOM. -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-jul</artifactId>
+        </dependency>
         <dependency>
             <groupId>dev.ikm.jpms</groupId>
             <artifactId>jsr305</artifactId>
@@ -440,6 +455,36 @@
                                 <artifactId>rocks-kb-engine</artifactId>
                             </artifactItem>
                             <artifactItem>
+                                <groupId>network.ike.komet</groupId>
+                                <artifactId>komet-claude-plugin</artifactId>
+                                <version>${komet-claude-plugin.version}</version>
+                            </artifactItem>
+                            <!-- complex-clause-plugin (#628): only the plugin jar is staged; its
+                                 runtime deps (komet layout/framework, tinkar, composer) are in the
+                                 boot image or already staged above. -->
+                            <artifactItem>
+                                <groupId>network.ike.komet</groupId>
+                                <artifactId>complex-clause-plugin</artifactId>
+                                <version>${complex-clause-plugin.version}</version>
+                            </artifactItem>
+                            <!-- Shared Markdown renderer (#585) the plugin requires at runtime.
+                                 Staged into the plugins/ layer alongside the plugin (like
+                                 rocksdbjni/jna are for rocks-kb-engine); it reads commonmark +
+                                 the jfx richtext model from the boot image. Version BOM-managed
+                                 (komet-bom). Built before this copy via the plugin's own edge. -->
+                            <artifactItem>
+                                <groupId>dev.ikm.komet</groupId>
+                                <artifactId>komet-markdown-richtext</artifactId>
+                            </artifactItem>
+                            <!-- tinkar-composer: required at runtime by the plugin's commit-narrator
+                                 (CommitNarratorLifecycle writes COMMENT_PATTERN semantics). Staged into
+                                 plugins/ alongside the plugin like the markdown renderer; reads tinkar
+                                 entity/terms from the boot image. Version BOM-managed (komet-bom). -->
+                            <artifactItem>
+                                <groupId>dev.ikm.tinkar</groupId>
+                                <artifactId>composer</artifactId>
+                            </artifactItem>
+                            <artifactItem>
                                 <groupId>dev.ikm.jpms</groupId>
                                 <artifactId>rocksdbjni</artifactId>
                             </artifactItem>
@@ -453,6 +498,26 @@
                             </artifactItem>
                         </artifactItems>
                     </configuration>
+                    <!-- Reactor-ordering edge ONLY (not a compile/module-path dependency):
+                         a plugin-level dependency on a reactor-built plugin makes Maven's
+                         reactor sort build it before this module's copy execution stages it,
+                         so a parallel `-T1C` build doesn't race the artifactItem copy. The
+                         plugin stays out of module-jars/ (boot layer) — staging is still the
+                         artifactItem copy into plugins/. Version shared with the artifactItem.
+                         (rocks-kb-engine wants the same edge, but its version is BOM-managed
+                         with no local property here — see ike-issues#583.) -->
+                    <dependencies>
+                        <dependency>
+                            <groupId>network.ike.komet</groupId>
+                            <artifactId>komet-claude-plugin</artifactId>
+                            <version>${komet-claude-plugin.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>network.ike.komet</groupId>
+                            <artifactId>complex-clause-plugin</artifactId>
+                            <version>${complex-clause-plugin.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.jreleaser</groupId>
@@ -652,44 +717,14 @@
                             <excludeGroupIds>org.apfloat</excludeGroupIds>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>copy-standard-module-dependencies</id>
-                        <phase>package[3]</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skip.image.standard}</skip>
-                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}/module-jars</outputDirectory>
-                            <!-- artifactItems are INHERITED from pluginManagement! -->
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-debug-module-dependencies</id>
-                        <phase>package[3]</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skip.image.debug}</skip>
-                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-debug/jlink/${jreleaser.platform.work}/kometDebugRuntimeImage-${jreleaser.platform.suffix}/module-jars
-                            </outputDirectory>
-                            <!-- artifactItems are INHERITED from pluginManagement! -->
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-profile-module-dependencies</id>
-                        <phase>package[3]</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skip.image.profile}</skip>
-                            <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-profile/jlink/${jreleaser.platform.work}/kometProfileRuntimeImage-${jreleaser.platform.suffix}/module-jars
-                            </outputDirectory>
-                            <!-- artifactItems are INHERITED from pluginManagement! -->
-                        </configuration>
-                    </execution>
+                    <!-- module-jars staging removed (ike-issues#626): these executions copied
+                         every runtime dependency jar into each image's module-jars/ to give the
+                         Evrete runtime compiler a readable classpath. That compiler is never
+                         invoked — EvreteRulesService runs with DISABLE_LITERAL_DATA=true and
+                         imports precompiled JAVA-CLASS rules — so the copy was ~80 MB of dead
+                         weight. Rules are added via the RuleProvider plugin SPI (plugins/) instead.
+                         The stage-dependencies-for-jlink execution above is kept: JReleaser needs
+                         jlink-module-path to BUILD the image. -->
                     <execution>
                         <id>fetch-standard-application-extensions</id>
                         <phase>package[4]</phase>

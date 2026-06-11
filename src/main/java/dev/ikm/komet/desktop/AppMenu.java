@@ -11,6 +11,7 @@ import dev.ikm.tinkar.common.service.ServiceKeys;
 import dev.ikm.tinkar.common.service.ServiceProperties;
 import dev.ikm.komet.framework.preferences.KometPreferencesStage;
 import dev.ikm.komet.framework.window.WindowSettings;
+import dev.ikm.komet.kleditorapp.view.KLEditorMainScreenController;
 import dev.ikm.komet.kview.mvvm.view.changeset.ExportController;
 import dev.ikm.komet.kview.mvvm.view.changeset.ImportController;
 import dev.ikm.komet.preferences.KometPreferences;
@@ -60,6 +61,9 @@ public class AppMenu {
 
     private static final Logger LOG = LoggerFactory.getLogger(AppMenu.class);
 
+    /** IKE getting-started page, opened from Help &gt; Getting started in the OS default browser. */
+    private static final String GETTING_STARTED_URL = "https://ike.network";
+
     private final App app;
     KometPreferencesStage kometPreferencesStage;
 
@@ -100,19 +104,18 @@ public class AppMenu {
         exportDatasetMenuItem.setOnAction(actionEvent -> openExport(stage));
         fileMenu.getItems().add(exportDatasetMenuItem);
         MenuItem menuItemQuit = new MenuItem("Quit");
-        menuItemQuit.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
+        menuItemQuit.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.SHORTCUT_DOWN));
         menuItemQuit.setOnAction(actionEvent -> app.quit());
         fileMenu.getItems().add(menuItemQuit);
 
         Menu editMenu = new Menu("Edit");
         MenuItem landingPage = new MenuItem("Landing Page");
-        landingPage.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN));
+        landingPage.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.SHORTCUT_DOWN));
         landingPage.setOnAction(actionEvent -> app.appPages.launchLandingPage(App.primaryStage, userProperty.get()));
         landingPage.setDisable(IS_BROWSER);
         editMenu.getItems().add(landingPage);
 
-        Menu helpMenu = new Menu("Help");
-        helpMenu.getItems().add(new MenuItem("Getting started"));
+        Menu helpMenu = createHelpMenu();
 
         menuBar.getMenus().addAll(fileMenu, editMenu, helpMenu);
         menuBar.setUseSystemMenuBar(true);
@@ -127,6 +130,50 @@ public class AppMenu {
             // add menu to the journal window
             Platform.runLater(() -> kometRoot.setTop(menuBar));
         }
+    }
+
+    /**
+     * Builds and attaches the Knowledge Layout Editor's window menu bar, then registers the
+     * stage with {@link WindowMenuManager} so that a live "Window" menu (listing all open
+     * windows) is inserted before "Help" and kept up to date. Uses the same mechanism as the
+     * journal and landing windows ({@code setUseSystemMenuBar} plus stage tracking) rather than
+     * a bespoke per-window bar.
+     *
+     * @param root       the editor window's root border pane the menu bar is attached to
+     * @param stage      the editor window's stage, tracked for the Window menu
+     * @param controller the editor controller, used to trigger Save Layout and reflect its enabled state
+     */
+    void generateKLEditorMenu(BorderPane root, Stage stage, KLEditorMainScreenController controller) {
+        MenuBar menuBar = new MenuBar();
+
+        Menu fileMenu = new Menu("File");
+        MenuItem saveLayout = new MenuItem("Save Layout");
+        saveLayout.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN));
+        saveLayout.setOnAction(actionEvent -> controller.saveWindow());
+        saveLayout.disableProperty().bind(controller.titleIsEmpty());
+        MenuItem about = new MenuItem("About");
+        about.setOnAction(actionEvent -> showAboutDialog());
+        MenuItem closeWindow = new MenuItem("Close");
+        closeWindow.setAccelerator(new KeyCodeCombination(KeyCode.W, KeyCombination.SHORTCUT_DOWN));
+        closeWindow.setOnAction(actionEvent -> stage.close());
+        fileMenu.getItems().addAll(saveLayout, new SeparatorMenuItem(), about, new SeparatorMenuItem(), closeWindow);
+
+        Menu editMenu = new Menu("Edit");
+        MenuItem landingPage = new MenuItem("Landing Page");
+        landingPage.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.SHORTCUT_DOWN));
+        landingPage.setOnAction(actionEvent -> app.appPages.launchLandingPage(App.primaryStage, userProperty.get()));
+        landingPage.setDisable(IS_BROWSER);
+        editMenu.getItems().add(landingPage);
+
+        Menu helpMenu = createHelpMenu();
+
+        menuBar.getMenus().addAll(fileMenu, editMenu, helpMenu);
+        menuBar.setUseSystemMenuBar(true);
+
+        // Register with WindowMenuManager — inserts a live "Window" menu before "Help"
+        WindowMenuManager.addStage(stage, menuBar);
+
+        Platform.runLater(() -> root.setTop(menuBar));
     }
 
     Menu createExchangeMenu() {
@@ -199,10 +246,10 @@ public class AppMenu {
     private MenuBar buildMenuBar() {
         Menu kometAppMenu = new Menu("Komet");
         MenuItem prefsItem = new MenuItem("Komet preferences...");
-        prefsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN));
+        prefsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.SHORTCUT_DOWN));
         prefsItem.setOnAction(event -> kometPreferencesStage.showPreferences());
         MenuItem quitItem = new MenuItem("Quit");
-        quitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.META_DOWN));
+        quitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.SHORTCUT_DOWN));
         quitItem.setOnAction(event -> app.quit());
         kometAppMenu.getItems().addAll(prefsItem, new SeparatorMenuItem(), quitItem);
 
@@ -339,7 +386,11 @@ public class AppMenu {
 
     private Menu createHelpMenu() {
         Menu helpMenu = new Menu("Help");
-        helpMenu.getItems().add(new MenuItem("Getting started"));
+        MenuItem gettingStarted = new MenuItem("Getting started");
+        // Open the IKE getting-started page in the OS default web browser (works on desktop and
+        // under JPro). HostServices delegates to the operating system's registered URL handler.
+        gettingStarted.setOnAction(event -> app.getHostServices().showDocument(GETTING_STARTED_URL));
+        helpMenu.getItems().add(gettingStarted);
         return helpMenu;
     }
 

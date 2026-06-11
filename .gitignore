@@ -24,3 +24,6 @@ buildNumber.properties
 
 # ike:* goal reports
 ike꞉*.md
+
+# Runtime logs
+logs/

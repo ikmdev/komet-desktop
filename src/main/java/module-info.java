@@ -97,6 +97,10 @@ module dev.ikm.komet.desktop {
     requires org.apache.logging.log4j;       // log4j-api
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j.slf4j2.impl;
+    // JUL → log4j2 bridge (ike-issues#627): routes java.util.logging (Evrete engine,
+    // org.evrete.*) into log4j2. Required so jlink includes it; activated at launch via
+    // -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager.
+    requires org.apache.logging.log4j.jul;
     requires javafx.graphics;
     //requires org.scenicview.scenicview;
 

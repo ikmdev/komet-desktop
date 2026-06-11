@@ -8,6 +8,7 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,8 @@ import java.util.stream.Collectors;
 public class WindowMenuManager implements ListChangeListener<Window> {
 
     private static final Logger LOG = LoggerFactory.getLogger(WindowMenuManager.class);
+    /** Key under which each window CheckMenuItem stores its focus Subscription for later release. */
+    private static final String FOCUS_SUBSCRIPTION = "windowMenu.focusSubscription";
     private static final WindowMenuManager INSTANCE = new WindowMenuManager();
 
     private final ConcurrentHashMap<Stage, MenuBar> managedMenus = new ConcurrentHashMap<>();
@@ -94,6 +97,16 @@ public class WindowMenuManager implements ListChangeListener<Window> {
     }
 
     private static void addWindowMenuItems(Stage windowStage, Menu windowMenu) {
+        // Release the previous build's title bindings and focus subscriptions before discarding
+        // the old items, so listeners do not accumulate on each stage's properties across rebuilds.
+        windowMenu.getItems().forEach(item -> {
+            if (item instanceof CheckMenuItem checkItem) {
+                checkItem.textProperty().unbind();
+            }
+            if (item.getProperties().get(FOCUS_SUBSCRIPTION) instanceof Subscription subscription) {
+                subscription.unsubscribe();
+            }
+        });
         windowMenu.getItems().clear();
 
         MenuItem minimize = new MenuItem("Minimize");
@@ -128,9 +141,14 @@ public class WindowMenuManager implements ListChangeListener<Window> {
                         Comparator.nullsFirst(Comparator.naturalOrder())))
                 .forEach(entry -> {
                     Stage s = entry.getKey();
-                    CheckMenuItem item = new CheckMenuItem(s.getTitle());
-                    s.focusedProperty().addListener((obs, old, focused) -> item.setSelected(focused));
-                    item.setSelected(s.isFocused());
+                    CheckMenuItem item = new CheckMenuItem();
+                    // Bind the label to the live stage title so the entry is correct even if the
+                    // title is set after the stage is registered, and tracks later title changes.
+                    item.textProperty().bind(s.titleProperty());
+                    // subscribe(...) sets the initial checked state and tracks focus; the returned
+                    // Subscription is released on the next rebuild (see the top of this method).
+                    item.getProperties().put(FOCUS_SUBSCRIPTION,
+                            s.focusedProperty().subscribe(item::setSelected));
                     item.setOnAction(e -> s.toFront());
                     windowMenu.getItems().add(item);
                 });

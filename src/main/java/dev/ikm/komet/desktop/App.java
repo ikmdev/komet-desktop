@@ -69,8 +69,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.prefs.BackingStoreException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static dev.ikm.komet.desktop.AppState.LOADING_DATA_SOURCE;
 import static dev.ikm.komet.desktop.AppState.LOGIN;
@@ -239,6 +237,7 @@ public class App extends Application {
                 : mavenVersion;
 
         LOG.info("Komet version: {}", version);
+        LOG.info("Komet PID: {}", ProcessHandle.current().pid());
         LOG.info("Build time: {}", buildInfo.getBuildTime());
         LOG.info("Runtime: java={}, javafx={}, os={}, arch={}, platform={}",
                 System.getProperty("java.version"),
@@ -246,8 +245,6 @@ public class App extends Application {
                 System.getProperty("os.name"),
                 System.getProperty("os.arch"),
                 IS_BROWSER ? "browser" : (IS_DESKTOP ? "desktop" : "unknown"));
-
-        logModuleJars();
     }
 
     /**
@@ -265,7 +262,7 @@ public class App extends Application {
      *   <li>{@code $JAVA_HOME/<name>} and two parent levels above</li>
      * </ol>
      *
-     * @param name the directory name to find (e.g. {@code module-jars}, {@code plugins})
+     * @param name the directory name to find (e.g. {@code plugins})
      * @return the first matching directory that exists, or {@code null} if none found
      */
     private static Path resolveRuntimeDirectory(String name) {
@@ -287,28 +284,6 @@ public class App extends Application {
             }
         }
         return null;
-    }
-
-    private static void logModuleJars() {
-        Path dir = resolveRuntimeDirectory("module-jars");
-        if (dir == null) {
-            LOG.info("module-jars directory not found in working directory or parent");
-            return;
-        }
-        LOG.info("module-jars directory: {}", dir.toAbsolutePath());
-        try (Stream<Path> stream = Files.list(dir)) {
-            List<String> jarNames = stream
-                    .map(path -> path.getFileName().toString())
-                    .sorted()
-                    .collect(Collectors.toList());
-            if (jarNames.isEmpty()) {
-                LOG.info("module-jars is empty");
-            } else {
-                LOG.info("module-jars contents ({}): {}", jarNames.size(), String.join(", ", jarNames));
-            }
-        } catch (IOException e) {
-            LOG.warn("Failed to list module-jars contents from {}", dir.toAbsolutePath(), e);
-        }
     }
 
     /**

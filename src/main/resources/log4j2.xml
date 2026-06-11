@@ -45,6 +45,25 @@
                 <OnStartupTriggeringPolicy minSize="0"/>
             </Policies>
         </RollingFile>
+
+        <!-- Dedicated rule-engine RollingFileAppender: Evrete (JUL, bridged via
+             log4j-jul) + IKE rule classes. See IKE-Network/ike-issues#627. -->
+        <RollingFile name="rulesFile"
+                     filePattern="${LOG_BASE_PATH}/%d{ISO8601_BASIC}-rules.log"
+                     ignoreExceptions="false">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <DirectWriteRolloverStrategy>
+                <Delete basePath="${LOG_BASE_PATH}" maxDepth="1">
+                    <IfFileName glob="*-rules.log">
+                        <IfLastModified age="${LOG_RETENTION_DAYS}"/>
+                    </IfFileName>
+                </Delete>
+            </DirectWriteRolloverStrategy>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="${FILE_SIZE_LIMIT}"/>
+                <OnStartupTriggeringPolicy minSize="0"/>
+            </Policies>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
@@ -73,6 +92,20 @@
         <Logger name="dev.ikm.tinkar.provider.changeset.ChangeSetWriterProvider" level="WARN" additivity="false">
             <AppenderRef ref="console"/>
             <AppenderRef ref="rollingFile"/>
+        </Logger>
+
+        <!-- Rule engine → dedicated -rules.log. org.evrete is the Evrete engine
+             (JUL, bridged via log4j-jul); dev.ikm.komet.rules is the IKE rule code
+             (slf4j). additivity="false" keeps them out of the main rolling log.
+             See IKE-Network/ike-issues#627. -->
+        <Logger name="org.evrete" level="INFO" additivity="false">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="rulesFile"/>
+        </Logger>
+
+        <Logger name="dev.ikm.komet.rules" level="INFO" additivity="false">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="rulesFile"/>
         </Logger>
     </Loggers>
 </Configuration>
