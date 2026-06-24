@@ -262,8 +262,12 @@ public class AppPages {
         final UUID journalTopic = journalWindowSettings.getValue(JOURNAL_TOPIC);
         Objects.requireNonNull(journalTopic, "journalTopic cannot be null");
 
-        ObservableEditCoordinate editCoordinate = windowSettings.getView().editCoordinate();
-        editCoordinate.authorForChangesProperty().setValue(loggedInUser);
+        // Set the author on the journal's actual working view (PARENT_VIEW_COORDINATES) — the instance the
+        // journal and its inner editing windows are built from (handed to the view model below) — not on a
+        // throwaway WindowSettings view that nothing reads. With the edit-coordinate listener registered
+        // (IKE-Network/ike-issues#751) the landing author-set already rides the mirror to this instance; this
+        // asserts it directly at journal launch as well.
+        parentViewCoordinates.editCoordinate().authorForChangesProperty().setValue(loggedInUser);
 
         Config journalConfig = new Config(KViewResources.journalFxml())
                 .updateViewModel("journalViewModel", journalViewModel -> {

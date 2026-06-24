@@ -50,6 +50,7 @@ import dev.ikm.tinkar.common.validation.ValidationRecord;
 import java.io.File;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class SelectDataSourceController {
@@ -108,6 +109,37 @@ public class SelectDataSourceController {
         fileListView.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
                 okButtonPressed(null);
+            }
+        });
+
+        // Grey out datastores already open in another process. The probe is
+        // advisory and can go stale (TOCTOU); okButtonPressed re-checks the
+        // selection, and the open-time DataStoreAlreadyOpenException path is the
+        // final backstop. See ike-issues#723 / #722.
+        fileListView.setCellFactory(listView -> new ListCell<>() {
+            @Override
+            protected void updateItem(DataUriOption item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setTooltip(null);
+                    setDisable(false);
+                    return;
+                }
+                DataServiceController<?> controller = dataSourceChoiceBox.getValue();
+                Optional<String> conflict = (controller == null)
+                        ? Optional.empty()
+                        : controller.openConflict(item);
+                if (conflict.isPresent()) {
+                    setText(item.name() + "  —  " + conflict.get());
+                    setTooltip(new Tooltip(conflict.get()
+                            + ".\nClose the other Komet process, or open a different datastore."));
+                    setDisable(true);
+                } else {
+                    setText(item.name());
+                    setTooltip(null);
+                    setDisable(false);
+                }
             }
         });
 
@@ -181,6 +213,23 @@ public class SelectDataSourceController {
 
     @FXML
     void okButtonPressed(ActionEvent event) {
+        // Early warning: don't launch into a store that is already open elsewhere.
+        // Re-probe the current selection (the greyed-out list state can be stale).
+        DataServiceController<?> selectedController = dataSourceChoiceBox.getValue();
+        DataUriOption selectedOption = fileListView.getSelectionModel().getSelectedItem();
+        if (selectedController != null && selectedOption != null) {
+            Optional<String> conflict = selectedController.openConflict(selectedOption);
+            if (conflict.isPresent()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Datastore in use");
+                alert.setHeaderText("This datastore is open in another process");
+                alert.setContentText(selectedOption.name() + " — " + conflict.get()
+                        + ".\n\nEither close the other process, or open a different datastore.");
+                alert.showAndWait();
+                return;
+            }
+        }
+
         saveDataServiceProperties(dataSourceChoiceBox.getValue());
         dataSourceChoiceBox.getValue().setDataUriOption(fileListView.getSelectionModel().getSelectedItem());
         
