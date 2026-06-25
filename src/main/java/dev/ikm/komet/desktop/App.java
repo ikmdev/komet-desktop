@@ -444,7 +444,6 @@ public class App extends Application {
             stage.setOnCloseRequest(windowEvent -> state.set(SHUTDOWN));
 
             // Show stage and set initial state
-            LOG.info("Style classes: \n" + scene.getRoot().getStyleClass().toString());
             stage.show();
         } catch (Exception ex) {
             LOG.error("Failed to initialize the application", ex);
