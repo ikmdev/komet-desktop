@@ -62,6 +62,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -217,15 +220,81 @@ public class App extends Application {
         }
     }, "Komet-Shutdown-Hook"));
 }
+    /**
+     * Initializes log4j2 from {@code conf/log4j2.xml} next to the runtime image.
+     *
+     * <p>Resolution order, first hit wins:
+     * <ol>
+     *   <li>the launcher-supplied {@code -Dlog4j.configurationFile} — jreleaser sets
+     *       this to {@code $APP_HOME/conf/log4j2.xml} (with {@code $APP_HOME} already
+     *       expanded) for both the jlink image and the jpackage {@code .app}, so it is
+     *       the authoritative path in a packaged install;</li>
+     *   <li>{@code conf/log4j2.xml} located with {@link #resolveRuntimeDirectory(String)},
+     *       the same probing used for {@code plugins/} ({@code ./conf}, {@code ../conf},
+     *       {@code $JAVA_HOME}-relative siblings) — covers a bare jlink image;</li>
+     *   <li>the {@code log4j2.xml} bundled on the classpath — covers IDE and dev runs.</li>
+     * </ol>
+     *
+     * <p>The earlier implementation resolved a CWD-relative {@code ../conf/log4j2.xml}.
+     * A Finder-launched {@code .app} runs with {@code CWD=/}, so that path became
+     * {@code /conf/log4j2.xml} (missing), and initializing log4j2 from a non-existent
+     * file silently installs its console-only default — dropping the RollingFile
+     * appenders that write {@code ~/Solor/komet/logs}. That is the regression reported
+     * in ikmdev/komet-desktop#74. If nothing is found here, log4j2 is left to its own
+     * auto-configuration rather than being forced to that default.
+     */
     public static void initLog4J2FromConf() {
-        // Resolve <bin directory>/../conf/xml (or your app’s working dir/../conf)
-        Path cfg = Path.of("..", "conf", "log4j2.xml").toAbsolutePath();
+        URI configUri = null;
+        String source = null;
 
-        // Initialize BEFORE any logger is used
-        LoggerContext context = Configurator.initialize("app-log4j2", null, cfg.toUri());
-        context.getLogger("console").info("Log4j2 configuration loaded from: {}", cfg);
-        context.getLogger("rollingFile").info("Log4j2 configuration loaded from: {}", cfg);
-        System.out.println(context.getConfiguration());
+        // 1. Honor the launcher-provided -Dlog4j.configurationFile (authoritative for
+        //    both the jlink image and the jpackage .app; $APP_HOME is already expanded).
+        String configFileProperty = System.getProperty("log4j.configurationFile");
+        if (configFileProperty != null && !configFileProperty.isBlank()) {
+            Path cfg = Path.of(configFileProperty).toAbsolutePath();
+            if (Files.isRegularFile(cfg)) {
+                configUri = cfg.toUri();
+                source = cfg.toString();
+            }
+        }
+
+        // 2. Otherwise locate conf/log4j2.xml the way plugins/ is located.
+        if (configUri == null) {
+            Path confDir = resolveRuntimeDirectory("conf");
+            if (confDir != null) {
+                Path cfg = confDir.resolve("log4j2.xml").toAbsolutePath();
+                if (Files.isRegularFile(cfg)) {
+                    configUri = cfg.toUri();
+                    source = cfg.toString();
+                }
+            }
+        }
+
+        // 3. Fall back to the log4j2.xml bundled on the classpath (IDE / dev runs).
+        if (configUri == null) {
+            URL bundled = App.class.getClassLoader().getResource("log4j2.xml");
+            if (bundled != null) {
+                try {
+                    configUri = bundled.toURI();
+                    source = "classpath:log4j2.xml";
+                } catch (URISyntaxException e) {
+                    System.err.println("Could not resolve bundled log4j2.xml URI: " + e.getMessage());
+                }
+            }
+        }
+
+        if (configUri == null) {
+            // Nothing found anywhere — leave log4j2 to auto-configure rather than
+            // forcing the console-only default.
+            System.err.println("No log4j2.xml found via -Dlog4j.configurationFile, conf/, "
+                    + "or the classpath; leaving log4j2 to auto-configure");
+            return;
+        }
+
+        // Initialize BEFORE any logger is used.
+        LoggerContext context = Configurator.initialize("app-log4j2", null, configUri);
+        context.getLogger("console").info("Log4j2 configuration loaded from {}", source);
+        context.getLogger("rollingFile").info("Log4j2 configuration loaded from {}", source);
     }
 
     private static void logStartupInfo() {
