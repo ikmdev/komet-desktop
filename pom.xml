@@ -27,11 +27,11 @@
              maven-dependency-plugin fetch-*-application-extensions copy executions
              (NOT a compile dependency — it loads via the plugin layer, exactly like
              rocks-kb-engine). -->
-        <komet-claude-plugin.version>1-SNAPSHOT</komet-claude-plugin.version>
+        <komet-claude-plugin.version>1-issue-22-SNAPSHOT</komet-claude-plugin.version>
         <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
              dependency. All its runtime deps are in the boot image or already staged (composer). -->
-        <complex-clause-plugin.version>1-SNAPSHOT</complex-clause-plugin.version>
+        <complex-clause-plugin.version>1-issue-22-SNAPSHOT</complex-clause-plugin.version>
         <!-- rocks-kb-engine (ike-issues#583): staged into the runtime plugins/ layer like the two
              plugins above. Its version is duplicated here from komet-bom's rocks-kb.version so it
              can be declared as a maven-dependency-plugin dependency (the reactor-ordering edge);
