@@ -32,6 +32,12 @@
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
              dependency. All its runtime deps are in the boot image or already staged (composer). -->
         <complex-clause-plugin.version>1-SNAPSHOT</complex-clause-plugin.version>
+        <!-- rocks-kb-engine (ike-issues#583): staged into the runtime plugins/ layer like the two
+             plugins above. Its version is duplicated here from komet-bom's rocks-kb.version so it
+             can be declared as a maven-dependency-plugin dependency (the reactor-ordering edge);
+             dependencyManagement/BOM does not govern plugin-dependency versions. Keep in sync with
+             komet-bom rocks-kb.version. -->
+        <rocks-kb-engine.version>0.1.0-SNAPSHOT</rocks-kb-engine.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
@@ -504,8 +510,10 @@
                          so a parallel `-T1C` build doesn't race the artifactItem copy. The
                          plugin stays out of module-jars/ (boot layer) — staging is still the
                          artifactItem copy into plugins/. Version shared with the artifactItem.
-                         (rocks-kb-engine wants the same edge, but its version is BOM-managed
-                         with no local property here — see ike-issues#583.) -->
+                         rocks-kb-engine now carries the same edge as well (ike-issues#583), via a
+                         local rocks-kb-engine.version property mirrored from komet-bom's
+                         rocks-kb.version (dependencyManagement does not govern plugin-dependency
+                         versions). -->
                     <dependencies>
                         <dependency>
                             <groupId>network.ike.komet</groupId>
@@ -516,6 +524,11 @@
                             <groupId>network.ike.komet</groupId>
                             <artifactId>complex-clause-plugin</artifactId>
                             <version>${complex-clause-plugin.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>dev.ikm.ike</groupId>
+                            <artifactId>rocks-kb-engine</artifactId>
+                            <version>${rocks-kb-engine.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
