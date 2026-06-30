@@ -37,9 +37,13 @@ import org.controlsfx.validation.ValidationMessage;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import dev.ikm.komet.framework.KometNode;
 import dev.ikm.komet.framework.propsheet.KometPropertyEditorFactory;
 import dev.ikm.komet.framework.propsheet.SheetItem;
+import dev.ikm.komet.preferences.KometPreferences;
+import dev.ikm.komet.preferences.Preferences;
 import dev.ikm.komet.progress.ProgressNodeFactory;
 import dev.ikm.tinkar.common.service.DataServiceController;
 import dev.ikm.tinkar.common.service.DataServiceProperty;
@@ -54,6 +58,28 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class SelectDataSourceController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SelectDataSourceController.class);
+
+    /**
+     * User-preferences node that remembers the last data-source selection so the picker
+     * can pre-select it on the next launch. This lives in the machine-global <em>user</em>
+     * preferences ({@link Preferences#get()} → {@code getUserPreferences()}), not the
+     * datastore-scoped configuration preferences used for the last author, because the
+     * provider and knowledge base are chosen <em>before</em> any datastore is open.
+     * See IKE-Network/ike-issues#786.
+     */
+    private static final String DATA_SOURCE_SELECTION_NODE = "datasource-selection";
+
+    /** Key holding the {@code controllerName()} of the provider selected last time. */
+    private static final String LAST_PROVIDER_KEY = "last-provider";
+
+    /**
+     * Prefix for the per-provider last-knowledge-base keys. The full key is
+     * {@code "kb." + controllerName()}, so each provider remembers its own last
+     * knowledge base independently.
+     */
+    private static final String LAST_KB_KEY_PREFIX = "kb.";
 
     private File rootFolder = new File(System.getProperty("user.home"), "Solor");
 
@@ -145,10 +171,19 @@ public class SelectDataSourceController {
 
         propertySheet.setPropertyEditorFactory(new KometPropertyEditorFactory(null));
 
-        // Set default data service
+        // Pre-select the provider used last time (machine-global user preference). Fall
+        // back to the first "Open Spined..." controller, then to the first controller.
+        // Selecting fires dataSourceChanged(), which restores that provider's last
+        // knowledge base. See IKE-Network/ike-issues#786.
+        Optional<String> lastProvider = readLastProvider();
         dataSourceChoiceBox.getItems().stream()
-                .filter(dataServiceController -> dataServiceController.controllerName().startsWith("Open Spined"))
+                .filter(dataServiceController -> lastProvider
+                        .map(name -> name.equals(dataServiceController.controllerName()))
+                        .orElse(false))
                 .findFirst()
+                .or(() -> dataSourceChoiceBox.getItems().stream()
+                        .filter(dataServiceController -> dataServiceController.controllerName().startsWith("Open Spined"))
+                        .findFirst())
                 .ifPresentOrElse(dataSourceChoiceBox.getSelectionModel()::select,
                         dataSourceChoiceBox.getSelectionModel()::selectFirst);
     }
@@ -162,8 +197,7 @@ public class SelectDataSourceController {
         fileListView.getItems().clear();
         fileListView.getItems().addAll(dataSourceChoiceBox.getValue().providerOptions());
         fileListView.getItems().sort(NaturalOrder.getObjectComparator());
-        fileListView.getSelectionModel().selectFirst();
-        fileListView.getSelectionModel().selectFirst();
+        selectRememberedOrFirstKnowledgeBase(dataSourceChoiceBox.getValue());
         fileListView.requestFocus();
 
         propertySheet.getItems().clear();
@@ -230,6 +264,9 @@ public class SelectDataSourceController {
             }
         }
 
+        // Remember this provider + knowledge base so the next launch pre-selects it.
+        persistSelection(selectedController, selectedOption);
+
         saveDataServiceProperties(dataSourceChoiceBox.getValue());
         dataSourceChoiceBox.getValue().setDataUriOption(fileListView.getSelectionModel().getSelectedItem());
         
@@ -256,6 +293,104 @@ public class SelectDataSourceController {
         dataServicePropertyStringMap.forEach((dataServiceProperty, simpleStringProperty) -> {
             dataServiceController.setDataServiceProperty(dataServiceProperty, simpleStringProperty.getValue());
         });
+    }
+
+    /**
+     * Selects, in {@link #fileListView}, the knowledge base this provider opened last time,
+     * falling back to the first item when there is no remembered selection or the remembered
+     * knowledge base is no longer present (e.g. the directory was moved or deleted).
+     *
+     * @param controller the currently selected data-source provider; may be {@code null}
+     */
+    private void selectRememberedOrFirstKnowledgeBase(DataServiceController<?> controller) {
+        Optional<String> lastKnowledgeBaseUri = readLastKnowledgeBaseUri(controller);
+        if (lastKnowledgeBaseUri.isPresent()) {
+            for (DataUriOption option : fileListView.getItems()) {
+                if (lastKnowledgeBaseUri.get().equals(option.uri().toString())) {
+                    fileListView.getSelectionModel().select(option);
+                    fileListView.scrollTo(option);
+                    return;
+                }
+            }
+        }
+        fileListView.getSelectionModel().selectFirst();
+    }
+
+    /**
+     * Persists the confirmed selection — the provider and its knowledge base — to the
+     * machine-global user preferences so the next launch can pre-select them. A preferences
+     * failure is logged but never blocks opening the datastore.
+     *
+     * @param controller the confirmed data-source provider; a {@code null} controller is ignored
+     * @param option     the confirmed knowledge base; if {@code null}, only the provider is stored
+     */
+    private static void persistSelection(DataServiceController<?> controller, DataUriOption option) {
+        if (controller == null) {
+            return;
+        }
+        try {
+            KometPreferences preferences = dataSourceSelectionPreferences();
+            preferences.put(LAST_PROVIDER_KEY, controller.controllerName());
+            if (option != null) {
+                preferences.put(lastKnowledgeBaseKey(controller), option.uri().toString());
+            }
+            preferences.flush();
+        } catch (Exception ex) {
+            LOG.warn("Could not persist last-selected data-source preference", ex);
+        }
+    }
+
+    /**
+     * Reads the {@code controllerName()} of the provider selected on the previous launch.
+     *
+     * @return the remembered provider name, or empty if none is stored or it cannot be read
+     */
+    private static Optional<String> readLastProvider() {
+        try {
+            return dataSourceSelectionPreferences().get(LAST_PROVIDER_KEY);
+        } catch (Exception ex) {
+            LOG.warn("Could not read last-selected data-source provider preference", ex);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Reads the URI of the knowledge base the given provider opened on the previous launch.
+     *
+     * @param controller the provider whose last knowledge base is requested; may be {@code null}
+     * @return the remembered knowledge-base URI string, or empty if none is stored or it
+     *         cannot be read
+     */
+    private static Optional<String> readLastKnowledgeBaseUri(DataServiceController<?> controller) {
+        if (controller == null) {
+            return Optional.empty();
+        }
+        try {
+            return dataSourceSelectionPreferences().get(lastKnowledgeBaseKey(controller));
+        } catch (Exception ex) {
+            LOG.warn("Could not read last-selected knowledge base preference for provider {}",
+                    controller.controllerName(), ex);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Returns the user-preferences node that holds the last data-source selection.
+     *
+     * @return the {@value #DATA_SOURCE_SELECTION_NODE} node under the user preferences root
+     */
+    private static KometPreferences dataSourceSelectionPreferences() {
+        return Preferences.get().getUserPreferences().node(DATA_SOURCE_SELECTION_NODE);
+    }
+
+    /**
+     * Builds the per-provider preference key for that provider's last knowledge base.
+     *
+     * @param controller the provider; must not be {@code null}
+     * @return the preference key, {@code "kb." + controllerName()}
+     */
+    private static String lastKnowledgeBaseKey(DataServiceController<?> controller) {
+        return LAST_KB_KEY_PREFIX + controller.controllerName();
     }
 
     /**
