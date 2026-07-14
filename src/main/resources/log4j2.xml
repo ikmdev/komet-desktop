@@ -94,6 +94,13 @@
             <AppenderRef ref="rollingFile"/>
         </Logger>
 
+        <!-- RocksProvider logs one INFO line per nidForUuids lookup, which floods
+             the log during bulk operations (e.g. journal window restoration). -->
+        <Logger name="dev.ikm.ds.rocks.RocksProvider" level="WARN" additivity="false">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="rollingFile"/>
+        </Logger>
+
         <!-- Rule engine → dedicated -rules.log. org.evrete is the Evrete engine
              (JUL, bridged via log4j-jul); dev.ikm.komet.rules is the IKE rule code
              (slf4j). additivity="false" keeps them out of the main rolling log.
