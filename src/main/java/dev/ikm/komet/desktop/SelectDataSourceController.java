@@ -39,6 +39,8 @@ import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import dev.ikm.komet.desktop.datasource.maven.MavenDataSourceDialogController;
+import dev.ikm.komet.desktop.datasource.maven.ProviderArtifactQualifier;
 import dev.ikm.komet.framework.KometNode;
 import dev.ikm.komet.framework.propsheet.KometPropertyEditorFactory;
 import dev.ikm.komet.framework.propsheet.SheetItem;
@@ -50,8 +52,12 @@ import dev.ikm.tinkar.common.service.DataServiceProperty;
 import dev.ikm.tinkar.common.service.DataUriOption;
 import dev.ikm.tinkar.common.util.text.NaturalOrder;
 import dev.ikm.tinkar.common.validation.ValidationRecord;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.stage.Stage;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Optional;
@@ -113,11 +119,20 @@ public class SelectDataSourceController {
     @FXML // fx:id="fileListView"
     private ListView<DataUriOption> fileListView; // Value injected by FXMLLoader
 
+    @FXML // fx:id="addFromMavenButton"
+    private Button addFromMavenButton; // Value injected by FXMLLoader
+
     // This method is called by the FXMLLoader when initialization is complete
     @FXML
     void initialize() {
         assert dataSourceChoiceBox != null : "fx:id=\"dataSourceChoiceBox\" was not injected: check your FXML file 'SelectDataSource.fxml'.";
         assert cancelButton != null : "fx:id=\"cancelButton\" was not injected: check your FXML file 'SelectDataSource.fxml'.";
+
+        ImageView mavenIcon = new ImageView(new Image(getClass().getResourceAsStream("oakleaf.png")));
+        mavenIcon.setFitHeight(16);
+        mavenIcon.setPreserveRatio(true);
+        mavenIcon.setSmooth(true);
+        addFromMavenButton.setGraphic(mavenIcon);
 
         ServiceLifecycleManager lifecycleManager = ServiceLifecycleManager.get();
     
@@ -199,6 +214,11 @@ public class SelectDataSourceController {
         fileListView.getItems().sort(NaturalOrder.getObjectComparator());
         selectRememberedOrFirstKnowledgeBase(dataSourceChoiceBox.getValue());
         fileListView.requestFocus();
+
+        Optional<ProviderArtifactQualifier.Flow> mavenFlow =
+                ProviderArtifactQualifier.flowFor(dataSourceChoiceBox.getValue().controllerName());
+        addFromMavenButton.setVisible(mavenFlow.isPresent());
+        addFromMavenButton.setManaged(mavenFlow.isPresent());
 
         propertySheet.getItems().clear();
         validationSupport = new ValidationSupport();
@@ -287,6 +307,48 @@ public class SelectDataSourceController {
         progressTabPane.getTabs().add(progressTab);
 
         App.state.set(AppState.SELECTED_DATA_SOURCE);
+    }
+
+    /**
+     * Opens the "Add from Maven" dialog for the currently selected provider and, on a
+     * successful download, adds the resulting {@link DataUriOption} to {@link #fileListView}
+     * and selects it — from that point it's an ordinary local entry, indistinguishable from
+     * one the user placed under {@code ~/Solor} by hand.
+     *
+     * <p>Re-downloading the exact same resolved build (same artifact, same version — for a
+     * {@code -SNAPSHOT}, the same concrete timestamped build, not just the same {@code -SNAPSHOT}
+     * line) materializes to the exact same {@code ~/Solor} path and so returns a
+     * {@link DataUriOption} equal to one already in {@link #fileListView} ({@code equals()} is
+     * structural — same name and URI). That must select the existing row, not add a second,
+     * visually-identical one.
+     *
+     * @param event the triggering action event; unused
+     */
+    @FXML
+    void addFromMavenButtonPressed(ActionEvent event) {
+        DataServiceController<?> selectedController = dataSourceChoiceBox.getValue();
+        if (selectedController == null) {
+            return;
+        }
+        Optional<ProviderArtifactQualifier.Flow> flow =
+                ProviderArtifactQualifier.flowFor(selectedController.controllerName());
+        if (flow.isEmpty()) {
+            return;
+        }
+        try {
+            Stage owner = (Stage) addFromMavenButton.getScene().getWindow();
+            Optional<DataUriOption> result = MavenDataSourceDialogController.show(owner, flow.get());
+            result.ifPresent(option -> {
+                if (!fileListView.getItems().contains(option)) {
+                    fileListView.getItems().add(option);
+                    fileListView.getItems().sort(NaturalOrder.getObjectComparator());
+                }
+                fileListView.getSelectionModel().select(option);
+                fileListView.scrollTo(option);
+            });
+        } catch (IOException e) {
+            LOG.error("Failed to open the Add from Maven dialog", e);
+        }
     }
 
     private void saveDataServiceProperties(DataServiceController<?> dataServiceController) {

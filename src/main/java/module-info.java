@@ -30,6 +30,8 @@ module dev.ikm.komet.desktop {
     exports dev.ikm.komet.desktop.util;
     opens dev.ikm.komet.desktop to javafx.fxml;
     opens dev.ikm.komet.desktop.aboutdialog to javafx.fxml;
+    opens dev.ikm.komet.desktop.datasource.maven to javafx.fxml;
+    requires java.net.http;
     requires java.xml;
 
     // TODO Not happy that I have to specify these here... Can't dynamically add modules?
@@ -71,6 +73,7 @@ module dev.ikm.komet.desktop {
     requires dev.ikm.komet.classification;
     requires dev.ikm.komet.details;
     requires dev.ikm.komet.builder;
+    requires dev.ikm.komet.framework;
     requires dev.ikm.komet.kview;
     requires dev.ikm.komet.kleditorapp;
     requires dev.ikm.komet.artifact;
@@ -78,6 +81,7 @@ module dev.ikm.komet.desktop {
     requires dev.ikm.komet.list;
     requires dev.ikm.komet.navigator;
     requires dev.ikm.komet.preferences;
+    requires dev.ikm.komet.pluginresolver;
     requires dev.ikm.komet.progress;
     requires dev.ikm.komet.search;
     requires dev.ikm.tinkar.provider.search;

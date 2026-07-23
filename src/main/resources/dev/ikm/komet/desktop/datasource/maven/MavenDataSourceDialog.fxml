@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns:fx="http://javafx.com/fxml/1" fx:id="rootVBox" prefWidth="480.0" spacing="10.0"
+      xmlns="http://javafx.com/javafx/23" fx:controller="dev.ikm.komet.desktop.datasource.maven.MavenDataSourceDialogController">
+    <padding>
+        <Insets bottom="12.0" left="12.0" right="12.0" top="12.0"/>
+    </padding>
+    <children>
+        <GridPane hgap="8.0" vgap="8.0">
+            <columnConstraints>
+                <ColumnConstraints hgrow="NEVER" minWidth="80.0"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+            <children>
+                <Label text="Repository:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="repositoryUrlComboBox" editable="true" maxWidth="Infinity"
+                          GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                <Label text="Username:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <TextField fx:id="usernameField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                <Label text="Password:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                <PasswordField fx:id="passwordField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+            </children>
+        </GridPane>
+        <Button fx:id="testConnectionButton" mnemonicParsing="false" onAction="#testConnectionButtonPressed"
+                text="Test Connection" style="-fx-text-fill: black;"/>
+        <CheckBox fx:id="rememberCredentialsCheckBox" mnemonicParsing="false" selected="true" text="Remember credentials for this repository"/>
+        <Separator/>
+        <Label text="Search Nexus (optional):"/>
+        <HBox alignment="CENTER_LEFT" spacing="8.0">
+            <children>
+                <TextField fx:id="nexusSearchField" promptText="free text, or groupId:artifactPattern (e.g. network.ike:ike-starter*)" HBox.hgrow="ALWAYS"/>
+                <Button fx:id="nexusSearchButton" mnemonicParsing="false" onAction="#nexusSearchButtonPressed" text="Search"/>
+            </children>
+        </HBox>
+        <ListView fx:id="nexusSearchResultsView" prefHeight="100.0"/>
+        <GridPane hgap="8.0" vgap="8.0">
+            <columnConstraints>
+                <ColumnConstraints hgrow="NEVER" minWidth="80.0"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+            <children>
+                <Label text="Group Id:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <TextField fx:id="groupIdField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                <Label text="Artifact Id:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <TextField fx:id="artifactIdField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+            </children>
+        </GridPane>
+        <HBox alignment="CENTER_LEFT" spacing="8.0">
+            <children>
+                <Label text="Version:"/>
+                <ComboBox fx:id="versionComboBox" editable="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                          promptText="pick from the list, or type a known version"/>
+            </children>
+        </HBox>
+        <HBox alignment="CENTER_LEFT" spacing="8.0">
+            <children>
+                <Label text="Size:"/>
+                <Label fx:id="sizeLabel"/>
+            </children>
+        </HBox>
+        <Label fx:id="existingArtifactLabel" wrapText="true" managed="false" visible="false"/>
+        <Label fx:id="freshnessLabel" wrapText="true" managed="false" visible="false"/>
+        <Label fx:id="statusLabel" wrapText="true"/>
+        <HBox alignment="CENTER_LEFT" spacing="8.0">
+            <children>
+                <ProgressBar fx:id="downloadProgressBar" prefWidth="240.0" progress="0.0"/>
+                <Label fx:id="etaLabel"/>
+                <Button fx:id="cancelDownloadButton" mnemonicParsing="false" onAction="#cancelDownloadButtonPressed" text="Cancel"/>
+            </children>
+        </HBox>
+        <HBox alignment="CENTER_RIGHT" spacing="8.0">
+            <children>
+                <Button fx:id="closeButton" mnemonicParsing="false" onAction="#closeButtonPressed" text="Close"/>
+                <Button fx:id="downloadButton" defaultButton="true" mnemonicParsing="false" onAction="#downloadButtonPressed" text="Download"/>
+            </children>
+        </HBox>
+    </children>
+</VBox>

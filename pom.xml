@@ -395,6 +395,10 @@
         </dependency>
         <dependency>
             <groupId>dev.ikm.komet</groupId>
+            <artifactId>artifact-resolution</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.ikm.komet</groupId>
             <artifactId>framework</artifactId>
         </dependency>
         <dependency>
