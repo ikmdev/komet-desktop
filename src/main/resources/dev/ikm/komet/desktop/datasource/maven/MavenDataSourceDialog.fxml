@@ -57,6 +57,13 @@
         </HBox>
         <HBox alignment="CENTER_LEFT" spacing="8.0">
             <children>
+                <Label text="Classifiers:"/>
+                <TextField fx:id="classifierField" maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                           promptText="preference order; * allowed — e.g. reasoned-pb, pb, reasoned-*"/>
+            </children>
+        </HBox>
+        <HBox alignment="CENTER_LEFT" spacing="8.0">
+            <children>
                 <Label text="Size:"/>
                 <Label fx:id="sizeLabel"/>
             </children>

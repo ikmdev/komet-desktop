@@ -133,6 +133,8 @@ public final class MavenDataSourceDialogController {
     @FXML
     private ComboBox<String> versionComboBox;
     @FXML
+    private TextField classifierField;
+    @FXML
     private Label statusLabel;
     @FXML
     private Label sizeLabel;
@@ -267,6 +269,10 @@ public final class MavenDataSourceDialogController {
      */
     private void applyFlow(ProviderArtifactQualifier.Flow flow) {
         this.flow = flow;
+        // The classifier field always restates the new flow's own candidates: a value hand-entered
+        // for the previous flow describes artifacts this one doesn't use, and silently carrying it
+        // over would search for the wrong thing (ikmdev/komet-desktop#117).
+        classifierField.setText(ClassifierSelection.ofFlowDefaults(flow).displayText());
         Optional<DialogSelection> remembered = dialogSelectionStore.get(flow.name());
 
         String repositoryUrl = remembered.map(DialogSelection::repositoryUrl)
@@ -426,6 +432,30 @@ public final class MavenDataSourceDialogController {
      * @param repositoryUrl the repository URL
      * @return the repository id to key credential storage with
      */
+    /**
+     * The classifiers to look for: whatever the user has the classifier field set to, falling back
+     * to this flow's own candidates when they've cleared it (ikmdev/komet-desktop#117).
+     *
+     * @return the current selection, never empty
+     */
+    private ClassifierSelection classifierSelection() {
+        ClassifierSelection edited = ClassifierSelection.parse(classifierField.getText());
+        return edited.isEmpty() ? ClassifierSelection.ofFlowDefaults(flow) : edited;
+    }
+
+    /**
+     * The classifier names a repository <em>search</em> is scoped by. A search filters on exact
+     * names and cannot evaluate a glob, so a selection of nothing but wildcards leaves the browse
+     * step with no scope — this flow's candidates stand in, and the wildcards still apply where
+     * they can be evaluated: against the classifiers a specific version actually publishes.
+     *
+     * @return the classifier names to browse by
+     */
+    private List<String> browseClassifiers() {
+        List<String> literals = classifierSelection().literals();
+        return literals.isEmpty() ? ProviderArtifactQualifier.classifierCandidates(flow) : literals;
+    }
+
     private String repositoryId(String repositoryUrl) {
         return repositoryIdByUrl.getOrDefault(repositoryUrl, repositoryUrl);
     }
@@ -577,7 +607,7 @@ public final class MavenDataSourceDialogController {
         String repositoryUrl = repositoryUrlComboBox.getValue();
         boolean local = isLocal(repositoryUrl);
         Optional<Credentials> credentials = enteredCredentials();
-        List<String> classifierCandidates = ProviderArtifactQualifier.classifierCandidates(flow);
+        List<String> classifierCandidates = browseClassifiers();
 
         nexusSearchButton.setDisable(true);
         statusLabel.setText("Searching…");
@@ -681,7 +711,7 @@ public final class MavenDataSourceDialogController {
         statusLabel.setText(local ? "Listing local versions…" : "Listing versions…");
         versionComboBox.getItems().clear();
 
-        List<String> classifierCandidates = ProviderArtifactQualifier.classifierCandidates(flow);
+        List<String> classifierCandidates = browseClassifiers();
 
         if (local) {
             Task<List<String>> localTask = new Task<>() {
@@ -895,7 +925,12 @@ public final class MavenDataSourceDialogController {
         };
         task.setOnSucceeded(event -> {
             ClassifierLookup lookup = task.getValue();
-            Optional<String> best = ProviderArtifactQualifier.pickBestClassifier(flow, lookup.assets().classifiers().keySet());
+            // Wildcards resolve here and only here: against the classifiers this exact version
+            // actually publishes, so a pattern can never widen into a request for something the
+            // repository doesn't have (ikmdev/komet-desktop#117).
+            ClassifierSelection selection = classifierSelection();
+            List<String> matched = selection.resolve(lookup.assets().classifiers().keySet());
+            Optional<String> best = matched.stream().findFirst();
             if (best.isEmpty()) {
                 sizeLabel.setText("Not available");
                 // Names what was actually found, not just what wasn't — an empty classifier set
@@ -909,10 +944,16 @@ public final class MavenDataSourceDialogController {
                                 + " — nothing to offer for the " + flow + " flow."
                         : "No " + flow + "-compatible variant for " + coordinates.artifactId() + " " + version
                                 + ". Published: " + String.join(", ", published)
-                                + ". Looked for: " + String.join(", ", ProviderArtifactQualifier.classifierCandidates(flow)) + ".");
+                                + ". Looked for: " + selection.displayText() + ".");
                 return;
             }
             resolvedClassifier = best.get();
+            if (matched.size() > 1) {
+                // Several classifiers satisfy the selection — say which won and what else matched,
+                // rather than silently picking one and leaving the user to wonder what they got.
+                statusLabel.setText("Classifier " + resolvedClassifier + " selected; also matched: "
+                        + String.join(", ", matched.subList(1, matched.size())) + ".");
+            }
             NexusSearchClient.AssetInfo zipAsset = lookup.assets().classifiers().get(resolvedClassifier);
             // The download's filename must embed the asset's own resolved build (a timestamped
             // value for a snapshot), not the "1.0.0-SNAPSHOT" component version — fall back to the
@@ -921,7 +962,8 @@ public final class MavenDataSourceDialogController {
             resolvedZipSha256 = zipAsset.sha256();
             resolvedPom = lookup.assets().pom();
             if (local) {
-                reportLocalSize(coordinates, version, resolvedFileVersion, resolvedClassifier);
+                reportLocalSize(coordinates, MavenDataStoreDownloadTask.directoryVersion(version),
+                        resolvedFileVersion, resolvedClassifier);
             } else {
                 OptionalLong size = zipAsset.size();
                 sizeLabel.setText((size.isPresent() ? formatSize(size.getAsLong()) : "size unknown") + " (" + resolvedClassifier + ")");
@@ -1292,7 +1334,9 @@ public final class MavenDataSourceDialogController {
         if (selectedVersion == null || selectedVersion.isBlank() || resolvedClassifier == null || resolvedFileVersion == null) {
             return;
         }
-        String directoryVersion = selectedVersion.strip();
+        // A remote component search answers with the resolved snapshot build, which is the version
+        // embedded in the FILENAME — the directory is the base -SNAPSHOT (ikmdev/komet-desktop#116).
+        String directoryVersion = MavenDataStoreDownloadTask.directoryVersion(selectedVersion.strip());
         String classifier = resolvedClassifier;
         String fileVersion = resolvedFileVersion;
         String repositoryUrl = repositoryUrlComboBox.getValue();

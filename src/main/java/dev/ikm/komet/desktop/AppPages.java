@@ -318,6 +318,13 @@ public class AppPages {
         }
 
         journalStage.setOnHidden(windowEvent -> {
+            // This handler serves the genuine close-one-journal case. During app quit,
+            // App.quit() has already saved every journal window and then stopped the data
+            // services this save path needs (PrimitiveData AND Preferences) — no window-state
+            // save may run after data services stop (ike-issues#944).
+            if (App.shutdownInProgress) {
+                return;
+            }
             app.saveJournalWindowsToPreferences();
             journalController.shutdown();
             app.journalControllersList.remove(journalController);
