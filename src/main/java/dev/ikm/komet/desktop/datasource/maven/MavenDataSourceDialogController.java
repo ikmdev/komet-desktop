@@ -65,6 +65,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -969,7 +970,8 @@ public final class MavenDataSourceDialogController {
                 sizeLabel.setText((size.isPresent() ? formatSize(size.getAsLong()) : "size unknown") + " (" + resolvedClassifier + ")");
                 downloadButton.setDisable(false);
             }
-            refreshExistingArtifactStatus(resolveSolorDestination(coordinates.artifactId() + "-" + resolvedFileVersion));
+            refreshExistingArtifactStatus(resolveSolorDestination(
+                    classifiedArtifactName(coordinates, resolvedFileVersion, resolvedClassifier)));
         });
         task.setOnFailed(event -> {
             sizeLabel.setText("Size unknown");
@@ -1096,20 +1098,66 @@ public final class MavenDataSourceDialogController {
     /**
      * The {@code ~/Solor} path a given artifact name would materialize to for {@link #flow} —
      * a directory for {@link ProviderArtifactQualifier.Flow#SA}/{@link ProviderArtifactQualifier.Flow#ROCKS},
-     * a {@code -pb.zip}-suffixed file for {@link ProviderArtifactQualifier.Flow#PB}. Shared between
-     * {@link #probeSize} (to check whether it already exists) and {@link #downloadButtonPressed}
-     * (the actual materialization target), so both always agree on exactly the same path.
+     * a zip whose name always ends in {@code pb.zip} for {@link ProviderArtifactQualifier.Flow#PB}.
+     * Shared between {@link #probeSize} (to check whether it already exists) and
+     * {@link #downloadButtonPressed} (the actual materialization target), so both always agree on
+     * exactly the same path.
      *
-     * @param artifactName the artifact name (e.g. {@code artifactId + "-" + fileVersion}), without
-     *         any flow-specific suffix
+     * @param artifactName the artifact name ({@link #classifiedArtifactName}, or a user-chosen
+     *         Save-As replacement), without any flow-specific suffix
      * @return the prospective {@code ~/Solor} destination path
      */
     private Path resolveSolorDestination(String artifactName) {
         Path solorRoot = new File(System.getProperty("user.home"), "Solor").toPath();
+        return solorDestination(solorRoot, flow, artifactName);
+    }
+
+    /**
+     * {@link #resolveSolorDestination}'s naming rule, parameterized for tests. For
+     * {@link ProviderArtifactQualifier.Flow#PB} the returned file name always ends in
+     * {@code pb.zip}: that exact (case-insensitive) suffix is what every {@code New*Controller}'s
+     * {@code isValidDataLocation} accepts a changeset zip by ({@code SpinedArrayProvider},
+     * {@code ProviderEphemeral}, {@code MVStoreProvider}, and Rocks KB's {@code RocksProvider}
+     * all share the predicate). So a name that already ends in {@code pb} — the usual case now
+     * that artifact names embed the resolved classifier (ikmdev/komet-desktop#118), e.g.
+     * {@code ...-reasoned-pb} — gets just {@code .zip}, and any other name ({@code ...-changeset},
+     * a hand-typed Save-As name) gets {@code -pb.zip} appended. The {@code SA}/{@code ROCKS}
+     * open-controller predicates check a store directory's <em>contents</em>, never its name, so
+     * those destinations are the artifact name verbatim.
+     *
+     * @param solorRoot the {@code ~/Solor} root to resolve against
+     * @param flow the flow being materialized
+     * @param artifactName the artifact name, without any flow-specific suffix
+     * @return the destination path
+     */
+    static Path solorDestination(Path solorRoot, ProviderArtifactQualifier.Flow flow, String artifactName) {
         return switch (flow) {
             case SA, ROCKS -> solorRoot.resolve(artifactName);
-            case PB -> solorRoot.resolve(artifactName + "-pb.zip");
+            case PB -> solorRoot.resolve(artifactName.toLowerCase(Locale.ROOT).endsWith("pb")
+                    ? artifactName + ".zip"
+                    : artifactName + "-pb.zip");
         };
+    }
+
+    /**
+     * The classifier-qualified artifact name {@code ~/Solor} materializations are keyed by:
+     * {@code <artifactId>-<fileVersion>-<classifier>}, mirroring the Maven GAV-C file name the
+     * download itself is cached under ({@link MavenDataStoreDownloadTask#localRepositoryPath}).
+     * Embedding the classifier keeps differently-classified pulls of the same version — reachable
+     * since the classifier selection became editable (ikmdev/komet-desktop#117) — from colliding
+     * on one destination (ikmdev/komet-desktop#118). Embedding {@code fileVersion}, not the
+     * (possibly literal {@code -SNAPSHOT}) selected version, keeps distinct snapshot builds of
+     * the same {@code -SNAPSHOT} line distinct (ikmdev/komet-desktop#116) — for a snapshot it is
+     * the concrete, uniquely-timestamped build actually being downloaded
+     * (e.g. {@code example-plugin-1.0.0-20260714.135548-4}).
+     *
+     * @param coordinates the artifact coordinates
+     * @param fileVersion the concrete resolved file version
+     * @param classifier the resolved classifier
+     * @return the classifier-qualified artifact name
+     */
+    static String classifiedArtifactName(ArtifactCoordinates coordinates, String fileVersion, String classifier) {
+        return coordinates.artifactId() + "-" + fileVersion + "-" + classifier;
     }
 
     /**
@@ -1268,9 +1316,9 @@ public final class MavenDataSourceDialogController {
      * Prompts for a replacement artifact name, pre-filled with the first name
      * ({@link #firstAvailableArtifactName}) that doesn't already collide, and keeps re-prompting
      * (with a warning) until the user either enters a genuinely free name or cancels outright.
-     * The {@code -pb.zip}/plain-directory suffixing itself ({@link #resolveSolorDestination}) is
-     * never exposed for editing — only the base name is — so a renamed PB download still lands
-     * in the shape {@code NewController.isValidDataLocation} requires.
+     * The flow suffixing itself ({@link #solorDestination}) is never exposed for editing — only
+     * the base name is — so a renamed PB download still lands in the {@code pb.zip} shape the
+     * {@code New*Controller} {@code isValidDataLocation} predicates require.
      *
      * @param proposedArtifactName the artifact name that turned out to already exist
      * @return the chosen, confirmed-free artifact name, or empty if the user cancelled
@@ -1281,7 +1329,7 @@ public final class MavenDataSourceDialogController {
             TextInputDialog dialog = new TextInputDialog(suggestion);
             dialog.setTitle("Save As");
             dialog.setHeaderText(flow == ProviderArtifactQualifier.Flow.PB
-                    ? "Choose a different name — saved as ~/Solor/<name>-pb.zip"
+                    ? "Choose a different name — saved as ~/Solor/<name>-pb.zip (just <name>.zip if the name already ends in pb)"
                     : "Choose a different name — saved as ~/Solor/<name>");
             dialog.setContentText("Name:");
             dialog.initOwner(stage);
@@ -1344,11 +1392,7 @@ public final class MavenDataSourceDialogController {
         ArtifactCoordinates coordinates = currentCoordinates();
         Optional<Credentials> credentials = enteredCredentials();
 
-        // Embeds fileVersion, not the (possibly literal "-SNAPSHOT") selected version — for a
-        // snapshot this is the concrete, uniquely-timestamped build actually being downloaded
-        // (e.g. "example-plugin-1.0.0-20260714.135548-4"), so distinct test pulls of the same
-        // -SNAPSHOT line land as distinct ~/Solor entries instead of one overwriting the other.
-        String proposedArtifactName = coordinates.artifactId() + "-" + fileVersion;
+        String proposedArtifactName = classifiedArtifactName(coordinates, fileVersion, classifier);
         Optional<String> resolvedArtifactName = resolveDownloadArtifactName(proposedArtifactName);
         if (resolvedArtifactName.isEmpty()) {
             statusLabel.setText("Download cancelled — kept the existing copy at " + resolveSolorDestination(proposedArtifactName));
