@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -154,6 +155,34 @@ class MavenDataSourceDialogControllerTest {
                 MavenDataSourceDialogController.mostRecentVersion(List.of(
                         "1-20260727.032644-5",
                         "20991231")));
+    }
+
+    @Test
+    void rememberedRepositorySelectionIsRestoredVerbatim() {
+        assertEquals("https://nexus.example.com/repository/custom/",
+                MavenDataSourceDialogController.repositoryUrlToRestore(
+                        Optional.of("https://nexus.example.com/repository/custom/")));
+        assertEquals("Local repository (~/.m2)",
+                MavenDataSourceDialogController.repositoryUrlToRestore(
+                        Optional.of("Local repository (~/.m2)")));
+    }
+
+    @Test
+    void absentOrBlankRememberedSelectionFallsBackToTheDefaultRepository() {
+        assertEquals("https://nexus.tinkar.org/repository/ike-restricted/",
+                MavenDataSourceDialogController.repositoryUrlToRestore(Optional.empty()));
+        assertEquals("https://nexus.tinkar.org/repository/ike-restricted/",
+                MavenDataSourceDialogController.repositoryUrlToRestore(Optional.of("  ")));
+    }
+
+    @Test
+    void rememberedRetiredCentralSelectionMigratesToTheDefaultRepository() {
+        // Central was a built-in choice before IKE-Network/ike-issues#958; a ComboBox happily
+        // displays a value absent from its items list, so without this migration a persisted
+        // Central selection would resurface forever.
+        assertEquals("https://nexus.tinkar.org/repository/ike-restricted/",
+                MavenDataSourceDialogController.repositoryUrlToRestore(
+                        Optional.of("https://repo.maven.apache.org/maven2/")));
     }
 
     @Test

@@ -18,6 +18,7 @@ package dev.ikm.komet.desktop.datasource.maven;
 import dev.ikm.komet.framework.concurrent.TaskWrapper;
 import dev.ikm.komet.framework.progress.ProgressHelper;
 import dev.ikm.komet.pluginresolver.ArtifactCoordinates;
+import dev.ikm.komet.pluginresolver.ConnectionFailures;
 import dev.ikm.komet.pluginresolver.Credentials;
 import dev.ikm.komet.pluginresolver.DialogSelection;
 import dev.ikm.komet.pluginresolver.DialogSelectionStore;
@@ -30,6 +31,7 @@ import dev.ikm.komet.pluginresolver.NexusSearchClient;
 import dev.ikm.komet.pluginresolver.RemoteVersionResolver;
 import dev.ikm.komet.pluginresolver.RepositoryConnectionTester;
 import dev.ikm.komet.pluginresolver.RepositoryCredentialStore;
+import dev.ikm.komet.pluginresolver.RepositoryHttpClients;
 import dev.ikm.komet.pluginresolver.SettingsXmlReader;
 import dev.ikm.tinkar.common.service.DataUriOption;
 import dev.ikm.tinkar.common.service.TinkExecutor;
@@ -94,12 +96,21 @@ import java.util.stream.Collectors;
 public final class MavenDataSourceDialogController {
 
     private static final Logger LOG = LoggerFactory.getLogger(MavenDataSourceDialogController.class);
-    private static final String DEFAULT_REPOSITORY_URL = "https://repo.maven.apache.org/maven2/";
-    private static final String DEFAULT_REPOSITORY_ID = "central";
 
     /** Default repository — pre-selected whenever no prior selection has been remembered yet. */
-    private static final String KNOWN_WORKING_REPOSITORY_URL = "https://nexus.tinkar.org/repository/ike-restricted/";
-    private static final String KNOWN_WORKING_REPOSITORY_ID = "ike-restricted";
+    private static final String DEFAULT_REPOSITORY_URL = "https://nexus.tinkar.org/repository/ike-restricted/";
+    private static final String DEFAULT_REPOSITORY_ID = "ike-restricted";
+
+    /**
+     * Maven Central, formerly offered as a built-in choice. Retired: every flow this dialog
+     * serves fetches restricted-license, multi-gigabyte data artifacts that Central cannot
+     * host, so as a choice it could only dead-end (IKE-Network/ike-issues#958). A remembered
+     * selection of it migrates to {@link #DEFAULT_REPOSITORY_URL} in {@link #applyFlow} —
+     * without that, {@code ComboBox.setValue} would happily keep displaying a value absent
+     * from the items list forever. Typing the URL, or declaring it in {@code settings.xml},
+     * still works.
+     */
+    private static final String RETIRED_CENTRAL_REPOSITORY_URL = "https://repo.maven.apache.org/maven2/";
 
     /**
      * A pseudo "repository URL" selectable in {@link #repositoryUrlComboBox} that means
@@ -257,9 +268,10 @@ public final class MavenDataSourceDialogController {
 
     /**
      * Records which flow this dialog instance is for and restores the last-used repository
-     * ({@link DialogSelection}) — falling back to {@link #KNOWN_WORKING_REPOSITORY_URL} when
-     * nothing has been remembered yet — so a returning user doesn't re-pick a repository or
-     * re-enter credentials. If credentials are already known (restored from
+     * ({@link DialogSelection}) — falling back to {@link #DEFAULT_REPOSITORY_URL} when nothing
+     * has been remembered yet, and migrating a remembered
+     * {@link #RETIRED_CENTRAL_REPOSITORY_URL} the same way — so a returning user doesn't
+     * re-pick a repository or re-enter credentials. If credentials are already known (restored from
      * {@link #credentialStore} the moment the repository was set above), this immediately tests
      * them, so the dialog opens already showing "Connection succeeded".
      *
@@ -278,14 +290,28 @@ public final class MavenDataSourceDialogController {
         classifierField.setText(ClassifierSelection.ofFlowDefaults(flow).displayText());
         Optional<DialogSelection> remembered = dialogSelectionStore.get(flow.name());
 
-        String repositoryUrl = remembered.map(DialogSelection::repositoryUrl)
-                .filter(value -> !value.isBlank())
-                .orElse(KNOWN_WORKING_REPOSITORY_URL);
+        String repositoryUrl = repositoryUrlToRestore(remembered.map(DialogSelection::repositoryUrl));
         repositoryUrlComboBox.setValue(repositoryUrl);
 
         if (!isLocal(repositoryUrl) && enteredCredentials().isPresent()) {
             testConnectionButtonPressed();
         }
+    }
+
+    /**
+     * The repository to select when the dialog opens: the remembered selection, unless there
+     * is none, it's blank, or it's the {@link #RETIRED_CENTRAL_REPOSITORY_URL} (which a prior
+     * version offered as a built-in and may have persisted) — all of which fall back to
+     * {@link #DEFAULT_REPOSITORY_URL}.
+     *
+     * @param remembered the remembered repository URL, if any
+     * @return the repository URL to select
+     */
+    static String repositoryUrlToRestore(Optional<String> remembered) {
+        return remembered
+                .filter(value -> !value.isBlank())
+                .filter(value -> !RETIRED_CENTRAL_REPOSITORY_URL.equals(value))
+                .orElse(DEFAULT_REPOSITORY_URL);
     }
 
     /**
@@ -395,16 +421,14 @@ public final class MavenDataSourceDialogController {
     }
 
     /**
-     * Populates {@link #repositoryUrlComboBox}'s available choices: the known-working
-     * repository, Central, and everything declared in {@code ~/.m2/settings.xml}'s
+     * Populates {@link #repositoryUrlComboBox}'s available choices: the local-repository
+     * sentinel, the default repository, and everything declared in {@code ~/.m2/settings.xml}'s
      * {@code <repositories>}/{@code <mirrors>}, remembering each URL's repository id for
      * credential lookup. Does not select a value — {@link #applyFlow} decides that once the
      * flow (and any remembered selection for it) is known.
      */
     private void initializeRepositoryChoices() {
         repositoryUrlComboBox.getItems().add(LOCAL_REPOSITORY_SENTINEL);
-        repositoryIdByUrl.put(KNOWN_WORKING_REPOSITORY_URL, KNOWN_WORKING_REPOSITORY_ID);
-        repositoryUrlComboBox.getItems().add(KNOWN_WORKING_REPOSITORY_URL);
         repositoryIdByUrl.put(DEFAULT_REPOSITORY_URL, DEFAULT_REPOSITORY_ID);
         repositoryUrlComboBox.getItems().add(DEFAULT_REPOSITORY_URL);
 
@@ -534,7 +558,7 @@ public final class MavenDataSourceDialogController {
         Task<Boolean> task = new Task<>() {
             @Override
             protected Boolean call() throws Exception {
-                HttpClient httpClient = HttpClient.newHttpClient();
+                HttpClient httpClient = RepositoryHttpClients.newClient();
                 return credentials.isPresent()
                         ? RepositoryConnectionTester.testConnection(httpClient, repositoryUrl, credentials.get())
                         : RepositoryConnectionTester.testConnection(httpClient, repositoryUrl);
@@ -553,7 +577,8 @@ public final class MavenDataSourceDialogController {
             testConnectionButton.setDisable(false);
             testConnectionButton.setText("Connection failed");
             testConnectionButton.setStyle("-fx-text-fill: red;");
-            statusLabel.setText("Connection test failed: " + task.getException().getMessage());
+            LOG.warn("Connection test to {} failed", repositoryUrl, task.getException());
+            statusLabel.setText("Connection test failed: " + ConnectionFailures.describe(task.getException()));
         });
         TinkExecutor.threadPool().submit(task);
     }
@@ -628,7 +653,7 @@ public final class MavenDataSourceDialogController {
                     List<ArtifactCoordinates> localResults = List.copyOf(LocalRepositorySearch.search(M2_REPOSITORY_ROOT, query.strip(), classifierCandidates));
                     return new SearchOutcome(localResults, Map.of());
                 }
-                HttpClient httpClient = HttpClient.newHttpClient();
+                HttpClient httpClient = RepositoryHttpClients.newClient();
                 List<NexusSearchClient.SearchMatch> matches = NexusSearchClient.searchWithCompatibleVersions(
                         httpClient, repositoryUrl, query.strip(), classifierCandidates, credentials.orElse(null));
                 Map<ArtifactCoordinates, String> compatibleVersions = new LinkedHashMap<>();
@@ -660,8 +685,9 @@ public final class MavenDataSourceDialogController {
         });
         task.setOnFailed(event -> {
             nexusSearchButton.setDisable(false);
+            LOG.warn("Repository search at {} failed", repositoryUrl, task.getException());
             statusLabel.setText((local ? "Local search failed: " : "Search unavailable for this repository: ")
-                    + task.getException().getMessage());
+                    + ConnectionFailures.describe(task.getException()));
         });
         TinkExecutor.threadPool().submit(task);
     }
@@ -741,7 +767,8 @@ public final class MavenDataSourceDialogController {
             });
             localTask.setOnFailed(event -> {
                 listingVersions = false;
-                statusLabel.setText("Failed to list local versions: " + localTask.getException().getMessage());
+                LOG.warn("Listing local versions of {} failed", coordinates, localTask.getException());
+                statusLabel.setText("Failed to list local versions: " + ConnectionFailures.describe(localTask.getException()));
             });
             TinkExecutor.threadPool().submit(localTask);
             return;
@@ -757,7 +784,7 @@ public final class MavenDataSourceDialogController {
                     // SOLOR's POM-only "1.0.0-SNAPSHOT" while omitting its real "20250827" zips
                     // entirely). A version with no usable variant must never appear in the picker,
                     // per IKE-Network/ike-issues#882.
-                    HttpClient httpClient = HttpClient.newHttpClient();
+                    HttpClient httpClient = RepositoryHttpClients.newClient();
                     return NexusSearchClient.compatibleVersions(httpClient, repositoryUrl, coordinates,
                             classifierCandidates, credentials.orElse(null));
                 }
@@ -787,7 +814,8 @@ public final class MavenDataSourceDialogController {
         });
         task.setOnFailed(event -> {
             listingVersions = false;
-            statusLabel.setText("Failed to list versions: " + task.getException().getMessage());
+            LOG.warn("Listing versions of {} at {} failed", coordinates, repositoryUrl, task.getException());
+            statusLabel.setText("Failed to list versions: " + ConnectionFailures.describe(task.getException()));
         });
         TinkExecutor.threadPool().submit(task);
     }
@@ -971,7 +999,7 @@ public final class MavenDataSourceDialogController {
                 // than trusting maven-metadata.xml, whose version list can be incomplete (SOLOR's
                 // lists only a POM-only "1.0.0-SNAPSHOT", omitting the real "20250827" zips
                 // entirely — the bait-and-switch of IKE-Network/ike-issues#882).
-                HttpClient httpClient = HttpClient.newHttpClient();
+                HttpClient httpClient = RepositoryHttpClients.newClient();
                 NexusSearchClient.ComponentAssets assets = credentials.isPresent()
                         ? NexusSearchClient.componentAssets(httpClient, repositoryUrl, coordinates, version, credentials.get())
                         : NexusSearchClient.componentAssets(httpClient, repositoryUrl, coordinates, version);
@@ -1029,7 +1057,9 @@ public final class MavenDataSourceDialogController {
         });
         task.setOnFailed(event -> {
             sizeLabel.setText("Size unknown");
-            statusLabel.setText("Failed to check available classifiers: " + task.getException().getMessage());
+            LOG.warn("Checking available classifiers of {} {} at {} failed", coordinates, version, repositoryUrl,
+                    task.getException());
+            statusLabel.setText("Failed to check available classifiers: " + ConnectionFailures.describe(task.getException()));
         });
         TinkExecutor.threadPool().submit(task);
     }
@@ -1463,7 +1493,7 @@ public final class MavenDataSourceDialogController {
             };
         } else {
             URI downloadUri = MavenDataStoreDownloadTask.downloadUri(repositoryUrl, coordinates, directoryVersion, fileVersion, classifier);
-            HttpClient httpClient = HttpClient.newHttpClient();
+            HttpClient httpClient = RepositoryHttpClients.newClient();
             // The POM is fetched/cached/verified alongside the zip (real Maven tooling always
             // does), from the same asset lookup probeSize already resolved resolvedZipSha256
             // from — no extra request needed to know what to fetch or what to verify it against.
