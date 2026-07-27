@@ -59,9 +59,15 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SelectDataSourceController {
 
@@ -86,6 +92,38 @@ public class SelectDataSourceController {
      * knowledge base independently.
      */
     private static final String LAST_KB_KEY_PREFIX = "kb.";
+
+    /**
+     * The folder-name property every folder-creating New-store controller exposes — equal, as
+     * a record, to the {@code NEW_FOLDER_PROPERTY} each of {@code SpinedArrayProvider},
+     * {@code MVStoreProvider}, and Rocks KB's {@code RocksProvider} declares verbatim as
+     * {@code new DataServiceProperty("New folder name", false, true)} (confirmed against their
+     * sources). Record equality is what lets this class find the property in
+     * {@link #dataServicePropertyStringMap} without a compile dependency on providers loaded
+     * through the dynamic plugin layer.
+     */
+    private static final DataServiceProperty NEW_FOLDER_PROPERTY =
+            new DataServiceProperty("New folder name", false, true);
+
+    /**
+     * Store-type folder suffix per New-store {@code controllerName()} — the extension
+     * {@link #deriveStoreFolderName} ends a proposed folder name with, so store folders read
+     * as what they are. Controllers absent here (the Open controllers, and ephemeral's
+     * folder-less New controller) get no folder-name proposal at all. Names confirmed
+     * verbatim against each provider's {@code CONTROLLER_NAME}.
+     */
+    private static final Map<String, String> STORE_SUFFIX_BY_CONTROLLER = Map.of(
+            "New SpinedArrayStore", "sa",
+            "New MV Store", "mv",
+            "New Rocks KB", "rkb");
+
+    /**
+     * A snapshot-resolved version tail: {@code -<yyyyMMdd>.<HHmmss>} followed by any number of
+     * {@code -<number>} counters (the deploy build number, plus any Save-As copy counters).
+     * Group 1 is everything up to and including the hyphen before the timestamp, groups 2 and
+     * 3 the date and time.
+     */
+    private static final Pattern SNAPSHOT_TIMESTAMP_TAIL = Pattern.compile("(.*-)(\\d{8})\\.(\\d{6})(-\\d+)*");
 
     private File rootFolder = new File(System.getProperty("user.home"), "Solor");
 
@@ -152,6 +190,11 @@ public class SelectDataSourceController {
                 okButtonPressed(null);
             }
         });
+
+        // Selecting a changeset proposes the matching New-store folder name
+        // (ikmdev/komet-desktop#120) — derived, minimal, unique, and still editable.
+        fileListView.getSelectionModel().selectedItemProperty().addListener(
+                (observable, oldValue, newValue) -> proposeNewFolderName(newValue));
 
         // Grey out datastores already open in another process. The probe is
         // advisory and can go stale (TOCTOU); okButtonPressed re-checks the
@@ -349,6 +392,115 @@ public class SelectDataSourceController {
         } catch (IOException e) {
             LOG.error("Failed to open the Add from Maven dialog", e);
         }
+    }
+
+    /**
+     * Proposes a New-store folder name derived from {@code selected} (ikmdev/komet-desktop#120)
+     * — only when the current controller is a folder-creating New-store controller
+     * ({@link #STORE_SUFFIX_BY_CONTROLLER}) whose {@link #NEW_FOLDER_PROPERTY} is already on
+     * the property sheet. During a provider switch, {@link #dataSourceChanged} restores the
+     * remembered selection <em>before</em> it populates {@link #dataServicePropertyStringMap},
+     * so that restored selection deliberately proposes nothing — a folder name the user typed
+     * earlier (carried in the controller's own properties) survives switching away and back.
+     * Only an actual selection in the visible list — including the auto-select after a Maven
+     * download ({@link #addFromMavenButtonPressed}) — overwrites the field.
+     *
+     * @param selected the newly selected knowledge base; {@code null} (a cleared selection)
+     *         proposes nothing
+     */
+    private void proposeNewFolderName(DataUriOption selected) {
+        if (selected == null) {
+            return;
+        }
+        DataServiceController<?> controller = dataSourceChoiceBox.getValue();
+        if (controller == null) {
+            return;
+        }
+        String storeSuffix = STORE_SUFFIX_BY_CONTROLLER.get(controller.controllerName());
+        if (storeSuffix == null) {
+            return;
+        }
+        SimpleStringProperty folderNameProperty = dataServicePropertyStringMap.get(NEW_FOLDER_PROPERTY);
+        if (folderNameProperty == null) {
+            return;
+        }
+        folderNameProperty.set(firstAvailableFolderName(rootFolder,
+                deriveStoreFolderName(selected.name(), storeSuffix)));
+    }
+
+    /**
+     * Derives the proposed New-store folder name from a selected changeset name: the minimal
+     * name that stays unique while preserving a snapshot's date and time, without the
+     * classifier (ikmdev/komet-desktop#120). A trailing {@code .zip} is dropped (the
+     * in-session entry a Maven download adds has none; disk-scanned entries do). Trailing
+     * {@code -<classifier>} tails from {@link ProviderArtifactQualifier#classifierCandidates}
+     * are stripped longest-first and repeatedly, so the classifier-qualified
+     * {@code ...-changeset-pb} shape (ikmdev/komet-desktop#118) loses both tails. A snapshot
+     * {@code -<yyyyMMdd>.<HHmmss>-<build>} tail keeps its date and time but drops the
+     * counters, the timestamp's dot becoming a hyphen so the only dot left is the store-suffix
+     * separator. Finally the store-type suffix is appended. Examples:
+     * {@code ike-starter-set-1-20260726.155158-4-reasoned-pb} →
+     * {@code ike-starter-set-1-20260726-155158.sa};
+     * {@code pizzakb-1.0.0-pb.zip} → {@code pizzakb-1.0.0.sa}.
+     *
+     * @param selectionName the selected {@link DataUriOption#name()}
+     * @param storeSuffix the store-type suffix, without the dot (e.g. {@code "sa"})
+     * @return the proposed folder name
+     */
+    static String deriveStoreFolderName(String selectionName, String storeSuffix) {
+        String zipStripped = selectionName.strip();
+        if (zipStripped.toLowerCase(Locale.ROOT).endsWith(".zip")) {
+            zipStripped = zipStripped.substring(0, zipStripped.length() - ".zip".length());
+        }
+        List<String> classifierTails = new ArrayList<>(
+                ProviderArtifactQualifier.classifierCandidates(ProviderArtifactQualifier.Flow.PB));
+        classifierTails.sort(Comparator.comparingInt(String::length).reversed());
+        String name = zipStripped;
+        boolean stripped = true;
+        while (stripped) {
+            stripped = false;
+            for (String classifier : classifierTails) {
+                String tail = "-" + classifier;
+                if (name.toLowerCase(Locale.ROOT).endsWith(tail)) {
+                    name = name.substring(0, name.length() - tail.length());
+                    stripped = true;
+                    break;
+                }
+            }
+        }
+        if (name.isEmpty()) {
+            // A name that was nothing but classifier tails — keep it recognizable instead.
+            name = zipStripped;
+        }
+        Matcher timestamped = SNAPSHOT_TIMESTAMP_TAIL.matcher(name);
+        if (timestamped.matches()) {
+            name = timestamped.group(1) + timestamped.group(2) + "-" + timestamped.group(3);
+        }
+        return name + "." + storeSuffix;
+    }
+
+    /**
+     * The first of {@code derivedName}, {@code <base>-2.<ext>}, {@code <base>-3.<ext>}, … that
+     * doesn't already exist under {@code rootFolder} — a proposed name should validate
+     * immediately, not arrive pre-flagged "directory exists". The counter goes before the
+     * store-type suffix so bumped names still read as stores ({@code ...-155158-2.sa}).
+     *
+     * @param rootFolder the {@code ~/Solor} root
+     * @param derivedName the derived folder name ({@link #deriveStoreFolderName})
+     * @return the first candidate with no existing file or directory in its way
+     */
+    static String firstAvailableFolderName(File rootFolder, String derivedName) {
+        if (!new File(rootFolder, derivedName).exists()) {
+            return derivedName;
+        }
+        int extensionStart = derivedName.lastIndexOf('.');
+        String base = extensionStart < 0 ? derivedName : derivedName.substring(0, extensionStart);
+        String extension = extensionStart < 0 ? "" : derivedName.substring(extensionStart);
+        int counter = 2;
+        while (new File(rootFolder, base + "-" + counter + extension).exists()) {
+            counter++;
+        }
+        return base + "-" + counter + extension;
     }
 
     private void saveDataServiceProperties(DataServiceController<?> dataServiceController) {
