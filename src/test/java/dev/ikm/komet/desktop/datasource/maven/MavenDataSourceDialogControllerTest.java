@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -116,6 +117,43 @@ class MavenDataSourceDialogControllerTest {
                 "1-chronology-builder-20260724.000852-12", "unreasoned-pb");
 
         assertEquals("ike-starter-set-1-chronology-builder-20260724.000852-12-unreasoned-pb", artifactName);
+    }
+
+    @Test
+    void mostRecentVersionPicksTheNewestStampAcrossSnapshotLines() {
+        // The reported case (ikmdev/komet-desktop#121): lexicographically, the two-day-old
+        // chronology-builder build sorts last — the stamp says otherwise.
+        List<String> versions = List.of(
+                "1-20260726.143839-2",
+                "1-20260726.152404-3",
+                "1-20260726.155158-4",
+                "1-20260727.032644-5",
+                "1-chronology-builder-20260724.000852-12");
+
+        assertEquals("1-20260727.032644-5",
+                MavenDataSourceDialogController.mostRecentVersion(versions));
+    }
+
+    @Test
+    void mostRecentVersionBreaksEqualStampsByBuildNumber() {
+        assertEquals("1-20260726.155158-12",
+                MavenDataSourceDialogController.mostRecentVersion(List.of(
+                        "1-20260726.155158-12",
+                        "1-20260726.155158-4")));
+    }
+
+    @Test
+    void mostRecentVersionFallsBackToLastWhenNothingIsStamped() {
+        assertEquals("20250901",
+                MavenDataSourceDialogController.mostRecentVersion(List.of("20250827", "20250901")));
+    }
+
+    @Test
+    void mostRecentVersionPrefersStampedOverUnstampedVersions() {
+        assertEquals("1-20260727.032644-5",
+                MavenDataSourceDialogController.mostRecentVersion(List.of(
+                        "1-20260727.032644-5",
+                        "20991231")));
     }
 
     @Test

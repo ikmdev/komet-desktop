@@ -74,6 +74,8 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -665,8 +667,8 @@ public final class MavenDataSourceDialogController {
     }
 
     /**
-     * Lists the published versions of the current Group Id/Artifact Id and selects the most
-     * recent one ({@link RemoteVersionResolver.VersionListing#mostRecent}), which in turn (via
+     * Lists the published versions of the current Group Id/Artifact Id and auto-selects the
+     * most recent one ({@link #mostRecentVersion}), which in turn (via
      * {@link #versionComboBox}'s {@code valueProperty} listener in {@link #initialize}) triggers
      * {@link #probeSize}. Triggered automatically — by tabbing out of or pressing Return in
      * {@link #groupIdField}/{@link #artifactIdField}, by picking a Nexus search result
@@ -677,16 +679,17 @@ public final class MavenDataSourceDialogController {
     }
 
     /**
-     * As {@link #listVersions()}, but preferring {@code preferredVersion} for the auto-selection
-     * once versions are listed, if it's actually present among them — falling back to "most
-     * recent" only when it isn't. {@code preferredVersion} comes from
-     * {@link #searchCompatibleVersionByCoordinates}: a Nexus search result is only surfaced at
-     * all because <em>some</em> version of it was confirmed to publish a compatible classifier
-     * ({@link #nexusSearchButtonPressed}), but that's not necessarily the most recent version —
-     * blindly auto-selecting "most recent" here could land on a version with no compatible
-     * classifier at all, meaning the artifact was presented as an option only to be immediately
-     * unusable once picked (per IKE-Network/ike-issues#882, exactly what classifier-scoped search
-     * was meant to prevent).
+     * As {@link #listVersions()}, with {@code preferredVersion} — the version a classifier-scoped
+     * search confirmed compatible ({@link #searchCompatibleVersionByCoordinates}) — guaranteed a
+     * place among the listed versions ({@link #versionsIncludingPreferred}). It does <em>not</em>
+     * drive the auto-selection: both lists a search pick can target (the Nexus asset index, and
+     * {@code ~/.m2}) offer only compatibility-filtered versions (IKE-Network/ike-issues#882,
+     * #932), so every listed version is usable and the most recent
+     * ({@link #mostRecentVersion}) is the right default. The search's own match is whichever
+     * asset the search API happened to return first — no recency contract — and pinning the
+     * selection to it landed on stale builds (ikmdev/komet-desktop#121). On the unfiltered
+     * non-Nexus metadata fallback, {@link #probeSize} remains the gate that disables Download
+     * when a selected version turns out to have no compatible variant.
      *
      * @param preferredVersion a version already confirmed compatible, if this call originated
      *         from picking a search result; empty for every other trigger (typing Group Id/
@@ -734,7 +737,7 @@ public final class MavenDataSourceDialogController {
                     return;
                 }
                 statusLabel.setText(versions.size() + " compatible local version(s) found.");
-                versionComboBox.setValue(preferredVersion.filter(versions::contains).orElse(versions.getLast()));
+                versionComboBox.setValue(mostRecentVersion(versions));
             });
             localTask.setOnFailed(event -> {
                 listingVersions = false;
@@ -780,7 +783,7 @@ public final class MavenDataSourceDialogController {
                 return;
             }
             statusLabel.setText(versions.size() + (nexus ? " compatible version(s) found." : " version(s) found."));
-            versionComboBox.setValue(preferredVersion.filter(versions::contains).orElse(versions.getLast()));
+            versionComboBox.setValue(mostRecentVersion(versions));
         });
         task.setOnFailed(event -> {
             listingVersions = false;
@@ -811,6 +814,57 @@ public final class MavenDataSourceDialogController {
         combined.add(preferred);
         combined.addAll(versions);
         return List.copyOf(combined);
+    }
+
+    /**
+     * A resolved snapshot stamp embedded in a version string: {@code <yyyyMMdd>.<HHmmss>},
+     * optionally followed by {@code -<build>} — the shape Maven deploys timestamped snapshot
+     * builds under (e.g. {@code 1-20260727.032644-5}, {@code
+     * 1-chronology-builder-20260724.000852-12}).
+     */
+    private static final Pattern SNAPSHOT_STAMP = Pattern.compile("(\\d{8}\\.\\d{6})(?:-(\\d+))?");
+
+    /**
+     * The version to auto-select from freshly listed {@code versions}: the most recent by the
+     * evidence the version strings actually carry (ikmdev/komet-desktop#121). Among versions
+     * embedding a resolved snapshot stamp ({@link #SNAPSHOT_STAMP}; its last occurrence), the
+     * newest stamp wins — build number, then list position, breaking ties — so resolved builds
+     * of <em>different</em> {@code -SNAPSHOT} lines ({@code 1-20260727.032644-5} vs {@code
+     * 1-chronology-builder-20260724.000852-12}) compare by when they were actually deployed,
+     * not alphabetically ({@code c} sorting after every digit is exactly how a two-day-old
+     * build used to win). A stamped version outranks every unstamped one: the stamp is deploy
+     * -time evidence, an unstamped version offers none. When <em>no</em> version carries a
+     * stamp (bare date-style releases like SOLOR's {@code 20250827}, where the lists' existing
+     * lexicographic order is already chronological), the last listed version is kept, unchanged
+     * from the pre-#121 behavior. No other version scheme is assumed: apart from the stamp,
+     * version strings stay opaque.
+     *
+     * @param versions the listed versions, in list order; must be non-empty
+     * @return the version to auto-select
+     */
+    static String mostRecentVersion(List<String> versions) {
+        String best = null;
+        String bestStamp = null;
+        long bestBuild = -1;
+        for (String version : versions) {
+            Matcher stamped = SNAPSHOT_STAMP.matcher(version);
+            String stamp = null;
+            long build = -1;
+            while (stamped.find()) {
+                stamp = stamped.group(1);
+                build = stamped.group(2) == null ? -1 : Long.parseLong(stamped.group(2));
+            }
+            if (stamp == null) {
+                continue;
+            }
+            int stampOrder = bestStamp == null ? 1 : stamp.compareTo(bestStamp);
+            if (stampOrder > 0 || (stampOrder == 0 && build >= bestBuild)) {
+                best = version;
+                bestStamp = stamp;
+                bestBuild = build;
+            }
+        }
+        return best != null ? best : versions.getLast();
     }
 
     /**
