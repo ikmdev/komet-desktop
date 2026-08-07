@@ -38,6 +38,12 @@
              dependencyManagement/BOM does not govern plugin-dependency versions. Keep in sync with
              komet-bom rocks-kb.version. -->
         <rocks-kb-engine.version>0.1.0-SNAPSHOT</rocks-kb-engine.version>
+        <!-- komet-grpc-plugin: module dev.ikm.tinkar.provider.grpc, a DataServiceController +
+             ServiceLifecycle provider exactly like rocks-kb-engine, so it is staged into the
+             runtime plugins/ layer the same way. It is also REQUIRED there: komet-claude-plugin's
+             module-info has a hard `requires dev.ikm.tinkar.provider.grpc`, and one unresolvable
+             module aborts the whole layer — dropping every plugin, not just the Claude one. -->
+        <komet-grpc-plugin.version>1-SNAPSHOT</komet-grpc-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
@@ -469,6 +475,22 @@
                                 <artifactId>komet-claude-plugin</artifactId>
                                 <version>${komet-claude-plugin.version}</version>
                             </artifactItem>
+                            <!-- komet-grpc-plugin: the gRPC DataServiceController, and the module
+                                 komet-claude-plugin hard-requires. Must be staged alongside it. -->
+                            <artifactItem>
+                                <groupId>network.ike.komet</groupId>
+                                <artifactId>komet-grpc-plugin</artifactId>
+                                <version>${komet-grpc-plugin.version}</version>
+                            </artifactItem>
+                            <!-- jsr305 supplies module dev.ikm.jpms.javax.annotation, which
+                                 komet-grpc-plugin requires. It reaches the jlink inputs but is not
+                                 linked into the boot image (nothing komet-desktop requires pulls it
+                                 in), so the plugin layer must carry it — same reason jna/jna-platform
+                                 are staged for rocks-kb-engine. Version from komet-bom. -->
+                            <artifactItem>
+                                <groupId>dev.ikm.jpms</groupId>
+                                <artifactId>jsr305</artifactId>
+                            </artifactItem>
                             <!-- complex-clause-plugin (#628): only the plugin jar is staged; its
                                  runtime deps (komet layout/framework, tinkar, composer) are in the
                                  boot image or already staged above. -->
@@ -533,6 +555,11 @@
                             <groupId>dev.ikm.ike</groupId>
                             <artifactId>rocks-kb-engine</artifactId>
                             <version>${rocks-kb-engine.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>network.ike.komet</groupId>
+                            <artifactId>komet-grpc-plugin</artifactId>
+                            <version>${komet-grpc-plugin.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -1303,7 +1330,7 @@
                 <dependency>
                     <groupId>dev.ikm.jpms</groupId>
                     <artifactId>rocksdbjni-jpms</artifactId>
-                    <version>10.4.2.r1-SNAPSHOT</version>
+                    <version>10.4.2-r1-SNAPSHOT</version>
                     <classifier>osx</classifier>
                     <exclusions>
                         <exclusion>
@@ -1330,7 +1357,7 @@
                 <dependency>
                     <groupId>dev.ikm.jpms</groupId>
                     <artifactId>rocksdbjni-jpms</artifactId>
-                    <version>10.4.2.r1-SNAPSHOT</version>
+                    <version>10.4.2-r1-SNAPSHOT</version>
                     <classifier>linux64</classifier>
                     <exclusions>
                         <exclusion>
@@ -1359,7 +1386,7 @@
                 <dependency>
                     <groupId>dev.ikm.jpms</groupId>
                     <artifactId>rocksdbjni-jpms</artifactId>
-                    <version>10.4.2.r1-SNAPSHOT</version>
+                    <version>10.4.2-r1-SNAPSHOT</version>
                     <classifier>win64</classifier>
                     <exclusions>
                         <exclusion>
