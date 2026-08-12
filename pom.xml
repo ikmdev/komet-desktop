@@ -511,6 +511,19 @@
                                 <artifactId>komet-grpc-plugin</artifactId>
                                 <version>${komet-grpc-plugin.version}</version>
                             </artifactItem>
+                            <!-- JPMS-wrapped javax.annotation (module
+                                 dev.ikm.jpms.javax.annotation) — required by
+                                 komet-grpc-plugin's module-info (gRPC stub
+                                 annotations) and absent from the boot image;
+                                 staged alongside the plugin like rocksdbjni/jna
+                                 are for rocks-kb-engine. Version not
+                                 BOM-managed — keep in sync with
+                                 komet-grpc-plugin's jsr305 dependency. -->
+                            <artifactItem>
+                                <groupId>dev.ikm.jpms</groupId>
+                                <artifactId>jsr305</artifactId>
+                                <version>3.0.2-r7</version>
+                            </artifactItem>
                             <artifactItem>
                                 <groupId>dev.ikm.jpms</groupId>
                                 <artifactId>rocksdbjni</artifactId>
