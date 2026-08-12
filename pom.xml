@@ -8,7 +8,7 @@
  <parent>
         <groupId>network.ike.platform</groupId>
         <artifactId>ike-parent</artifactId>
-        <version>142</version>
+        <version>153</version>
         <relativePath/>
     </parent>
 
@@ -38,11 +38,12 @@
              dependencyManagement/BOM does not govern plugin-dependency versions. Keep in sync with
              komet-bom rocks-kb.version. -->
         <rocks-kb-engine.version>0.1.0-SNAPSHOT</rocks-kb-engine.version>
-        <!-- komet-grpc-plugin: module dev.ikm.tinkar.provider.grpc, a DataServiceController +
-             ServiceLifecycle provider exactly like rocks-kb-engine, so it is staged into the
-             runtime plugins/ layer the same way. It is also REQUIRED there: komet-claude-plugin's
-             module-info has a hard `requires dev.ikm.tinkar.provider.grpc`, and one unresolvable
-             module aborts the whole layer — dropping every plugin, not just the Claude one. -->
+        <!-- komet-grpc-plugin: gRPC-backed datastore + search provider (icaglobal),
+             staged into the runtime plugins/ layer like the plugins above; it loads
+             via the plugin layer, not as a compile dependency. The gRPC/protobuf
+             runtime is shaded into the plugin jar. Its data-source menu entry comes
+             from its DataServiceController provides; full runtime function lands
+             with ikmdev/tinkar-core#220's remainder. -->
         <komet-grpc-plugin.version>1-SNAPSHOT</komet-grpc-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
@@ -475,22 +476,6 @@
                                 <artifactId>komet-claude-plugin</artifactId>
                                 <version>${komet-claude-plugin.version}</version>
                             </artifactItem>
-                            <!-- komet-grpc-plugin: the gRPC DataServiceController, and the module
-                                 komet-claude-plugin hard-requires. Must be staged alongside it. -->
-                            <artifactItem>
-                                <groupId>network.ike.komet</groupId>
-                                <artifactId>komet-grpc-plugin</artifactId>
-                                <version>${komet-grpc-plugin.version}</version>
-                            </artifactItem>
-                            <!-- jsr305 supplies module dev.ikm.jpms.javax.annotation, which
-                                 komet-grpc-plugin requires. It reaches the jlink inputs but is not
-                                 linked into the boot image (nothing komet-desktop requires pulls it
-                                 in), so the plugin layer must carry it — same reason jna/jna-platform
-                                 are staged for rocks-kb-engine. Version from komet-bom. -->
-                            <artifactItem>
-                                <groupId>dev.ikm.jpms</groupId>
-                                <artifactId>jsr305</artifactId>
-                            </artifactItem>
                             <!-- complex-clause-plugin (#628): only the plugin jar is staged; its
                                  runtime deps (komet layout/framework, tinkar, composer) are in the
                                  boot image or already staged above. -->
@@ -515,6 +500,29 @@
                             <artifactItem>
                                 <groupId>dev.ikm.tinkar</groupId>
                                 <artifactId>composer</artifactId>
+                            </artifactItem>
+                            <!-- komet-grpc-plugin: only the plugin jar is staged — the
+                                 gRPC/protobuf runtime is shaded into it, and its tinkar/komet
+                                 APIs come from the boot image (the NoLocalUserStore /
+                                 RemoteConceptSearchService surface landed on tinkar-core main,
+                                 ike-issues#991). -->
+                            <artifactItem>
+                                <groupId>network.ike.komet</groupId>
+                                <artifactId>komet-grpc-plugin</artifactId>
+                                <version>${komet-grpc-plugin.version}</version>
+                            </artifactItem>
+                            <!-- JPMS-wrapped javax.annotation (module
+                                 dev.ikm.jpms.javax.annotation) — required by
+                                 komet-grpc-plugin's module-info (gRPC stub
+                                 annotations) and absent from the boot image;
+                                 staged alongside the plugin like rocksdbjni/jna
+                                 are for rocks-kb-engine. Version not
+                                 BOM-managed — keep in sync with
+                                 komet-grpc-plugin's jsr305 dependency. -->
+                            <artifactItem>
+                                <groupId>dev.ikm.jpms</groupId>
+                                <artifactId>jsr305</artifactId>
+                                <version>3.0.2-r7</version>
                             </artifactItem>
                             <artifactItem>
                                 <groupId>dev.ikm.jpms</groupId>
@@ -552,14 +560,14 @@
                             <version>${complex-clause-plugin.version}</version>
                         </dependency>
                         <dependency>
-                            <groupId>dev.ikm.ike</groupId>
-                            <artifactId>rocks-kb-engine</artifactId>
-                            <version>${rocks-kb-engine.version}</version>
-                        </dependency>
-                        <dependency>
                             <groupId>network.ike.komet</groupId>
                             <artifactId>komet-grpc-plugin</artifactId>
                             <version>${komet-grpc-plugin.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>dev.ikm.ike</groupId>
+                            <artifactId>rocks-kb-engine</artifactId>
+                            <version>${rocks-kb-engine.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
