@@ -1338,7 +1338,7 @@
                 <dependency>
                     <groupId>dev.ikm.jpms</groupId>
                     <artifactId>rocksdbjni-jpms</artifactId>
-                    <version>10.4.2.r1-SNAPSHOT</version>
+                    <version>10.4.2-r1-SNAPSHOT</version>
                     <classifier>osx</classifier>
                     <exclusions>
                         <exclusion>
@@ -1365,7 +1365,7 @@
                 <dependency>
                     <groupId>dev.ikm.jpms</groupId>
                     <artifactId>rocksdbjni-jpms</artifactId>
-                    <version>10.4.2.r1-SNAPSHOT</version>
+                    <version>10.4.2-r1-SNAPSHOT</version>
                     <classifier>linux64</classifier>
                     <exclusions>
                         <exclusion>
@@ -1394,7 +1394,7 @@
                 <dependency>
                     <groupId>dev.ikm.jpms</groupId>
                     <artifactId>rocksdbjni-jpms</artifactId>
-                    <version>10.4.2.r1-SNAPSHOT</version>
+                    <version>10.4.2-r1-SNAPSHOT</version>
                     <classifier>win64</classifier>
                     <exclusions>
                         <exclusion>
