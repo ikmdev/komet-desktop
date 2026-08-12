@@ -38,6 +38,13 @@
              dependencyManagement/BOM does not govern plugin-dependency versions. Keep in sync with
              komet-bom rocks-kb.version. -->
         <rocks-kb-engine.version>0.1.0-SNAPSHOT</rocks-kb-engine.version>
+        <!-- komet-grpc-plugin: gRPC-backed datastore + search provider (icaglobal),
+             staged into the runtime plugins/ layer like the plugins above; it loads
+             via the plugin layer, not as a compile dependency. The gRPC/protobuf
+             runtime is shaded into the plugin jar. Its data-source menu entry comes
+             from its DataServiceController provides; full runtime function lands
+             with ikmdev/tinkar-core#220's remainder. -->
+        <komet-grpc-plugin.version>1-SNAPSHOT</komet-grpc-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
@@ -494,6 +501,16 @@
                                 <groupId>dev.ikm.tinkar</groupId>
                                 <artifactId>composer</artifactId>
                             </artifactItem>
+                            <!-- komet-grpc-plugin: only the plugin jar is staged — the
+                                 gRPC/protobuf runtime is shaded into it, and its tinkar/komet
+                                 APIs come from the boot image (the NoLocalUserStore /
+                                 RemoteConceptSearchService surface landed on tinkar-core main,
+                                 ike-issues#991). -->
+                            <artifactItem>
+                                <groupId>network.ike.komet</groupId>
+                                <artifactId>komet-grpc-plugin</artifactId>
+                                <version>${komet-grpc-plugin.version}</version>
+                            </artifactItem>
                             <artifactItem>
                                 <groupId>dev.ikm.jpms</groupId>
                                 <artifactId>rocksdbjni</artifactId>
@@ -528,6 +545,11 @@
                             <groupId>network.ike.komet</groupId>
                             <artifactId>complex-clause-plugin</artifactId>
                             <version>${complex-clause-plugin.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>network.ike.komet</groupId>
+                            <artifactId>komet-grpc-plugin</artifactId>
+                            <version>${komet-grpc-plugin.version}</version>
                         </dependency>
                         <dependency>
                             <groupId>dev.ikm.ike</groupId>
