@@ -13,7 +13,7 @@
     </parent>
 
     <artifactId>komet-desktop</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0.0</version>
 
     <name>Komet Desktop</name>
 
@@ -22,29 +22,29 @@
         <!-- Configure build timestamp -->
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <!-- asm.version inherited from ike-parent:14 (9.9.1, see #283) -->
-        <komet-bom.version>3.0.7-SNAPSHOT</komet-bom.version>
+        <komet-bom.version>3.0.7</komet-bom.version>
         <!-- komet-claude-plugin is staged into the runtime plugins/ layer by the
              maven-dependency-plugin fetch-*-application-extensions copy executions
              (NOT a compile dependency — it loads via the plugin layer, exactly like
              rocks-kb-engine). -->
-        <komet-claude-plugin.version>1-SNAPSHOT</komet-claude-plugin.version>
+        <komet-claude-plugin.version>1</komet-claude-plugin.version>
         <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
              dependency. All its runtime deps are in the boot image or already staged (composer). -->
-        <complex-clause-plugin.version>1-SNAPSHOT</complex-clause-plugin.version>
+        <complex-clause-plugin.version>1</complex-clause-plugin.version>
         <!-- rocks-kb-engine (ike-issues#583): staged into the runtime plugins/ layer like the two
              plugins above. Its version is duplicated here from komet-bom's rocks-kb.version so it
              can be declared as a maven-dependency-plugin dependency (the reactor-ordering edge);
              dependencyManagement/BOM does not govern plugin-dependency versions. Keep in sync with
              komet-bom rocks-kb.version. -->
-        <rocks-kb-engine.version>0.1.0-SNAPSHOT</rocks-kb-engine.version>
+        <rocks-kb-engine.version>0.1.0</rocks-kb-engine.version>
         <!-- komet-grpc-plugin: gRPC-backed datastore + search provider (icaglobal),
              staged into the runtime plugins/ layer like the plugins above; it loads
              via the plugin layer, not as a compile dependency. The gRPC/protobuf
              runtime is shaded into the plugin jar. Its data-source menu entry comes
              from its DataServiceController provides; full runtime function lands
              with ikmdev/tinkar-core#220's remainder. -->
-        <komet-grpc-plugin.version>1-SNAPSHOT</komet-grpc-plugin.version>
+        <komet-grpc-plugin.version>1</komet-grpc-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
@@ -86,7 +86,7 @@
             <dependency>
                 <groupId>dev.ikm.komet</groupId>
                 <artifactId>komet-bom</artifactId>
-                <version>3.0.7-SNAPSHOT</version>
+                <version>3.0.7</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
