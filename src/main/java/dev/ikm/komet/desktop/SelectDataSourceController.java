@@ -106,6 +106,37 @@ public class SelectDataSourceController {
             new DataServiceProperty("New folder name", false, true);
 
     /**
+     * Package prefix identifying a datastore controller supplied by the gRPC plugin. Matched by
+     * name, not by class, for the same reason as {@link #NEW_FOLDER_PROPERTY}: the plugin loads
+     * through the dynamic plugin layer and komet-desktop must not compile against it.
+     */
+    private static final String GRPC_PROVIDER_PACKAGE = "dev.ikm.tinkar.provider.grpc.";
+
+    /**
+     * Lifecycle-manager property naming the winner of the {@code SEARCH_ENGINE} exclusion group,
+     * read by {@code ServiceLifecycleManager.resolveGroupSelections()}.
+     */
+    private static final String SEARCH_ENGINE_GROUP_PROPERTY =
+            "service.lifecycle.group.SEARCH_ENGINE";
+
+    /**
+     * The gRPC search controller's name as the lifecycle manager computes it — {@code
+     * OuterClass.InnerClass}, which is what {@code getServiceName()} derives for a nested class.
+     * A mismatch here does not fail loudly: the manager logs a warning and falls back to the
+     * lowest-priority candidate, which would silently restore local Lucene indexing.
+     */
+    private static final String GRPC_SEARCH_CONTROLLER_NAME = "GrpcSearchService.Controller";
+
+    /**
+     * The local Lucene search controller's name, in the same {@code OuterClass.InnerClass} form.
+     * Named explicitly for local datastores rather than leaving the group unset: with the gRPC
+     * plugin bundled, {@code SEARCH_ENGINE} has two candidates, and an unset group falls back to
+     * lowest effective priority — a comparison the two controllers would otherwise resolve by
+     * discovery order.
+     */
+    private static final String LUCENE_SEARCH_CONTROLLER_NAME = "SearchProvider.Controller";
+
+    /**
      * Store-type folder suffix per New-store {@code controllerName()} — the extension
      * {@link #deriveStoreFolderName} ends a proposed folder name with, so store folders read
      * as what they are. Controllers absent here (the Open controllers, and ephemeral's
@@ -338,7 +369,24 @@ public class SelectDataSourceController {
             ServiceExclusionGroup.DATA_PROVIDER,
             dataSourceChoiceBox.getValue().getClass()
         );
-        
+
+        // A remote datastore answers search over the wire, so the local Lucene indexer must not
+        // also run: SearchProvider creates its index directory eagerly, leaving an empty index
+        // behind for a store that is never queried locally. Both search providers belong to the
+        // SEARCH_ENGINE exclusion group; naming the winner here is what excludes the other.
+        //
+        // Set by name rather than by class so this stays free of a compile dependency on the
+        // optional plugin. When the plugin is absent the group has a single candidate and the
+        // lifecycle manager auto-selects local Lucene, so this property is never consulted.
+        // Both branches name a winner explicitly. Clearing the property instead would leave the
+        // group unresolved, and with the plugin bundled its two candidates tie on effective
+        // priority — the manager would then break the tie by discovery order.
+        boolean remoteDatastore = selectedController != null
+                && selectedController.getClass().getName().startsWith(GRPC_PROVIDER_PACKAGE);
+        System.setProperty(SEARCH_ENGINE_GROUP_PROPERTY,
+                remoteDatastore ? GRPC_SEARCH_CONTROLLER_NAME : LUCENE_SEARCH_CONTROLLER_NAME);
+
+
         TabPane progressTabPane = new TabPane();
         rootBorderPane.setCenter(progressTabPane);
         rootBorderPane.setTop(null);
