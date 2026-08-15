@@ -13,7 +13,7 @@
     </parent>
 
     <artifactId>komet-desktop</artifactId>
-    <version>3.0.1-SNAPSHOT</version>
+    <version>3.0.1</version>
 
     <name>Komet Desktop</name>
 
@@ -22,7 +22,7 @@
         <!-- Configure build timestamp -->
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <!-- asm.version inherited from ike-parent:14 (9.9.1, see #283) -->
-        <komet-bom.version>3.0.8-SNAPSHOT</komet-bom.version>
+        <komet-bom.version>3.0.8</komet-bom.version>
         <!-- komet-claude-plugin is staged into the runtime plugins/ layer by the
              maven-dependency-plugin fetch-*-application-extensions copy executions
              (NOT a compile dependency — it loads via the plugin layer, exactly like
@@ -37,7 +37,7 @@
              can be declared as a maven-dependency-plugin dependency (the reactor-ordering edge);
              dependencyManagement/BOM does not govern plugin-dependency versions. Keep in sync with
              komet-bom rocks-kb.version. -->
-        <rocks-kb-engine.version>0.1.1-SNAPSHOT</rocks-kb-engine.version>
+        <rocks-kb-engine.version>0.1.1</rocks-kb-engine.version>
         <!-- komet-grpc-plugin: gRPC-backed datastore + search provider (icaglobal),
              staged into the runtime plugins/ layer like the plugins above; it loads
              via the plugin layer, not as a compile dependency. The gRPC/protobuf
@@ -86,7 +86,7 @@
             <dependency>
                 <groupId>dev.ikm.komet</groupId>
                 <artifactId>komet-bom</artifactId>
-                <version>3.0.8-SNAPSHOT</version>
+                <version>3.0.8</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
