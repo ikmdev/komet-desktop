@@ -349,7 +349,10 @@
             via the plugin layer (see IkeServiceManager and the fetch-*-application-extensions
             executions that stage it into plugins/). First real-world test of the plugin system.
         -->
-        <!-- rocksdbjni-jpms moved to OS-specific profiles below -->
+        <!-- rocksdbjni is declared in the OS-specific profiles below;
+             komet-bom manages its version, classifier exclusions, and
+             the r-suffixed JPMS line (ike-issues#1021: the -jpms
+             artifactId was a never-released dead end). -->
         <dependency>
             <groupId>dev.ikm.jpms</groupId>
             <artifactId>jna</artifactId>
@@ -1337,19 +1340,9 @@
             <dependencies>
                 <dependency>
                     <groupId>dev.ikm.jpms</groupId>
-                    <artifactId>rocksdbjni-jpms</artifactId>
-                    <version>10.4.2-r1-SNAPSHOT</version>
+                    <artifactId>rocksdbjni</artifactId>
                     <classifier>osx</classifier>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>net.java.dev.jna</groupId>
-                            <artifactId>jna</artifactId>
-                        </exclusion>
-                        <exclusion>
-                            <groupId>net.java.dev.jna</groupId>
-                            <artifactId>jna-platform</artifactId>
-                        </exclusion>
-                    </exclusions>
+                    <!-- version + jna exclusions from komet-bom -->
                 </dependency>
             </dependencies>
         </profile>
@@ -1364,19 +1357,9 @@
             <dependencies>
                 <dependency>
                     <groupId>dev.ikm.jpms</groupId>
-                    <artifactId>rocksdbjni-jpms</artifactId>
-                    <version>10.4.2-r1-SNAPSHOT</version>
+                    <artifactId>rocksdbjni</artifactId>
                     <classifier>linux64</classifier>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>net.java.dev.jna</groupId>
-                            <artifactId>jna</artifactId>
-                        </exclusion>
-                        <exclusion>
-                            <groupId>net.java.dev.jna</groupId>
-                            <artifactId>jna-platform</artifactId>
-                        </exclusion>
-                    </exclusions>
+                    <!-- version + jna exclusions from komet-bom -->
                 </dependency>
             </dependencies>
         </profile>
@@ -1393,19 +1376,9 @@
             <dependencies>
                 <dependency>
                     <groupId>dev.ikm.jpms</groupId>
-                    <artifactId>rocksdbjni-jpms</artifactId>
-                    <version>10.4.2-r1-SNAPSHOT</version>
+                    <artifactId>rocksdbjni</artifactId>
                     <classifier>win64</classifier>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>net.java.dev.jna</groupId>
-                            <artifactId>jna</artifactId>
-                        </exclusion>
-                        <exclusion>
-                            <groupId>net.java.dev.jna</groupId>
-                            <artifactId>jna-platform</artifactId>
-                        </exclusion>
-                    </exclusions>
+                    <!-- version + jna exclusions from komet-bom -->
                 </dependency>
             </dependencies>
         </profile>
