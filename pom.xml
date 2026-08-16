@@ -13,7 +13,7 @@
     </parent>
 
     <artifactId>komet-desktop</artifactId>
-    <version>3.0.3-SNAPSHOT</version>
+    <version>3.0.3</version>
 
     <name>Komet Desktop</name>
 
@@ -27,7 +27,7 @@
              maven-dependency-plugin fetch-*-application-extensions copy executions
              (NOT a compile dependency — it loads via the plugin layer, exactly like
              rocks-kb-engine). -->
-        <komet-claude-plugin.version>4-SNAPSHOT</komet-claude-plugin.version>
+        <komet-claude-plugin.version>4</komet-claude-plugin.version>
         <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
              dependency. All its runtime deps are in the boot image or already staged (composer). -->
