@@ -31,7 +31,7 @@
         <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
              dependency. All its runtime deps are in the boot image or already staged (composer). -->
-        <complex-clause-plugin.version>1</complex-clause-plugin.version>
+        <complex-clause-plugin.version>3-SNAPSHOT</complex-clause-plugin.version>
         <!-- rocks-kb-engine (ike-issues#583): staged into the runtime plugins/ layer like the two
              plugins above. Its version is duplicated here from komet-bom's rocks-kb.version so it
              can be declared as a maven-dependency-plugin dependency (the reactor-ordering edge);
@@ -44,7 +44,7 @@
              runtime is shaded into the plugin jar. Its data-source menu entry comes
              from its DataServiceController provides; full runtime function lands
              with ikmdev/tinkar-core#220's remainder. -->
-        <komet-grpc-plugin.version>1</komet-grpc-plugin.version>
+        <komet-grpc-plugin.version>3-SNAPSHOT</komet-grpc-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
