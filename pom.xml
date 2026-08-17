@@ -166,6 +166,18 @@
             <groupId>dev.ikm.komet</groupId>
             <artifactId>knowledge-layout-editor</artifactId>
         </dependency>
+        <!-- knowledge-layout and komet-terms reach the runtime module path transitively, so the
+             workspace extension (which rebinds member roots only, ike-issues#1019) left them on the
+             imported komet-bom's RELEASED pin while every directly declared komet module tracked the
+             workspace snapshot. Declaring them makes them track the workspace like their siblings. -->
+        <dependency>
+            <groupId>dev.ikm.komet</groupId>
+            <artifactId>knowledge-layout</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.ikm.komet</groupId>
+            <artifactId>komet-terms</artifactId>
+        </dependency>
         <dependency>
             <groupId>dev.ikm.komet</groupId>
             <artifactId>artifact</artifactId>
