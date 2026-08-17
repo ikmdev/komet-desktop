@@ -22,7 +22,11 @@
         <!-- Configure build timestamp -->
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <!-- asm.version inherited from ike-parent:14 (9.9.1, see #283) -->
-        <komet-bom.version>3.0.10</komet-bom.version>
+        <!-- The reactor line, not the released one: a released bom import pins every
+             previously-released komet SUB-MODULE (knowledge-layout, framework, …) stale in the
+             jlink boot image while the reactor builds snapshots — the ike-issues#1019 sub-module
+             gap, boot-image edition (the staging-property fix below is its plugins/ edition). -->
+        <komet-bom.version>3.0.11-SNAPSHOT</komet-bom.version>
         <!-- komet-claude-plugin is staged into the runtime plugins/ layer by the
              maven-dependency-plugin fetch-*-application-extensions copy executions
              (NOT a compile dependency — it loads via the plugin layer, exactly like
@@ -91,7 +95,7 @@
             <dependency>
                 <groupId>dev.ikm.komet</groupId>
                 <artifactId>komet-bom</artifactId>
-                <version>3.0.10</version>
+                <version>${komet-bom.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
