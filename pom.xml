@@ -31,7 +31,10 @@
              maven-dependency-plugin fetch-*-application-extensions copy executions
              (NOT a compile dependency — it loads via the plugin layer, exactly like
              rocks-kb-engine). -->
-        <komet-claude-plugin.version>5-SNAPSHOT</komet-claude-plugin.version>
+        <!-- NOTE: ws:align's bundle-edge derivation re-points this pin one generation stale
+             (the ike-issues#1027 defect, seen again 2026-08-17: 6-SNAPSHOT → 5-SNAPSHOT);
+             correct it to the member's CURRENT snapshot after any align pass. -->
+        <komet-claude-plugin.version>6-SNAPSHOT</komet-claude-plugin.version>
         <!-- komet-markdown-richtext is a komet SUB-MODULE: the workspace extension rebinds member
              ROOTS only (ike-issues#1019), and the imported komet-bom is the released line — so a
              version-less artifactItem stages the RELEASED renderer into plugins/. This staging
