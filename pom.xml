@@ -27,7 +27,12 @@
              maven-dependency-plugin fetch-*-application-extensions copy executions
              (NOT a compile dependency — it loads via the plugin layer, exactly like
              rocks-kb-engine). -->
-        <komet-claude-plugin.version>5</komet-claude-plugin.version>
+        <komet-claude-plugin.version>6-SNAPSHOT</komet-claude-plugin.version>
+        <!-- komet-markdown-richtext is a komet SUB-MODULE: the workspace extension rebinds member
+             ROOTS only (ike-issues#1019), and the imported komet-bom is the released line — so a
+             version-less artifactItem stages the RELEASED renderer into plugins/. This staging
+             property carries the pin explicitly, like the plugin jars above. -->
+        <komet-markdown-richtext.version>1.59.4-SNAPSHOT</komet-markdown-richtext.version>
         <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
              dependency. All its runtime deps are in the boot image or already staged (composer). -->
@@ -490,11 +495,14 @@
                             <!-- Shared Markdown renderer (#585) the plugin requires at runtime.
                                  Staged into the plugins/ layer alongside the plugin (like
                                  rocksdbjni/jna are for rocks-kb-engine); it reads commonmark +
-                                 the jfx richtext model from the boot image. Version BOM-managed
-                                 (komet-bom). Built before this copy via the plugin's own edge. -->
+                                 the jfx richtext model from the boot image. Version via the
+                                 staging property (a komet sub-module: neither the extension nor
+                                 the released BOM tracks the workspace line, ike-issues#1019).
+                                 Built before this copy via the plugin's own edge. -->
                             <artifactItem>
                                 <groupId>dev.ikm.komet</groupId>
                                 <artifactId>komet-markdown-richtext</artifactId>
+                                <version>${komet-markdown-richtext.version}</version>
                             </artifactItem>
                             <!-- tinkar-composer: required at runtime by the plugin's commit-narrator
                                  (CommitNarratorLifecycle writes COMMENT_PATTERN semantics). Staged into
