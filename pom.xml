@@ -26,7 +26,7 @@
              previously-released komet SUB-MODULE (knowledge-layout, framework, …) stale in the
              jlink boot image while the reactor builds snapshots — the ike-issues#1019 sub-module
              gap, boot-image edition (the staging-property fix below is its plugins/ edition). -->
-        <komet-bom.version>3.0.12-SNAPSHOT</komet-bom.version>
+        <komet-bom.version>3.0.12-incremental-reasoner-SNAPSHOT</komet-bom.version>
         <!-- komet-claude-plugin is staged into the runtime plugins/ layer by the
              maven-dependency-plugin fetch-*-application-extensions copy executions
              (NOT a compile dependency — it loads via the plugin layer, exactly like
@@ -34,7 +34,7 @@
         <!-- NOTE: ws:align's bundle-edge derivation re-points this pin one generation stale
              (the ike-issues#1027 defect, seen again 2026-08-17: 6-SNAPSHOT → 5-SNAPSHOT);
              correct it to the member's CURRENT snapshot after any align pass. -->
-        <komet-claude-plugin.version>7-SNAPSHOT</komet-claude-plugin.version>
+        <komet-claude-plugin.version>6-incremental-reasoner-SNAPSHOT</komet-claude-plugin.version>
         <!-- komet-markdown-richtext is a komet SUB-MODULE: the workspace extension rebinds member
              ROOTS only (ike-issues#1019), and the imported komet-bom is the released line — so a
              version-less artifactItem stages the RELEASED renderer into plugins/. This staging
@@ -49,7 +49,7 @@
              can be declared as a maven-dependency-plugin dependency (the reactor-ordering edge);
              dependencyManagement/BOM does not govern plugin-dependency versions. Keep in sync with
              komet-bom rocks-kb.version. -->
-        <rocks-kb-engine.version>0.1.4</rocks-kb-engine.version>
+        <rocks-kb-engine.version>0.1.5-incremental-reasoner-SNAPSHOT</rocks-kb-engine.version>
         <!-- komet-grpc-plugin: gRPC-backed datastore + search provider (icaglobal),
              staged into the runtime plugins/ layer like the plugins above; it loads
              via the plugin layer, not as a compile dependency. The gRPC/protobuf
