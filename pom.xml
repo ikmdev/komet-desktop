@@ -13,7 +13,7 @@
     </parent>
 
     <artifactId>komet-desktop</artifactId>
-    <version>3.0.6-SNAPSHOT</version>
+    <version>3.0.6-incremental-reasoner-SNAPSHOT</version>
 
     <name>Komet Desktop</name>
 
