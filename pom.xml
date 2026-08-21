@@ -35,28 +35,23 @@
              (the ike-issues#1027 defect, seen again 2026-08-17: 6-SNAPSHOT → 5-SNAPSHOT);
              correct it to the member's CURRENT snapshot after any align pass. -->
         <komet-claude-plugin.version>7-SNAPSHOT</komet-claude-plugin.version>
-        <!-- komet-markdown-richtext is a komet SUB-MODULE: the workspace extension rebinds member
-             ROOTS only (ike-issues#1019), and the imported komet-bom is the released line — so a
-             version-less artifactItem stages the RELEASED renderer into plugins/. This staging
-             property carries the pin explicitly, like the plugin jars above. -->
-        <komet-markdown-richtext.version>1.59.5-SNAPSHOT</komet-markdown-richtext.version>
         <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
              dependency. All its runtime deps are in the boot image or already staged (composer). -->
-        <complex-clause-plugin.version>3</complex-clause-plugin.version>
+        <complex-clause-plugin.version>6-SNAPSHOT</complex-clause-plugin.version>
         <!-- rocks-kb-engine (ike-issues#583): staged into the runtime plugins/ layer like the two
              plugins above. Its version is duplicated here from komet-bom's rocks-kb.version so it
              can be declared as a maven-dependency-plugin dependency (the reactor-ordering edge);
              dependencyManagement/BOM does not govern plugin-dependency versions. Keep in sync with
              komet-bom rocks-kb.version. -->
-        <rocks-kb-engine.version>0.1.4</rocks-kb-engine.version>
+        <rocks-kb-engine.version>0.1.5-SNAPSHOT</rocks-kb-engine.version>
         <!-- komet-grpc-plugin: gRPC-backed datastore + search provider (icaglobal),
              staged into the runtime plugins/ layer like the plugins above; it loads
              via the plugin layer, not as a compile dependency. The gRPC/protobuf
              runtime is shaded into the plugin jar. Its data-source menu entry comes
              from its DataServiceController provides; full runtime function lands
              with ikmdev/tinkar-core#220's remainder. -->
-        <komet-grpc-plugin.version>3</komet-grpc-plugin.version>
+        <komet-grpc-plugin.version>6-SNAPSHOT</komet-grpc-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
@@ -98,7 +93,7 @@
             <dependency>
                 <groupId>dev.ikm.komet</groupId>
                 <artifactId>komet-bom</artifactId>
-                <version>${komet-bom.version}</version>
+                <version>3.0.12-SNAPSHOT</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -514,14 +509,21 @@
                             <!-- Shared Markdown renderer (#585) the plugin requires at runtime.
                                  Staged into the plugins/ layer alongside the plugin (like
                                  rocksdbjni/jna are for rocks-kb-engine); it reads commonmark +
-                                 the jfx richtext model from the boot image. Version via the
-                                 staging property (a komet sub-module: neither the extension nor
-                                 the released BOM tracks the workspace line, ike-issues#1019).
+                                 the jfx richtext model from the boot image. Version BOM-managed,
+                                 like composer below: komet-bom is imported at the REACTOR line
+                                 above (not the released one), and it manages every komet
+                                 sub-module at ${komet.version} — so a version-less artifactItem
+                                 tracks the workspace line by itself, in a sibling reactor too.
+                                 This used to be an explicit staging pin, deliberately holding the
+                                 RELEASED renderer back when the bom import was the released line.
+                                 That rationale died with the reactor-line import; the pin outlived
+                                 it, was hand-bumped to chase komet's version, and on 2026-08-20
+                                 named 1.59.5-SNAPSHOT — a version published nowhere, since the
+                                 reactor builds 1.59.5-<topic>-SNAPSHOT. Do not reintroduce a pin.
                                  Built before this copy via the plugin's own edge. -->
                             <artifactItem>
                                 <groupId>dev.ikm.komet</groupId>
                                 <artifactId>komet-markdown-richtext</artifactId>
-                                <version>${komet-markdown-richtext.version}</version>
                             </artifactItem>
                             <!-- tinkar-composer: required at runtime by the plugin's commit-narrator
                                  (CommitNarratorLifecycle writes COMMENT_PATTERN semantics). Staged into
