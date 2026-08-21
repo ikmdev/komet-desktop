@@ -45,13 +45,20 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.image.Image;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import one.jpro.platform.utils.CommandRunner;
 import one.jpro.platform.utils.PlatformUtils;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -69,8 +76,10 @@ import java.nio.file.Path;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.prefs.BackingStoreException;
 
 import static dev.ikm.komet.desktop.AppState.LOADING_DATA_SOURCE;
@@ -122,6 +131,16 @@ public class App extends Application {
     private static final Object SHUTDOWN_LOCK = new Object();
     static volatile boolean shutdownInProgress = false;
     private static volatile boolean primitiveDataStopped = false;
+
+    /**
+     * Ceiling for the background data-service shutdown. Well above a healthy close
+     * (seconds) and above the data store's own bounded flush waits, so it only fires
+     * when shutdown is truly wedged — then the process exits instead of lingering
+     * as an unkillable, half-closed application (ike-issues#1064).
+     */
+    private static final Duration DATA_SHUTDOWN_DEADLINE = Duration.ofMinutes(5);
+
+    private Stage shutdownProgressStage;
 
     private static AlertDialogSubscriber alertDialogSubscriber;
 
@@ -787,32 +806,61 @@ public class App extends Application {
         shutdownInProgress = true;
     }
 
-    saveJournalWindowsToPreferences();
-    LOG.info(">>> Saved journal windows to preferences");
-
-    stopDataServices();
-
-    // Note: Removed explicit macOS MenuToolkit cleanup as it conflicts with
-    // Platform.exit()'s own native shutdown, causing SIGSEGV in objc_msgSend.
-    // Platform.exit() will handle all JavaFX/native cleanup automatically.
-
-    LOG.info(">>> Calling Platform.exit()");
-
-    // Exit JavaFX - but do it synchronously if we're already on FX thread
+    // UI-state persistence must run on the FX thread; the data-service shutdown must
+    // not (ike-issues#1064) — a stalled provider close froze the app for 71 s on
+    // 2026-08-21, and even a healthy close beachballs the UI for seconds.
     if (Platform.isFxApplicationThread()) {
-        LOG.info(">>> Already on FX thread, calling Platform.exit()");
-        Platform.exit();
-
-        // Give Platform.exit() time to clean up before stopping server
+        saveJournalWindowsToPreferences();
+        LOG.info(">>> Saved journal windows to preferences");
+        showShutdownProgressWindow();
+        Thread.ofPlatform().name("komet-shutdown").start(this::stopServicesThenExit);
+    } else {
+        CountDownLatch uiSaved = new CountDownLatch(1);
+        Platform.runLater(() -> {
+            saveJournalWindowsToPreferences();
+            LOG.info(">>> Saved journal windows to preferences");
+            showShutdownProgressWindow();
+            uiSaved.countDown();
+        });
         try {
-            Thread.sleep(200);
+            if (!uiSaved.await(30, TimeUnit.SECONDS)) {
+                LOG.warn(">>> FX thread did not persist journal windows within 30 s; continuing shutdown");
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    } else {
+        stopServicesThenExit();
+    }
+}
+
+    /**
+     * Stops the data services off the FX thread, then exits the JavaFX platform and
+     * stops the JPro server. A daemon watchdog forces process exit when the shutdown
+     * exceeds {@link #DATA_SHUTDOWN_DEADLINE}, so a wedged provider close can never
+     * leave a lingering, half-closed application.
+     */
+    private void stopServicesThenExit() {
+        Thread watchdog = Thread.ofPlatform().name("komet-shutdown-watchdog").daemon().start(() -> {
+            try {
+                Thread.sleep(DATA_SHUTDOWN_DEADLINE.toMillis());
+            } catch (InterruptedException e) {
+                return; // shutdown completed within the deadline
+            }
+            LOG.error(">>> Data-service shutdown exceeded {} - forcing exit", DATA_SHUTDOWN_DEADLINE);
+            System.exit(1);
+        });
+
+        stopDataServices();
+        watchdog.interrupt();
+
+        // Note: Removed explicit macOS MenuToolkit cleanup as it conflicts with
+        // Platform.exit()'s own native shutdown, causing SIGSEGV in objc_msgSend.
+        // Platform.exit() will handle all JavaFX/native cleanup automatically.
+
         LOG.info(">>> Scheduling Platform.exit() on FX thread");
         CountDownLatch exitLatch = new CountDownLatch(1);
         Platform.runLater(() -> {
+            closeShutdownProgressWindow();
             LOG.info(">>> Platform.exit() executing on FX thread");
             Platform.exit();
             exitLatch.countDown();
@@ -820,18 +868,55 @@ public class App extends Application {
 
         // Wait for Platform.exit() to complete
         try {
-            exitLatch.await();
-            LOG.info(">>> Platform.exit() completed");
+            if (exitLatch.await(30, TimeUnit.SECONDS)) {
+                LOG.info(">>> Platform.exit() completed");
+            } else {
+                LOG.warn(">>> Platform.exit() did not run within 30 s; continuing shutdown");
+            }
             Thread.sleep(200); // Give it time to clean up
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+
+        LOG.info(">>> Calling stopServer()");
+        stopServer();
+        LOG.info(">>> quit() method complete");
     }
 
-    LOG.info(">>> Calling stopServer()");
-    stopServer();
-    LOG.info(">>> quit() method complete");
-}
+    /**
+     * Shows a small always-on-top, application-modal window while the data services
+     * shut down in the background: the user sees that work is being saved, and modality
+     * blocks further edits against the closing data store. Desktop only; must be called
+     * on the FX thread.
+     */
+    private void showShutdownProgressWindow() {
+        if (!IS_DESKTOP) {
+            return;
+        }
+        ProgressIndicator indicator = new ProgressIndicator(ProgressIndicator.INDETERMINATE_PROGRESS);
+        indicator.setPrefSize(28, 28);
+        Label label = new Label("Saving your work…");
+        HBox content = new HBox(12, indicator, label);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(20, 28, 20, 28));
+        shutdownProgressStage = new Stage(StageStyle.UNDECORATED);
+        shutdownProgressStage.initModality(Modality.APPLICATION_MODAL);
+        shutdownProgressStage.setAlwaysOnTop(true);
+        shutdownProgressStage.setScene(new Scene(content));
+        shutdownProgressStage.show();
+        shutdownProgressStage.centerOnScreen();
+    }
+
+    /**
+     * Closes the shutdown progress window if one is showing. Must be called on the
+     * FX thread.
+     */
+    private void closeShutdownProgressWindow() {
+        if (shutdownProgressStage != null) {
+            shutdownProgressStage.close();
+            shutdownProgressStage = null;
+        }
+    }
 
     /**
      * Stops the JPro server by running the stop script.
