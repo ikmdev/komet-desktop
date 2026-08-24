@@ -34,7 +34,7 @@
         <!-- NOTE: ws:align's bundle-edge derivation re-points this pin one generation stale
              (the ike-issues#1027 defect, seen again 2026-08-17: 6-SNAPSHOT → 5-SNAPSHOT);
              correct it to the member's CURRENT snapshot after any align pass. -->
-        <komet-claude-plugin.version>7-SNAPSHOT</komet-claude-plugin.version>
+        <komet-claude-plugin.version>6-SNAPSHOT</komet-claude-plugin.version>
         <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
              dependency. All its runtime deps are in the boot image or already staged (composer). -->
