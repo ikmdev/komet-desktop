@@ -51,7 +51,7 @@
              runtime is shaded into the plugin jar. Its data-source menu entry comes
              from its DataServiceController provides; full runtime function lands
              with ikmdev/tinkar-core#220's remainder. -->
-        <komet-grpc-plugin.version>6-SNAPSHOT</komet-grpc-plugin.version>
+        <komet-grpc-plugin.version>6-grpc_commit_entities-SNAPSHOT</komet-grpc-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
