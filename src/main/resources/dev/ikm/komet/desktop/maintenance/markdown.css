@@ -10,29 +10,29 @@
  */
 
 .markdown-view {
-    -fx-font-size: 13px;
+    -fx-font-size: 1.083333em; /* 13px */
     -fx-padding: 12;
 }
 
 .markdown-view .h1 {
-    -fx-font-size: 22px;
+    -fx-font-size: 1.692308em; /* 22px, inside the 13px view */
     -fx-font-weight: bold;
     -fx-padding: 12 0 6 0;
 }
 .markdown-view .h2 {
-    -fx-font-size: 18px;
+    -fx-font-size: 1.384615em; /* 18px, inside the 13px view */
     -fx-font-weight: bold;
     -fx-padding: 10 0 4 0;
 }
 .markdown-view .h3 {
-    -fx-font-size: 15px;
+    -fx-font-size: 1.153846em; /* 15px, inside the 13px view */
     -fx-font-weight: bold;
     -fx-padding: 8 0 3 0;
 }
 .markdown-view .h4,
 .markdown-view .h5,
 .markdown-view .h6 {
-    -fx-font-size: 13px;
+    -fx-font-size: 1em; /* 13px, inside the 13px view */
     -fx-font-weight: bold;
     -fx-padding: 6 0 2 0;
 }
@@ -46,7 +46,7 @@
 
 .markdown-view .code-block {
     -fx-font-family: "Menlo", "Monaco", "Monospaced";
-    -fx-font-size: 12px;
+    -fx-font-size: 0.923077em; /* 12px, inside the 13px view */
     -fx-background-color: #f6f6f6;
     -fx-padding: 6 10 6 10;
 }
@@ -93,7 +93,7 @@
     -fx-padding: 1 6 1 6;
     -fx-background-radius: 3;
     -fx-font-family: "Menlo", "Monaco", "Monospaced";
-    -fx-font-size: 11px;
+    -fx-font-size: 0.846154em; /* 11px, inside the 13px view */
 }
 
 .md-table-cell.state-inactive,
@@ -104,7 +104,7 @@
     -fx-padding: 1 6 1 6;
     -fx-background-radius: 3;
     -fx-font-family: "Menlo", "Monaco", "Monospaced";
-    -fx-font-size: 11px;
+    -fx-font-size: 0.846154em; /* 11px, inside the 13px view */
 }
 
 .md-table-cell.state-withdrawn,
@@ -115,7 +115,7 @@
     -fx-padding: 1 6 1 6;
     -fx-background-radius: 3;
     -fx-font-family: "Menlo", "Monaco", "Monospaced";
-    -fx-font-size: 11px;
+    -fx-font-size: 0.846154em; /* 11px, inside the 13px view */
 }
 
 .md-table-cell.state-canceled,
@@ -126,7 +126,7 @@
     -fx-padding: 1 6 1 6;
     -fx-background-radius: 3;
     -fx-font-family: "Menlo", "Monaco", "Monospaced";
-    -fx-font-size: 11px;
+    -fx-font-size: 0.846154em; /* 11px, inside the 13px view */
 }
 
 .md-table-cell.state-primordial,
@@ -137,7 +137,7 @@
     -fx-padding: 1 6 1 6;
     -fx-background-radius: 3;
     -fx-font-family: "Menlo", "Monaco", "Monospaced";
-    -fx-font-size: 11px;
+    -fx-font-size: 0.846154em; /* 11px, inside the 13px view */
 }
 
 .md-table-cell.state-uncommitted,
@@ -148,6 +148,6 @@
     -fx-padding: 1 6 1 6;
     -fx-background-radius: 3;
     -fx-font-family: "Menlo", "Monaco", "Monospaced";
-    -fx-font-size: 11px;
+    -fx-font-size: 0.846154em; /* 11px, inside the 13px view */
     -fx-font-style: italic;
 }
