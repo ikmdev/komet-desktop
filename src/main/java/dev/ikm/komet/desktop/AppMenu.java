@@ -14,6 +14,7 @@ import dev.ikm.komet.framework.window.WindowSettings;
 import dev.ikm.komet.kleditorapp.view.KLEditorMainScreenController;
 import dev.ikm.komet.kview.mvvm.view.changeset.ExportController;
 import dev.ikm.komet.kview.mvvm.view.changeset.ImportController;
+import dev.ikm.komet.kview.mvvm.view.settings.SettingsDialog;
 import dev.ikm.komet.preferences.KometPreferences;
 import dev.ikm.komet.preferences.KometPreferencesImpl;
 import javafx.animation.KeyFrame;
@@ -103,6 +104,9 @@ public class AppMenu {
         MenuItem exportDatasetMenuItem = new MenuItem("Export Dataset");
         exportDatasetMenuItem.setOnAction(actionEvent -> openExport(stage));
         fileMenu.getItems().add(exportDatasetMenuItem);
+        MenuItem settingsMenuItem = new MenuItem("Settings...");
+        settingsMenuItem.setOnAction(actionEvent -> SettingsDialog.show(stage));
+        fileMenu.getItems().addAll(new SeparatorMenuItem(), settingsMenuItem, new SeparatorMenuItem());
         MenuItem menuItemQuit = new MenuItem("Quit");
         menuItemQuit.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.SHORTCUT_DOWN));
         menuItemQuit.setOnAction(actionEvent -> app.quit());
