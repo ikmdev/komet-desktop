@@ -17,6 +17,13 @@
 
     <name>Komet Desktop</name>
 
+    <scm>
+        <connection>scm:git:https://github.com/ikmdev/komet-desktop.git</connection>
+        <developerConnection>scm:git:git@github.com:ikmdev/komet-desktop.git</developerConnection>
+        <url>https://github.com/ikmdev/komet-desktop</url>
+        <tag>HEAD</tag>
+    </scm>
+
     <properties>
         <java.version>25</java.version>
         <!-- Configure build timestamp -->
