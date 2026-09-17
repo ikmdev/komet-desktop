@@ -184,8 +184,25 @@ public class App extends Application {
      * @param args Command line arguments for the application.
      */
     public static void main(String[] args) {
+        configureMacOSRenderingPipeline();
+
         // Launch the JavaFX application
         launch(args);
+    }
+
+    /**
+     * Renders through the OpenGL (es2) Prism pipeline on macOS instead of Metal, the JavaFX 27
+     * default there. With Metal (JavaFX 27-ea+24) the application crashes natively — an Apple crash
+     * report, no Java exception — once enough KL window content is on screen at the same time (a
+     * handful of open KL concept windows, or a KL pattern window with several fields); with es2 it
+     * does not (ikmdev/komet-desktop#183). Has to run before the JavaFX toolkit starts, which is
+     * when Prism reads the property. A {@code -Dprism.order} given on the command line wins, so
+     * Metal can still be chosen explicitly — e.g. to retest it against a newer JavaFX.
+     */
+    private static void configureMacOSRenderingPipeline() {
+        if (IS_MAC && System.getProperty("prism.order") == null) {
+            System.setProperty("prism.order", "es2,sw");
+        }
     }
 
     /**
