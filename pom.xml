@@ -8,7 +8,7 @@
  <parent>
         <groupId>network.ike.platform</groupId>
         <artifactId>ike-parent</artifactId>
-        <version>176</version>
+        <version>178</version>
         <relativePath/>
     </parent>
 
@@ -16,6 +16,13 @@
     <version>3.0.6-reasoner_cancel-SNAPSHOT</version>
 
     <name>Komet Desktop</name>
+
+    <scm>
+        <connection>scm:git:https://github.com/ikmdev/komet-desktop.git</connection>
+        <developerConnection>scm:git:git@github.com:ikmdev/komet-desktop.git</developerConnection>
+        <url>https://github.com/ikmdev/komet-desktop</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <properties>
         <java.version>25</java.version>

@@ -21,7 +21,7 @@ assemble:
         - pattern: ${project.build.directory}/jlink-module-path/*.jar
       java:
         mainModule: dev.ikm.komet.desktop
-        mainClass: dev.ikm.komet.desktop.App
+        mainClass: dev.ikm.komet.desktop.KometLauncher
         jvmOptions:
           universal:
             - --enable-preview
@@ -33,12 +33,6 @@ assemble:
             - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
             - -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer
             - --add-modules jdk.incubator.vector
-          # Prefer the Metal Prism pipeline on macOS. JavaFX 26 has full Metal
-          # support; pinning it avoids silent fallback to OpenGL on edge cases
-          # (older drivers, headless test harnesses) and matches the platform's
-          # supported GPU API on Apple Silicon.
-          osx:
-            - -Dprism.order=mtl
       jdeps:
         multiRelease: base
         ignoreMissingDeps: true
@@ -67,7 +61,7 @@ assemble:
         - pattern: ${project.build.directory}/jlink-module-path/*.jar
       java:
         mainModule: dev.ikm.komet.desktop
-        mainClass: dev.ikm.komet.desktop.App
+        mainClass: dev.ikm.komet.desktop.KometLauncher
         jvmOptions:
           universal:
             - --enable-preview
@@ -81,9 +75,6 @@ assemble:
             - --add-modules jdk.incubator.vector
             - -agentpath:${jprofiler.agent.path}=port=8849,nowait
             - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
-          # Prefer Metal Prism pipeline on macOS — see komet-standard for rationale.
-          osx:
-            - -Dprism.order=mtl
       jdeps:
         multiRelease: base
         ignoreMissingDeps: true
@@ -112,7 +103,7 @@ assemble:
         - pattern: ${project.build.directory}/jlink-module-path/*.jar
       java:
         mainModule: dev.ikm.komet.desktop
-        mainClass: dev.ikm.komet.desktop.App
+        mainClass: dev.ikm.komet.desktop.KometLauncher
         jvmOptions:
           universal:
             - --enable-preview
@@ -126,9 +117,6 @@ assemble:
             - --add-modules jdk.incubator.vector
             - -Xms24g
             - -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000
-          # Prefer Metal Prism pipeline on macOS — see komet-standard for rationale.
-          osx:
-            - -Dprism.order=mtl
       jdeps:
         multiRelease: base
         ignoreMissingDeps: true

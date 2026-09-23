@@ -179,12 +179,16 @@ public class App extends Application {
     final GitHubPreferencesDao gitHubPreferencesDao = new GitHubPreferencesDao();
 
     /**
-     * Main method that serves as the entry point for the JavaFX application.
+     * Fallback entry point when this class is launched directly.
+     *
+     * <p>The process entry point is {@link KometLauncher}. Do not add pre-toolkit setup
+     * (system properties such as {@code prism.order}) here: because {@code App} extends
+     * {@link Application}, the JDK launcher starts the JavaFX toolkit before this method
+     * runs, so such setup would be silently ignored. Put it in {@link KometLauncher} instead.
      *
      * @param args Command line arguments for the application.
      */
     public static void main(String[] args) {
-        // Launch the JavaFX application
         launch(args);
     }
 
@@ -336,6 +340,10 @@ public class App extends Application {
                 System.getProperty("os.name"),
                 System.getProperty("os.arch"),
                 IS_BROWSER ? "browser" : (IS_DESKTOP ? "desktop" : "unknown"));
+        // The requested Prism pipeline order decides whether the native Metal library can be
+        // loaded at all on macOS (ikmdev/komet-desktop#183), so record it in every session log.
+        LOG.info("Prism pipeline order: {}",
+                System.getProperty("prism.order", "<JavaFX default for this platform>"));
     }
 
     /**
