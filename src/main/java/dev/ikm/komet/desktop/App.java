@@ -179,30 +179,17 @@ public class App extends Application {
     final GitHubPreferencesDao gitHubPreferencesDao = new GitHubPreferencesDao();
 
     /**
-     * Main method that serves as the entry point for the JavaFX application.
+     * Fallback entry point when this class is launched directly.
+     *
+     * <p>The process entry point is {@link KometLauncher}. Do not add pre-toolkit setup
+     * (system properties such as {@code prism.order}) here: because {@code App} extends
+     * {@link Application}, the JDK launcher starts the JavaFX toolkit before this method
+     * runs, so such setup would be silently ignored. Put it in {@link KometLauncher} instead.
      *
      * @param args Command line arguments for the application.
      */
     public static void main(String[] args) {
-        configureMacOSRenderingPipeline();
-
-        // Launch the JavaFX application
         launch(args);
-    }
-
-    /**
-     * Renders through the OpenGL (es2) Prism pipeline on macOS instead of Metal, the JavaFX 27
-     * default there. With Metal (JavaFX 27-ea+24) the application crashes natively — an Apple crash
-     * report, no Java exception — once enough KL window content is on screen at the same time (a
-     * handful of open KL concept windows, or a KL pattern window with several fields); with es2 it
-     * does not (ikmdev/komet-desktop#183). Has to run before the JavaFX toolkit starts, which is
-     * when Prism reads the property. A {@code -Dprism.order} given on the command line wins, so
-     * Metal can still be chosen explicitly — e.g. to retest it against a newer JavaFX.
-     */
-    private static void configureMacOSRenderingPipeline() {
-        if (IS_MAC && System.getProperty("prism.order") == null) {
-            System.setProperty("prism.order", "es2,sw");
-        }
     }
 
     /**
@@ -353,6 +340,10 @@ public class App extends Application {
                 System.getProperty("os.name"),
                 System.getProperty("os.arch"),
                 IS_BROWSER ? "browser" : (IS_DESKTOP ? "desktop" : "unknown"));
+        // The requested Prism pipeline order decides whether the native Metal library can be
+        // loaded at all on macOS (ikmdev/komet-desktop#183), so record it in every session log.
+        LOG.info("Prism pipeline order: {}",
+                System.getProperty("prism.order", "<JavaFX default for this platform>"));
     }
 
     /**

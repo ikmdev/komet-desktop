@@ -30,7 +30,7 @@ assemble:
           - --add-modules jdk.incubator.vector
       java:
         mainModule: dev.ikm.komet.desktop
-        mainClass: dev.ikm.komet.desktop.App
+        mainClass: dev.ikm.komet.desktop.KometLauncher
       runtimeImages:
         - path: ${project.build.directory}/jreleaser-jlink/assemble/komet-standard/jlink/${jreleaser.platform.work}/kometRuntimeImage-${jreleaser.platform.suffix}
           platform: ${jreleaser.platform}
