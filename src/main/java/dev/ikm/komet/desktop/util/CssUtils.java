@@ -38,8 +38,8 @@ import java.util.Objects;
  *
  * <p><strong>Usage Example:</strong></p>
  * <pre>{@code
- * import static dev.ikm.komet.app.util.CssFile.*;
- * import dev.ikm.komet.app.util.CssUtils;
+ * import static dev.ikm.komet.desktop.util.CssFile.*;
+ * import dev.ikm.komet.desktop.util.CssUtils;
  * import javafx.scene.Scene;
  * import javafx.scene.layout.BorderPane;
  *
