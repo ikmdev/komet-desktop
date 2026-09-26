@@ -508,6 +508,9 @@ public class App extends Application {
         appMenu = new AppMenu(this);
         appPages = new AppPages(this);
 
+        // --kb, --user and --password-file, or their -Dkomet.* fallbacks (ike-issues#1139).
+        LaunchOptions.setCurrent(LaunchOptions.resolve(getParameters().getNamed(), System::getProperty));
+
         // Every window shown from here on carries the user's text size and glyph choices.
         TextSizeStylesheet.install(KometSettings.get());
         KonceptGlyphSettings.install(KometSettings.get());
@@ -601,7 +604,10 @@ public class App extends Application {
     private void startSelectDataSource(Stage stage) {
         state.set(SELECT_DATA_SOURCE);
         state.addListener(this::appStateChangeListener);
-        appPages.launchSelectDataSourcePage(stage);
+        // --kb opens a knowledge base with no picker; if it cannot, the picker opens (ike-issues#1139).
+        if (!appPages.openLaunchKnowledgeBase(stage)) {
+            appPages.launchSelectDataSourcePage(stage);
+        }
     }
 
     @Override
