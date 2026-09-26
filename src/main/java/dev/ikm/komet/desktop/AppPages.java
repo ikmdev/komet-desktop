@@ -11,7 +11,7 @@ import static dev.ikm.komet.desktop.util.CssFile.KVIEW_CSS;
 import static dev.ikm.komet.desktop.util.CssUtils.addStylesheets;
 import static dev.ikm.komet.kview.events.EventTopics.JOURNAL_TOPIC;
 import static dev.ikm.komet.kview.events.JournalTileEvent.UPDATE_JOURNAL_TILE;
-import static dev.ikm.komet.kview.mvvm.model.DataModelHelper.fetchDescendentsOfConcept;
+import static dev.ikm.komet.kview.mvvm.model.DataModelHelper.fetchLeafDescendentsOfConcept;
 import static dev.ikm.komet.kview.mvvm.view.loginauthor.LoginAuthorViewModel.LoginProperties.SELECTED_AUTHOR;
 import static dev.ikm.komet.kview.mvvm.viewmodel.ViewModelKey.CURRENT_JOURNAL_WINDOW_TOPIC;
 import static dev.ikm.komet.kview.mvvm.viewmodel.ViewModelKey.VIEW_PROPERTIES;
@@ -46,12 +46,16 @@ import dev.ikm.komet.kview.mvvm.view.journal.JournalController;
 import dev.ikm.komet.kview.mvvm.view.landingpage.LandingPageViewFactory;
 import dev.ikm.komet.kview.mvvm.view.login.LoginPageController;
 import dev.ikm.komet.kview.mvvm.view.loginauthor.LoginAuthorController;
+import dev.ikm.komet.kview.mvvm.view.loginauthor.LoginAuthorViewModel;
 import dev.ikm.komet.kview.mvvm.viewmodel.JournalViewModel;
 import dev.ikm.komet.navigator.graph.GraphNavigatorNodeFactory;
 import dev.ikm.komet.preferences.KometPreferences;
 import dev.ikm.komet.preferences.KometPreferencesImpl;
 import dev.ikm.komet.search.SearchNodeFactory;
+import dev.ikm.tinkar.common.service.DataServiceController;
 import dev.ikm.tinkar.common.service.PrimitiveData;
+import dev.ikm.tinkar.common.service.ServiceExclusionGroup;
+import dev.ikm.tinkar.common.service.ServiceLifecycleManager;
 import dev.ikm.tinkar.coordinate.view.calculator.ViewCalculator;
 import dev.ikm.tinkar.entity.ConceptEntity;
 import dev.ikm.tinkar.entity.EntityService;
@@ -59,6 +63,8 @@ import dev.ikm.tinkar.terms.ConceptFacade;
 import dev.ikm.tinkar.terms.TinkarTerm;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.control.Alert;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
@@ -71,7 +77,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class AppPages {
     private static final Logger LOG = LoggerFactory.getLogger(AppPages.class);
@@ -126,14 +134,19 @@ public class AppPages {
         final WindowSettings windowSettings = new WindowSettings(windowPreferences);
         ViewProperties viewProperties = windowSettings.getView().makeOverridableViewProperties("login-author");
 
-        // Bypass the login screen if developer has specified -Ddev_author=<username or uuid string>
-        if (bypassLogin(viewProperties)) {
+        // Bypass the login screen for -Ddev_author=<username or uuid string>, or for --user with a
+        // password that checks; otherwise a --user author is preselected on the screen.
+        final ConceptEntity[] preselectedAuthor = new ConceptEntity[1];
+        if (bypassLogin(viewProperties, author -> preselectedAuthor[0] = author)) {
             return;
         }
 
         Config loginConfig = new Config(LoginAuthorController.class.getResource("LoginAuthor.fxml"))
                 .updateViewModel("loginAuthorViewModel", loginAuthorViewModel -> {
                     loginAuthorViewModel.setPropertyValue(VIEW_PROPERTIES, viewProperties);
+                    if (preselectedAuthor[0] != null) {
+                        loginAuthorViewModel.setPropertyValue(SELECTED_AUTHOR, preselectedAuthor[0]);
+                    }
                 });
 
 
@@ -156,57 +169,159 @@ public class AppPages {
     }
 
     /**
-     * Returns true if developer specifies a valid user or uuid of concept (decendents of user) otherwise false.
-     * @return Returns true if developer specifies a valid user or uuid of concept (decendents of user) otherwise false.
+     * Logs in without the author screen when the launch asked for it, and returns true if it did:
+     * the developer bypass {@code -Ddev_author=<name or uuid>} with no password, or
+     * {@code --user=<name or uuid>} with the password the author screen would accept
+     * (IKE-Network/ike-issues#1139). When {@code --user} names an author but the password is
+     * missing or does not check, the author screen opens with that author selected.
+     *
+     * @param viewProperties the author screen's view
+     * @param preselect      receives the {@code --user} author when the screen must still be shown
+     * @return true if an author is logged in and the app has moved to {@link AppState#RUNNING}
      */
-    private boolean bypassLogin(ViewProperties viewProperties) {
-        // Check for developer bypass using a known user.
+    private boolean bypassLogin(ViewProperties viewProperties, Consumer<ConceptEntity> preselect) {
+        // Create new instance of ViewCalculator to have stated navigation along with inferred.
+        ViewCalculator viewCalculator = ViewCoordinateHelper.createNavigationCalculatorWithPatternNidsLatest(viewProperties, TinkarTerm.STATED_NAVIGATION_PATTERN.nid());
+
+        // Developer bypass using a known user, no password.
         String devAuthorPropStr = System.getProperty(DEV_AUTHOR);
         if (devAuthorPropStr != null) {
-            // Create new instance of ViewCalculator to have stated navigation along with inferred.
-            ViewCalculator viewCalculator = ViewCoordinateHelper.createNavigationCalculatorWithPatternNidsLatest(viewProperties, TinkarTerm.STATED_NAVIGATION_PATTERN.nid());
-            Set<ConceptEntity> conceptEntitySet = fetchDescendentsOfConcept(viewCalculator, TinkarTerm.USER.publicId());
-            if (conceptEntitySet.isEmpty()) {
-                // add default user into set of available users
-                conceptEntitySet.add(EntityService.get().getEntityFast(TinkarTerm.USER));
+            Optional<ConceptEntity> devAuthor = resolveAuthor(viewCalculator, devAuthorPropStr);
+            if (devAuthor.isPresent()) {
+                LOG.info("Developer By Pass {} = {}, name = {}", DEV_AUTHOR, devAuthorPropStr, viewCalculator.getDescriptionTextOrNid(devAuthor.get().nid()));
+                logIn(devAuthor.get());
+                return true;
             }
+            // Developer entered a non existing user
+            LOG.warn("No concept entity found for user id {}. Will be showing login screen.", devAuthorPropStr);
+        }
 
-            // check for name or public id
-            Optional<ConceptEntity> conceptEntityOpt = conceptEntitySet.stream().filter(conceptEntity -> {
-                // if found bypass
-                Optional<String> devAuthor = viewCalculator.getDescriptionText(conceptEntity.nid());
-                // LOG.info("author name = {}, and idstring = {}", devAuthor.orElse("no name"), conceptEntity.publicId().idString());
-                UUID uuid = null;
-                try {
-                    uuid = UUID.fromString(devAuthorPropStr);
-                } catch (IllegalArgumentException ex) {
-                    // ignore
+        // --user: the password is checked the way the author screen checks it.
+        Optional<String> launchUser = LaunchOptions.current().get(LaunchOptions.Option.USER);
+        if (launchUser.isPresent()) {
+            Optional<ConceptEntity> author = resolveAuthor(viewCalculator, launchUser.get());
+            if (author.isEmpty()) {
+                LOG.warn("--{} names no author: {}. Showing the author screen.",
+                        LaunchOptions.Option.USER.argumentName(), launchUser.get());
+                return false;
+            }
+            Optional<String> password = LaunchOptions.current().password(System::getenv);
+            if (password.isPresent() && LoginAuthorViewModel.passwordMatches(viewProperties, author.get(), password.get())) {
+                LOG.info("Logged in from the command line as {}", viewCalculator.getDescriptionTextOrNid(author.get().nid()));
+                logIn(author.get());
+                return true;
+            }
+            if (password.isEmpty()) {
+                LOG.warn("--{} {}: no password supplied (set {} or pass --{}). Showing the author screen.",
+                        LaunchOptions.Option.USER.argumentName(), launchUser.get(),
+                        LaunchOptions.PASSWORD_ENVIRONMENT_VARIABLE, LaunchOptions.Option.PASSWORD_FILE.argumentName());
+            } else {
+                LOG.warn("--{} {}: the password does not match. Showing the author screen.",
+                        LaunchOptions.Option.USER.argumentName(), launchUser.get());
+            }
+            preselect.accept(author.get());
+        }
+        return false;
+    }
+
+    /**
+     * Finds the author a launch option names, by public id or by name, among the authors the
+     * author screen lists: the leaf descendants of {@link TinkarTerm#USER}, else that concept itself.
+     *
+     * @param viewCalculator a calculator with stated navigation
+     * @param nameOrUuid     the author's name or one of its UUIDs
+     * @return the author, or empty when none matches
+     */
+    private static Optional<ConceptEntity> resolveAuthor(ViewCalculator viewCalculator, String nameOrUuid) {
+        // Only leaf descendants of USER are named users; grouping concepts in the subtree are excluded (ike-issues#754).
+        Set<ConceptEntity> authors = fetchLeafDescendentsOfConcept(viewCalculator, TinkarTerm.USER.publicId());
+        if (authors.isEmpty()) {
+            // add default user into set of available users
+            authors.add(EntityService.get().getEntityFast(TinkarTerm.USER));
+        }
+        UUID uuid = null;
+        try {
+            uuid = UUID.fromString(nameOrUuid);
+        } catch (IllegalArgumentException ex) {
+            // a name, not a UUID
+        }
+        final UUID givenUuid = uuid;
+        return authors.stream().filter(author -> {
+            if (givenUuid != null) {
+                return author.publicId().contains(givenUuid);
+            }
+            return nameOrUuid.equals(viewCalculator.getPreferredDescriptionTextWithFallbackOrNid(author.nid()))
+                    || viewCalculator.getDescriptionText(author.nid()).map(nameOrUuid::equals).orElse(false);
+        }).findFirst();
+    }
+
+    private static void logIn(ConceptEntity author) {
+        App.userProperty.set(author.toProxy());
+        App.state.set(AppState.RUNNING);
+    }
+
+    /**
+     * Opens the knowledge base named by {@code --kb} with no picker, and returns true if it did
+     * (IKE-Network/ike-issues#1139). It opens only what the picker could open, through the same
+     * provider and the same {@link SelectDataSourceController#prepareDataSource} step. When the
+     * knowledge base cannot be resolved, or is open in another process, the reason is shown and
+     * the caller opens the picker instead.
+     *
+     * @param stage the primary stage
+     * @return true if the knowledge base is loading
+     */
+    boolean openLaunchKnowledgeBase(Stage stage) {
+        Optional<String> knowledgeBase = LaunchOptions.current().get(LaunchOptions.Option.KB);
+        if (knowledgeBase.isEmpty()) {
+            return false;
+        }
+        ServiceLifecycleManager lifecycleManager = ServiceLifecycleManager.get();
+        if (!lifecycleManager.isDiscovered()) {
+            lifecycleManager.discoverServices();
+        }
+        List<DataServiceController<?>> controllers = new ArrayList<>();
+        lifecycleManager.getServicesForGroup(ServiceExclusionGroup.DATA_PROVIDER)
+                .forEach(service -> controllers.add((DataServiceController<?>) service));
+
+        Path home = Path.of(System.getProperty("user.home"));
+        KnowledgeBaseResolver.Resolution resolution = KnowledgeBaseResolver.resolve(knowledgeBase.get(),
+                home.resolve("Solor"), home, KnowledgeBaseResolver.candidates(controllers));
+        switch (resolution) {
+            case KnowledgeBaseResolver.Unresolved unresolved -> {
+                LOG.error("--{}={}: {}", LaunchOptions.Option.KB.argumentName(), knowledgeBase.get(), unresolved.message());
+                showLaunchProblem("Cannot open the knowledge base", unresolved.message());
+                return false;
+            }
+            case KnowledgeBaseResolver.Found found -> {
+                DataServiceController<?> controller = controllers.stream()
+                        .filter(candidate -> candidate.controllerName().equals(found.controllerName()))
+                        .findFirst().orElseThrow();
+                Optional<String> conflict = controller.openConflict(found.option());
+                if (conflict.isPresent()) {
+                    LOG.error("--{}={}: {}", LaunchOptions.Option.KB.argumentName(), knowledgeBase.get(), conflict.get());
+                    showLaunchProblem("This datastore is open in another process",
+                            found.option().name() + " — " + conflict.get()
+                                    + ".\n\nEither close the other process, or open a different datastore.");
+                    return false;
                 }
-
-                // check if developer passed in uuid or a name description.
-                return uuid != null
-                        && conceptEntity.publicId().contains(UUID.fromString(devAuthorPropStr))
-                        || devAuthor.isPresent()
-                        && devAuthor.get().equals(devAuthorPropStr);
-            }).findFirst();
-
-            // if a match is found go and by pass
-            conceptEntityOpt.ifPresentOrElse(conceptEntity -> {
-                        // bypass login screen
-                        LOG.info("Developer By Pass {} = {}, name = {}", DEV_AUTHOR, devAuthorPropStr, viewCalculator.getDescriptionTextOrNid(conceptEntity.nid()));
-                        App.userProperty.set(conceptEntity.toProxy());
-                        App.state.set(AppState.RUNNING);
-                    }, ()->
-                            // Developer entered a non existing user
-                            LOG.warn("No concept entity found for user id {}. Will be showing login screen.", devAuthorPropStr)
-            );
-
-            // if found then avoid loading login screen.
-            if (conceptEntityOpt.isPresent()) {
+                LOG.info("Opening {} with {} (--{})", found.option().uri(), found.controllerName(),
+                        LaunchOptions.Option.KB.argumentName());
+                SelectDataSourceController.prepareDataSource(controller, found.option());
+                app.rootPane.getChildren().setAll(SelectDataSourceController.loadingProgressView());
+                stage.setTitle("KOMET Startup");
+                app.appMenu.setupMenus(app.rootPane);
+                App.state.set(AppState.SELECTED_DATA_SOURCE);
                 return true;
             }
         }
-        return false;
+    }
+
+    private static void showLaunchProblem(String header, String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Komet launch options");
+        alert.setHeaderText(header);
+        alert.setContentText(message + "\n\nChoose a knowledge base in the picker instead.");
+        alert.showAndWait();
     }
 
     public void launchLandingPage(Stage stage, ConceptFacade loggedInUser) {
@@ -235,6 +350,10 @@ public class AppPages {
             stage.setMaximized(false);  // Change from true to false
             stage.setWidth(1035);       // Match the prefWidth from landing-page.fxml
             stage.setHeight(850);       // Match the prefHeight from landing-page.fxml
+            // Where it was at the last quit on this knowledge base, if recorded (ike-issues#1151).
+            if (!IS_BROWSER) {
+                OpenWindowTracker.recordedLandingPage().ifPresent(saved -> ScreenFit.place(stage, saved));
+            }
             stage.setOnCloseRequest(windowEvent -> {
                 // This is called only when the user clicks the close button on the window
                 App.state.set(SHUTDOWN);
@@ -309,12 +428,17 @@ public class AppPages {
         }
 
         if (journalWindowSettings.getValue(JOURNAL_HEIGHT) != null) {
-            journalStage.setHeight(journalWindowSettings.getValue(JOURNAL_HEIGHT));
-            journalStage.setWidth(journalWindowSettings.getValue(JOURNAL_WIDTH));
-            journalStage.setX(journalWindowSettings.getValue(JOURNAL_XPOS));
-            journalStage.setY(journalWindowSettings.getValue(JOURNAL_YPOS));
+            // Moved onto a connected screen if it was saved on one that is gone (ike-issues#1151).
+            ScreenFit.place(journalStage, new Rectangle2D(
+                    journalWindowSettings.getValue(JOURNAL_XPOS), journalWindowSettings.getValue(JOURNAL_YPOS),
+                    journalWindowSettings.getValue(JOURNAL_WIDTH), journalWindowSettings.getValue(JOURNAL_HEIGHT)));
         } else {
             journalStage.setMaximized(true);
+        }
+
+        // Reopened at the next launch if it is open at quit (ike-issues#1151).
+        if (!IS_BROWSER) {
+            app.openWindowTracker.track(journalStage, () -> Optional.of(OpenWindows.Entry.journal(journalTopic)));
         }
 
         journalStage.setOnHidden(windowEvent -> {
@@ -368,6 +492,21 @@ public class AppPages {
      */
     void launchKLEditorViewPage(PrefX klWindowSettings, ConceptFacade loggedInUser, String windowToLoad,
                                 boolean standardWindow) {
+        launchKLEditorViewPage(klWindowSettings, loggedInUser, windowToLoad, standardWindow, Optional.empty());
+    }
+
+    /**
+     * Opens a KL editor window on a layout.
+     *
+     * @param klWindowSettings the window settings
+     * @param loggedInUser     the author for changes
+     * @param windowToLoad     the layout's title, or null for a new layout
+     * @param standardWindow   whether the layout is a standard window
+     * @param bounds           where to open it, when reopening a window open at the last quit
+     *                         (ike-issues#1151); empty opens it maximized
+     */
+    void launchKLEditorViewPage(PrefX klWindowSettings, ConceptFacade loggedInUser, String windowToLoad,
+                                boolean standardWindow, Optional<Rectangle2D> bounds) {
         Objects.requireNonNull(klWindowSettings, "klWindowSettings cannot be null");
 
         final KometPreferences appPreferences = KometPreferencesImpl.getConfigurationRootPreferences();
@@ -403,9 +542,18 @@ public class AppPages {
 
         app.appMenu.generateKLEditorMenu((BorderPane) root, klEditorWindowStage, klEditorMainScreenController);
 
-        klEditorWindowStage.setMaximized(true);
+        bounds.ifPresentOrElse(saved -> ScreenFit.place(klEditorWindowStage, saved),
+                () -> klEditorWindowStage.setMaximized(true));
 
         klEditorWindowStage.setOnHidden(windowEvent -> klEditorMainScreenController.shutdown());
+
+        // Reopened at the next launch if it is open at quit on a saved layout (ike-issues#1151).
+        if (!IS_BROWSER) {
+            app.openWindowTracker.track(klEditorWindowStage, () -> klEditorMainScreenController.savedWindowTitle()
+                    .map(title -> OpenWindows.Entry.klEditor(title, klEditorMainScreenController.isStandardWindows(),
+                            new Rectangle2D(klEditorWindowStage.getX(), klEditorWindowStage.getY(),
+                                    klEditorWindowStage.getWidth(), klEditorWindowStage.getHeight()))));
+        }
 
         if (IS_BROWSER) {
             app.webAPI.openStageAsTab(klEditorWindowStage, "KL Editor");
