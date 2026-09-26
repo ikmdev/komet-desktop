@@ -43,6 +43,11 @@ assemble:
         - zip-2
         - --bind-services
         - --ignore-signing-information
+        # OSGi bundle metadata, unused in this JPMS runtime image. jgit ships OSGI-INF/, and the
+        # multi-release jars apfloat and jspecify map META-INF/versions/9/OSGI-INF/ to it, so three
+        # modules hold resources in package path "OSGI-INF" — which JDK 27's jlink rejects
+        # ("Multiple modules contain non-empty package") (IKE-Network/ike-issues#1143).
+        - '--exclude-resources=**/OSGI-INF/**'
         - --add-modules=jdk.incubator.vector
       fileSets:
         - input: ${project.basedir}/src/main/resources
@@ -85,6 +90,11 @@ assemble:
         - zip-2
         - --bind-services
         - --ignore-signing-information
+        # OSGi bundle metadata, unused in this JPMS runtime image. jgit ships OSGI-INF/, and the
+        # multi-release jars apfloat and jspecify map META-INF/versions/9/OSGI-INF/ to it, so three
+        # modules hold resources in package path "OSGI-INF" — which JDK 27's jlink rejects
+        # ("Multiple modules contain non-empty package") (IKE-Network/ike-issues#1143).
+        - '--exclude-resources=**/OSGI-INF/**'
         - --add-modules=jdk.incubator.vector
       fileSets:
         - input: ${project.basedir}/src/main/resources
@@ -127,6 +137,11 @@ assemble:
         - zip-2
         - --bind-services
         - --ignore-signing-information
+        # OSGi bundle metadata, unused in this JPMS runtime image. jgit ships OSGI-INF/, and the
+        # multi-release jars apfloat and jspecify map META-INF/versions/9/OSGI-INF/ to it, so three
+        # modules hold resources in package path "OSGI-INF" — which JDK 27's jlink rejects
+        # ("Multiple modules contain non-empty package") (IKE-Network/ike-issues#1143).
+        - '--exclude-resources=**/OSGI-INF/**'
         - --add-modules=jdk.incubator.vector
       fileSets:
         - input: ${project.basedir}/src/main/resources
