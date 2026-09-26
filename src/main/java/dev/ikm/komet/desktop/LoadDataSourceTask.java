@@ -18,9 +18,7 @@ package dev.ikm.komet.desktop;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.Alert;
-import javafx.scene.layout.Region;
 import dev.ikm.tinkar.common.service.DataStoreAlreadyOpenException;
-import dev.ikm.tinkar.common.service.IncompatibleNidLayoutException;
 import dev.ikm.tinkar.common.service.PrimitiveData;
 import dev.ikm.tinkar.common.service.TrackingCallable;
 import org.slf4j.Logger;
@@ -48,6 +46,23 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
             LOG.info("PrimitiveData.start() completed successfully");
             LOG.info("Scheduling state transition to SELECT_USER");
             Platform.runLater(() -> {
+                // A 6-bit database opens normally; warn before any work and offer
+                // 6-bit mode or migration (IKE-Network/ike-issues#1138).
+                if (NidLayoutMigration.inSixBitMode()) {
+                    switch (NidLayoutMigration.askAfterOpen()) {
+                        case OPEN_IN_SIX_BIT_MODE -> LOG.info("User chose to continue in 6-bit mode");
+                        case MIGRATE -> {
+                            NidLayoutMigration.migrate(
+                                    () -> state.set(AppState.SHUTDOWN),
+                                    () -> state.set(AppState.SELECT_USER));
+                            return;
+                        }
+                        case QUIT -> {
+                            state.set(AppState.SHUTDOWN);
+                            return;
+                        }
+                    }
+                }
                 LOG.info("Platform.runLater executing - setting state to SELECT_USER");
                 state.set(AppState.SELECT_USER);
                 LOG.info("State set to SELECT_USER");
@@ -63,12 +78,7 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
             Optional<DataStoreAlreadyOpenException> alreadyOpen = DataStoreAlreadyOpenException.findIn(ex);
             if (alreadyOpen.isPresent()) {
                 handleDataStoreAlreadyOpen(alreadyOpen.get());
-                return null;
             }
-            // A database in the older nid layout is refused unmodified; say so and
-            // explain the migration instead of leaving the startup window idle
-            // (IKE-Network/ike-issues#1138).
-            IncompatibleNidLayoutException.findIn(ex).ifPresent(this::handleIncompatibleNidLayout);
             return null;
         } finally {
             updateTitle("Data source loaded in " + durationString());
@@ -97,34 +107,6 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
                     alreadyOpen.dataStorePath()
                             + "\n\nClose the other Komet window (or process) using this database, "
                             + "then start Komet again.");
-            alert.showAndWait();
-            state.set(AppState.SHUTDOWN);
-        });
-    }
-
-    /**
-     * Explains that the selected database uses the older nid layout, that it
-     * was not changed, and how to migrate it; then transitions the application
-     * to {@link AppState#SHUTDOWN}, since the refusal is terminal. Scheduled as
-     * one JavaFX runnable so shutdown waits for the user to dismiss the dialog.
-     *
-     * @param incompatible the refusal naming the database
-     */
-    private void handleIncompatibleNidLayout(IncompatibleNidLayoutException incompatible) {
-        LOG.error("Database uses an incompatible nid layout: {}", incompatible.dataStorePath());
-        Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Database needs migration");
-            alert.setHeaderText("This database uses an older format that this version of Komet can't open");
-            alert.setContentText(
-                    incompatible.dataStorePath()
-                            + "\n\nIt was created in the earlier format, which allows at most 63 patterns. "
-                            + "This version allows up to 255 and stores identifiers differently, so it "
-                            + "can't read the older database. The database has not been changed."
-                            + "\n\nTo migrate it: open it in a Komet version that uses the earlier format, "
-                            + "export it with File > Export Dataset, then create a new database from "
-                            + "that export in this version.");
-            alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
             alert.showAndWait();
             state.set(AppState.SHUTDOWN);
         });

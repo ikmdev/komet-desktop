@@ -101,6 +101,8 @@ public class AppPages {
 
     void launchSelectDataSourcePage(Stage stage) {
         try {
+            // Completing a 6-bit → 8-bit migration: propose the new folder (ike-issues#1138).
+            NidLayoutMigration.applyPendingMigration();
             FXMLLoader sourceLoader = new FXMLLoader(getClass().getResource("SelectDataSource.fxml"));
             BorderPane sourceRoot = sourceLoader.load();
             SelectDataSourceController sourceController = sourceLoader.getController();
@@ -225,10 +227,11 @@ public class AppPages {
             // Set the logged-in user as author on the controller's single edit coordinate
             app.landingPageController.editCoordinate().authorForChangesProperty().setValue(loggedInUser);
             app.landingPageController.getWelcomeTitleLabel().setText("User: " + username);
-            app.landingPageController.setSelectedDatasetTitle(PrimitiveData.get().name());
+            app.landingPageController.setSelectedDatasetTitle(
+                    PrimitiveData.get().name() + NidLayoutMigration.titleSuffix());
             app.landingPageController.getGithubStatusHyperlink().setOnAction(_ -> app.appGithub.connectToGithub());
 
-            stage.setTitle("Landing Page");
+            stage.setTitle("Landing Page" + NidLayoutMigration.titleSuffix());
             stage.setMaximized(false);  // Change from true to false
             stage.setWidth(1035);       // Match the prefWidth from landing-page.fxml
             stage.setHeight(850);       // Match the prefHeight from landing-page.fxml
