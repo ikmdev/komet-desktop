@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
@@ -46,6 +47,15 @@ public final class LaunchOptions {
 
     /** The program argument that must never carry a password; it is refused, not read. */
     static final String REFUSED_PASSWORD_ARGUMENT = "password";
+
+    /**
+     * The flag that skips reopening the windows open at the last quit, for this launch only
+     * (IKE-Network/ike-issues#1151); for example when a journal fails on open.
+     */
+    public static final String NO_RESTORE_ARGUMENT = "--no-restore";
+
+    /** The system-property fallback for {@link #NO_RESTORE_ARGUMENT}; {@code true} skips reopening. */
+    public static final String NO_RESTORE_PROPERTY = "komet.no-restore";
 
     /**
      * A launch option: its program-argument name and its system-property fallback.
@@ -85,12 +95,14 @@ public final class LaunchOptions {
         }
     }
 
-    private static LaunchOptions current = new LaunchOptions(new EnumMap<>(Option.class));
+    private static LaunchOptions current = new LaunchOptions(new EnumMap<>(Option.class), false);
 
     private final Map<Option, String> values;
+    private final boolean noRestore;
 
-    private LaunchOptions(Map<Option, String> values) {
+    private LaunchOptions(Map<Option, String> values, boolean noRestore) {
         this.values = values;
+        this.noRestore = noRestore;
     }
 
     /**
@@ -98,11 +110,13 @@ public final class LaunchOptions {
      * A blank value counts as absent. A {@code --password} argument is refused with an error in
      * the log, never read.
      *
-     * @param namedArguments the {@code --name=value} program arguments, as JavaFX parses them
-     * @param systemProperty looks up a system property; answers {@code null} when it is unset
+     * @param namedArguments   the {@code --name=value} program arguments, as JavaFX parses them
+     * @param unnamedArguments the other program arguments, such as {@value #NO_RESTORE_ARGUMENT}
+     * @param systemProperty   looks up a system property; answers {@code null} when it is unset
      * @return the resolved options
      */
-    public static LaunchOptions resolve(Map<String, String> namedArguments, UnaryOperator<String> systemProperty) {
+    public static LaunchOptions resolve(Map<String, String> namedArguments, List<String> unnamedArguments,
+                                        UnaryOperator<String> systemProperty) {
         if (namedArguments.containsKey(REFUSED_PASSWORD_ARGUMENT)) {
             LOG.error("Ignoring --{}: a password is never taken from the command line, where ps and shell "
                     + "history expose it. Set {} or pass --{}.", REFUSED_PASSWORD_ARGUMENT,
@@ -118,7 +132,9 @@ public final class LaunchOptions {
                 values.put(option, value.strip());
             }
         }
-        return new LaunchOptions(values);
+        boolean noRestore = unnamedArguments.contains(NO_RESTORE_ARGUMENT)
+                || Boolean.parseBoolean(systemProperty.apply(NO_RESTORE_PROPERTY));
+        return new LaunchOptions(values, noRestore);
     }
 
     /**
@@ -147,6 +163,15 @@ public final class LaunchOptions {
      */
     public Optional<String> get(Option option) {
         return Optional.ofNullable(values.get(option));
+    }
+
+    /**
+     * Whether this launch skips reopening the windows open at the last quit.
+     *
+     * @return true for {@value #NO_RESTORE_ARGUMENT} or {@code -D}{@value #NO_RESTORE_PROPERTY}{@code =true}
+     */
+    public boolean noRestore() {
+        return noRestore;
     }
 
     /**

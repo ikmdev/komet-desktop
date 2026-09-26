@@ -63,6 +63,7 @@ import dev.ikm.tinkar.terms.ConceptFacade;
 import dev.ikm.tinkar.terms.TinkarTerm;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.control.Alert;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -346,6 +347,10 @@ public class AppPages {
             stage.setMaximized(false);  // Change from true to false
             stage.setWidth(1035);       // Match the prefWidth from landing-page.fxml
             stage.setHeight(850);       // Match the prefHeight from landing-page.fxml
+            // Where it was at the last quit on this knowledge base, if recorded (ike-issues#1151).
+            if (!IS_BROWSER) {
+                OpenWindowTracker.recordedLandingPage().ifPresent(saved -> ScreenFit.place(stage, saved));
+            }
             stage.setOnCloseRequest(windowEvent -> {
                 // This is called only when the user clicks the close button on the window
                 App.state.set(SHUTDOWN);
@@ -420,12 +425,17 @@ public class AppPages {
         }
 
         if (journalWindowSettings.getValue(JOURNAL_HEIGHT) != null) {
-            journalStage.setHeight(journalWindowSettings.getValue(JOURNAL_HEIGHT));
-            journalStage.setWidth(journalWindowSettings.getValue(JOURNAL_WIDTH));
-            journalStage.setX(journalWindowSettings.getValue(JOURNAL_XPOS));
-            journalStage.setY(journalWindowSettings.getValue(JOURNAL_YPOS));
+            // Moved onto a connected screen if it was saved on one that is gone (ike-issues#1151).
+            ScreenFit.place(journalStage, new Rectangle2D(
+                    journalWindowSettings.getValue(JOURNAL_XPOS), journalWindowSettings.getValue(JOURNAL_YPOS),
+                    journalWindowSettings.getValue(JOURNAL_WIDTH), journalWindowSettings.getValue(JOURNAL_HEIGHT)));
         } else {
             journalStage.setMaximized(true);
+        }
+
+        // Reopened at the next launch if it is open at quit (ike-issues#1151).
+        if (!IS_BROWSER) {
+            app.openWindowTracker.track(journalStage, () -> Optional.of(OpenWindows.Entry.journal(journalTopic)));
         }
 
         journalStage.setOnHidden(windowEvent -> {
@@ -479,6 +489,21 @@ public class AppPages {
      */
     void launchKLEditorViewPage(PrefX klWindowSettings, ConceptFacade loggedInUser, String windowToLoad,
                                 boolean standardWindow) {
+        launchKLEditorViewPage(klWindowSettings, loggedInUser, windowToLoad, standardWindow, Optional.empty());
+    }
+
+    /**
+     * Opens a KL editor window on a layout.
+     *
+     * @param klWindowSettings the window settings
+     * @param loggedInUser     the author for changes
+     * @param windowToLoad     the layout's title, or null for a new layout
+     * @param standardWindow   whether the layout is a standard window
+     * @param bounds           where to open it, when reopening a window open at the last quit
+     *                         (ike-issues#1151); empty opens it maximized
+     */
+    void launchKLEditorViewPage(PrefX klWindowSettings, ConceptFacade loggedInUser, String windowToLoad,
+                                boolean standardWindow, Optional<Rectangle2D> bounds) {
         Objects.requireNonNull(klWindowSettings, "klWindowSettings cannot be null");
 
         final KometPreferences appPreferences = KometPreferencesImpl.getConfigurationRootPreferences();
@@ -514,9 +539,18 @@ public class AppPages {
 
         app.appMenu.generateKLEditorMenu((BorderPane) root, klEditorWindowStage, klEditorMainScreenController);
 
-        klEditorWindowStage.setMaximized(true);
+        bounds.ifPresentOrElse(saved -> ScreenFit.place(klEditorWindowStage, saved),
+                () -> klEditorWindowStage.setMaximized(true));
 
         klEditorWindowStage.setOnHidden(windowEvent -> klEditorMainScreenController.shutdown());
+
+        // Reopened at the next launch if it is open at quit on a saved layout (ike-issues#1151).
+        if (!IS_BROWSER) {
+            app.openWindowTracker.track(klEditorWindowStage, () -> klEditorMainScreenController.savedWindowTitle()
+                    .map(title -> OpenWindows.Entry.klEditor(title, klEditorMainScreenController.isStandardWindows(),
+                            new Rectangle2D(klEditorWindowStage.getX(), klEditorWindowStage.getY(),
+                                    klEditorWindowStage.getWidth(), klEditorWindowStage.getHeight()))));
+        }
 
         if (IS_BROWSER) {
             app.webAPI.openStageAsTab(klEditorWindowStage, "KL Editor");
