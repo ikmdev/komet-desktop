@@ -1,6 +1,6 @@
 schema: 1
-standards-version: '259'
-applied: '2026-09-27T15:33:25.882115Z'
+standards-version: '260'
+applied: '2026-09-27T22:37:29.639711Z'
 files:
   .gitignore:
     tier: tracked-block
