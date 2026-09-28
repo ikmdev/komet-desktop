@@ -358,16 +358,36 @@ public class SelectDataSourceController {
             }
         }
 
-        // Remember this provider + knowledge base so the next launch pre-selects it.
-        persistSelection(selectedController, selectedOption);
+        saveDataServiceProperties(selectedController);
+        prepareDataSource(selectedController, selectedOption);
 
-        saveDataServiceProperties(dataSourceChoiceBox.getValue());
-        dataSourceChoiceBox.getValue().setDataUriOption(fileListView.getSelectionModel().getSelectedItem());
-        
+        rootBorderPane.setCenter(loadingProgressView());
+        rootBorderPane.setTop(null);
+        rootBorderPane.setBottom(null);
+
+        App.state.set(AppState.SELECTED_DATA_SOURCE);
+    }
+
+    /**
+     * Readies {@code controller} to open {@code option}, the way the picker's OK does: remembers the
+     * selection so the next launch pre-selects it, points the provider at the knowledge base, and
+     * selects the provider and the search engine before the services start. The caller then moves
+     * the app to {@link AppState#SELECTED_DATA_SOURCE}. Shared by the picker and the {@code --kb}
+     * launch option (IKE-Network/ike-issues#1139), so both open a knowledge base identically.
+     *
+     * @param controller the provider that opens the knowledge base
+     * @param option     the knowledge base
+     */
+    static void prepareDataSource(DataServiceController<?> controller, DataUriOption option) {
+        // Remember this provider + knowledge base so the next launch pre-selects it.
+        persistSelection(controller, option);
+
+        controller.setDataUriOption(option);
+
         // Select the service for the group BEFORE starting services
         ServiceLifecycleManager.get().selectServiceForGroup(
             ServiceExclusionGroup.DATA_PROVIDER,
-            dataSourceChoiceBox.getValue().getClass()
+            controller.getClass()
         );
 
         // A remote datastore answers search over the wire, so the local Lucene indexer must not
@@ -381,23 +401,24 @@ public class SelectDataSourceController {
         // Both branches name a winner explicitly. Clearing the property instead would leave the
         // group unresolved, and with the plugin bundled its two candidates tie on effective
         // priority — the manager would then break the tie by discovery order.
-        boolean remoteDatastore = selectedController != null
-                && selectedController.getClass().getName().startsWith(GRPC_PROVIDER_PACKAGE);
+        boolean remoteDatastore = controller.getClass().getName().startsWith(GRPC_PROVIDER_PACKAGE);
         System.setProperty(SEARCH_ENGINE_GROUP_PROPERTY,
                 remoteDatastore ? GRPC_SEARCH_CONTROLLER_NAME : LUCENE_SEARCH_CONTROLLER_NAME);
+    }
 
-
+    /**
+     * The progress view shown while a knowledge base loads.
+     *
+     * @return a tab pane holding the progress node
+     */
+    static TabPane loadingProgressView() {
         TabPane progressTabPane = new TabPane();
-        rootBorderPane.setCenter(progressTabPane);
-        rootBorderPane.setTop(null);
-        rootBorderPane.setBottom(null);
         ProgressNodeFactory progressNodeFactory = new ProgressNodeFactory();
         KometNode kometNode = progressNodeFactory.create();
         Tab progressTab = new Tab(kometNode.getTitle().getValue(), kometNode.getNode());
         progressTab.setGraphic(kometNode.getTitleNode());
         progressTabPane.getTabs().add(progressTab);
-
-        App.state.set(AppState.SELECTED_DATA_SOURCE);
+        return progressTabPane;
     }
 
     /**

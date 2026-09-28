@@ -100,7 +100,6 @@ import static dev.ikm.komet.kview.events.EventTopics.KL_TOPIC;
 import static dev.ikm.komet.kview.events.EventTopics.USER_TOPIC;
 import static dev.ikm.komet.preferences.JournalWindowPreferences.JOURNALS;
 import static dev.ikm.komet.preferences.JournalWindowPreferences.JOURNAL_IDS;
-import static dev.ikm.komet.preferences.JournalWindowSettings.JOURNAL_TITLE;
 import static dev.ikm.tinkar.events.FrameworkTopics.IMPORT_TOPIC;
 
 /**
@@ -172,6 +171,12 @@ public class App extends Application {
      * This is a list of new windows that have been launched. During shutdown, the application close each stage gracefully.
      */
     final List<JournalController> journalControllersList = new ArrayList<>();
+
+    /** The journals and KL editor windows to reopen at the next launch (ike-issues#1151). */
+    final OpenWindowTracker openWindowTracker = new OpenWindowTracker();
+
+    /** Windows are reopened once per process, at the first landing page, never on a later one. */
+    private boolean windowsReopened = false;
 
     /**
      * GitHub preferences data access object.
@@ -448,8 +453,7 @@ public class App extends Application {
         Subscriber<CreateJournalEvent> summonJournalWindowSubscriber = evt -> {
             final PrefX journalWindowSettingsObjectMap = evt.getWindowSettingsObjectMap();
             final UUID journalTopic = journalWindowSettingsObjectMap.getValue(JOURNAL_TOPIC);
-            final String journalName = journalWindowSettingsObjectMap.getValue(JOURNAL_TITLE);
-            // Check if a journal window with the same title is already open
+            // Check if a window for this journal (by topic) is already open
             journalControllersList.stream()
                     .filter(journalController ->
                             journalController.getJournalTopic().equals(journalTopic))
@@ -458,7 +462,7 @@ public class App extends Application {
                                 if (IS_BROWSER) {
                                     // Similar to the desktop version, bring the existing tab to the front
                                     Stage journalStage = (Stage) journalController.getJournalRootPane().getScene().getWindow();
-                                    webAPI.openStageAsTab(journalStage, journalName.replace(" ", "_"));
+                                    webAPI.openStageAsTab(journalStage, journalController.getJournalDirName());
                                 } else {
                                     // Bring the existing window to the front
                                     journalController.windowToFront();
@@ -509,6 +513,10 @@ public class App extends Application {
         appClassicKomet = new AppClassicKomet(this);
         appMenu = new AppMenu(this);
         appPages = new AppPages(this);
+
+        // --kb, --user, --password-file and --no-restore, or their -Dkomet.* fallbacks (ike-issues#1139, #1151).
+        LaunchOptions.setCurrent(LaunchOptions.resolve(getParameters().getNamed(), getParameters().getUnnamed(),
+                System::getProperty));
 
         // Every window shown from here on carries the user's text size and glyph choices.
         TextSizeStylesheet.install(KometSettings.get());
@@ -603,7 +611,10 @@ public class App extends Application {
     private void startSelectDataSource(Stage stage) {
         state.set(SELECT_DATA_SOURCE);
         state.addListener(this::appStateChangeListener);
-        appPages.launchSelectDataSourcePage(stage);
+        // --kb opens a knowledge base with no picker; if it cannot, the picker opens (ike-issues#1139).
+        if (!appPages.openLaunchKnowledgeBase(stage)) {
+            appPages.launchSelectDataSourcePage(stage);
+        }
     }
 
     @Override
@@ -741,6 +752,7 @@ public class App extends Application {
                     LOG.info("Launching landing page for user: {}", userProperty.get());
                     appPages.launchLandingPage(primaryStage, (ConceptFacade) userProperty.get());
                     LOG.info("Landing page launched successfully");
+                    reopenWindowsOnce();
                 }
                 case SHUTDOWN -> {
                     LOG.info("App shutting down");
@@ -825,6 +837,7 @@ public class App extends Application {
     // not (ike-issues#1064) — a stalled provider close froze the app for 71 s on
     // 2026-08-21, and even a healthy close beachballs the UI for seconds.
     if (Platform.isFxApplicationThread()) {
+        recordOpenWindows();
         saveJournalWindowsToPreferences();
         LOG.info(">>> Saved journal windows to preferences");
         showShutdownProgressWindow();
@@ -832,6 +845,7 @@ public class App extends Application {
     } else {
         CountDownLatch uiSaved = new CountDownLatch(1);
         Platform.runLater(() -> {
+            recordOpenWindows();
             saveJournalWindowsToPreferences();
             LOG.info(">>> Saved journal windows to preferences");
             showShutdownProgressWindow();
@@ -847,6 +861,63 @@ public class App extends Application {
         stopServicesThenExit();
     }
 }
+
+    /**
+     * Records the windows open at quit and the landing page's place, so the next launch on this
+     * knowledge base reopens them where they were (ike-issues#1151). Before the landing page
+     * there is nothing to record, and the previous record is kept.
+     */
+    private void recordOpenWindows() {
+        if (IS_BROWSER || landingPageController == null) {
+            return;
+        }
+        openWindowTracker.record();
+        OpenWindowTracker.recordLandingPage(primaryStage);
+    }
+
+    /**
+     * Reopens, back to front, the journals and KL editor windows that were open when Komet last
+     * quit on this knowledge base (ike-issues#1151), unless the Startup setting is off or this
+     * launch passed {@code --no-restore}. Each window reopens through the path a user's own open
+     * takes; one that fails is logged and skipped, and the rest still reopen.
+     */
+    private void reopenWindowsOnce() {
+        if (windowsReopened || IS_BROWSER) {
+            return;
+        }
+        windowsReopened = true;
+        if (LaunchOptions.current().noRestore()) {
+            LOG.info("Not reopening the windows open at the last quit: {}", LaunchOptions.NO_RESTORE_ARGUMENT);
+            return;
+        }
+        if (!KometSettings.get().isReopenWindowsAtLaunch()) {
+            LOG.info("Not reopening the windows open at the last quit: the Startup setting is off");
+            return;
+        }
+        List<OpenWindows.Entry> windows = OpenWindowTracker.recordedWindows();
+        if (windows.isEmpty()) {
+            return;
+        }
+        LOG.info("Reopening {} window(s) open at the last quit", windows.size());
+        // After the landing page is showing, so the reopened windows open in front of it.
+        Platform.runLater(() -> {
+            for (OpenWindows.Entry window : windows) {
+                try {
+                    switch (window.kind()) {
+                        case JOURNAL -> {
+                            if (!landingPageController.openJournal(UUID.fromString(window.key()))) {
+                                LOG.warn("Not reopening journal {}: it no longer exists", window.key());
+                            }
+                        }
+                        case KL_EDITOR -> appPages.launchKLEditorViewPage(PrefX.create(), userProperty.get(),
+                                window.key(), window.standard(), window.bounds());
+                    }
+                } catch (RuntimeException ex) {
+                    LOG.error("Could not reopen {} {}", window.kind(), window.key(), ex);
+                }
+            }
+        });
+    }
 
     /**
      * Stops the data services off the FX thread, then exits the JavaFX platform and
