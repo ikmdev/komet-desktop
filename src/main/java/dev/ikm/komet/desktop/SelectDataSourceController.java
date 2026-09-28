@@ -607,7 +607,7 @@ public class SelectDataSourceController {
      * @param controller the confirmed data-source provider; a {@code null} controller is ignored
      * @param option     the confirmed knowledge base; if {@code null}, only the provider is stored
      */
-    private static void persistSelection(DataServiceController<?> controller, DataUriOption option) {
+    static void persistSelection(DataServiceController<?> controller, DataUriOption option) {
         if (controller == null) {
             return;
         }

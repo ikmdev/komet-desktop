@@ -108,6 +108,9 @@ module dev.ikm.komet.desktop {
     requires javafx.graphics;
     //requires org.scenicview.scenicview;
 
+    provides dev.ikm.tinkar.common.service.ServiceLifecycle
+            with dev.ikm.komet.desktop.MigrationRelaunchLifecycle;
+
     uses DataServiceController;
     uses DefaultDescriptionForNidService;
     uses EntityService;

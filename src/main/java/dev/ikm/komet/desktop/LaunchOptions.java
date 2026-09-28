@@ -66,7 +66,14 @@ public final class LaunchOptions {
         /** The author to log in as, skipping the author screen when the password checks. */
         USER("user", "komet.user"),
         /** A file whose first line is the {@link #USER} password. */
-        PASSWORD_FILE("password-file", "komet.password-file");
+        PASSWORD_FILE("password-file", "komet.password-file"),
+        /**
+         * The folder the picker proposes for the new 8-bit database, set only on the relaunch
+         * that completes a 6-bit to 8-bit migration (IKE-Network/ike-issues#1138). A program
+         * argument, because {@code launchKomet} splits {@code JAVA_OPTS} on whitespace
+         * (IKE-Network/ike-issues#1156).
+         */
+        MIGRATION_FOLDER("migration-folder", "komet.nidLayoutMigration.folder");
 
         private final String argumentName;
         private final String propertyName;

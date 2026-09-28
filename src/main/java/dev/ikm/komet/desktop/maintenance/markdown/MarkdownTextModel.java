@@ -111,7 +111,7 @@ public final class MarkdownTextModel extends StyledTextModelViewOnlyBase {
     }
 
     @Override
-    public StyleAttributeMap getStyleAttributeMap(StyleResolver resolver, TextPos pos) {
+    public StyleAttributeMap getStyleAttributeMap(StyleResolver resolver, TextPos pos, boolean forInsert) {
         // View-only viewer: no per-position style introspection is needed for editing.
         return StyleAttributeMap.EMPTY;
     }

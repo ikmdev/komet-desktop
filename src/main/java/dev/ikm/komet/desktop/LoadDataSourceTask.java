@@ -46,6 +46,23 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
             LOG.info("PrimitiveData.start() completed successfully");
             LOG.info("Scheduling state transition to SELECT_USER");
             Platform.runLater(() -> {
+                // A 6-bit database opens normally; warn before any work and offer
+                // 6-bit mode or migration (IKE-Network/ike-issues#1138).
+                if (NidLayoutMigration.inSixBitMode()) {
+                    switch (NidLayoutMigration.askAfterOpen()) {
+                        case OPEN_IN_SIX_BIT_MODE -> LOG.info("User chose to continue in 6-bit mode");
+                        case MIGRATE -> {
+                            NidLayoutMigration.migrate(
+                                    () -> state.set(AppState.SHUTDOWN),
+                                    () -> state.set(AppState.SELECT_USER));
+                            return;
+                        }
+                        case QUIT -> {
+                            state.set(AppState.SHUTDOWN);
+                            return;
+                        }
+                    }
+                }
                 LOG.info("Platform.runLater executing - setting state to SELECT_USER");
                 state.set(AppState.SELECT_USER);
                 LOG.info("State set to SELECT_USER");
