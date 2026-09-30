@@ -1052,6 +1052,14 @@
                         <configuration>
                             <configFile>${project.build.directory}/jreleaser-config/jreleaser-jlink.yml</configFile>
                             <outputDirectory>${project.build.directory}/jreleaser-jlink</outputDirectory>
+                            <!-- JReleaser resolves the jar glob by walking every file under
+                                 its base directory, which defaults to the multi-module root:
+                                 the whole working set. Under -T 1C that walk raced with
+                                 tinkar-core/integration's Lucene files and failed the
+                                 assembly. Every path in jreleaser-jlink.yml is absolute, so
+                                 this module is the only base the walk needs
+                                 (IKE-Network/ike-issues#1162). -->
+                            <multiModuleProjectDirectory>${project.basedir}</multiModuleProjectDirectory>
                         </configuration>
                     </execution>
                     <!--
