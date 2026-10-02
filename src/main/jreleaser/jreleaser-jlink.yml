@@ -33,6 +33,9 @@ assemble:
             - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
             - -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer
             - --add-modules jdk.incubator.vector
+            # Lucene 10.5.1 turns its Vector API code on only up to Java 26 and warns on 27.
+            # The property raises that limit. Drop it when a Lucene release supports Java 27.
+            - -Dorg.apache.lucene.vectorization.upperJavaFeatureVersion=27
       jdeps:
         multiRelease: base
         ignoreMissingDeps: true
@@ -78,6 +81,9 @@ assemble:
             - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
             - -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer
             - --add-modules jdk.incubator.vector
+            # Lucene 10.5.1 turns its Vector API code on only up to Java 26 and warns on 27.
+            # The property raises that limit. Drop it when a Lucene release supports Java 27.
+            - -Dorg.apache.lucene.vectorization.upperJavaFeatureVersion=27
             - -agentpath:${jprofiler.agent.path}=port=8849,nowait
             - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
       jdeps:
@@ -125,6 +131,9 @@ assemble:
             - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
             - -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer
             - --add-modules jdk.incubator.vector
+            # Lucene 10.5.1 turns its Vector API code on only up to Java 26 and warns on 27.
+            # The property raises that limit. Drop it when a Lucene release supports Java 27.
+            - -Dorg.apache.lucene.vectorization.upperJavaFeatureVersion=27
             - -Xms24g
             - -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000
       jdeps:

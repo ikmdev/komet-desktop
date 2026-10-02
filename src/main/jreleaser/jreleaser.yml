@@ -28,6 +28,9 @@ assemble:
           - --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator
           - --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file
           - --add-modules jdk.incubator.vector
+          # Lucene 10.5.1 turns its Vector API code on only up to Java 26 and warns on 27.
+          # The property raises that limit. Drop it when a Lucene release supports Java 27.
+          - -Dorg.apache.lucene.vectorization.upperJavaFeatureVersion=27
       java:
         mainModule: dev.ikm.komet.desktop
         mainClass: dev.ikm.komet.desktop.KometLauncher
