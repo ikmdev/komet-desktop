@@ -11,7 +11,6 @@ import static dev.ikm.komet.desktop.util.CssFile.KVIEW_CSS;
 import static dev.ikm.komet.desktop.util.CssUtils.addStylesheets;
 import static dev.ikm.komet.kview.events.EventTopics.JOURNAL_TOPIC;
 import static dev.ikm.komet.kview.events.JournalTileEvent.UPDATE_JOURNAL_TILE;
-import static dev.ikm.komet.kview.mvvm.model.DataModelHelper.fetchLeafDescendentsOfConcept;
 import static dev.ikm.komet.kview.mvvm.view.loginauthor.LoginAuthorViewModel.LoginProperties.SELECTED_AUTHOR;
 import static dev.ikm.komet.kview.mvvm.viewmodel.ViewModelKey.CURRENT_JOURNAL_WINDOW_TOPIC;
 import static dev.ikm.komet.kview.mvvm.viewmodel.ViewModelKey.VIEW_PROPERTIES;
@@ -32,6 +31,7 @@ import static dev.ikm.komet.preferences.KLEditorPreferences.KL_STANDARD_WINDOWS_
 import static dev.ikm.komet.preferences.KLEditorPreferences.KL_USER_WINDOWS_DIR;
 import static javafx.scene.layout.Region.USE_COMPUTED_SIZE;
 import dev.ikm.komet.framework.KometNodeFactory;
+import dev.ikm.komet.framework.observable.read.NavigationReads;
 import dev.ikm.komet.framework.preferences.PrefX;
 import dev.ikm.komet.framework.view.ObservableEditCoordinate;
 import dev.ikm.komet.framework.view.ObservableViewNoOverride;
@@ -234,7 +234,7 @@ public class AppPages {
      */
     private static Optional<ConceptEntity> resolveAuthor(ViewCalculator viewCalculator, String nameOrUuid) {
         // Only leaf descendants of USER are named users; grouping concepts in the subtree are excluded (ike-issues#754).
-        Set<ConceptEntity> authors = fetchLeafDescendentsOfConcept(viewCalculator, TinkarTerm.USER.publicId());
+        Set<ConceptEntity> authors = NavigationReads.leafDescendantsOf(viewCalculator, TinkarTerm.USER);
         if (authors.isEmpty()) {
             // add default user into set of available users
             authors.add(EntityService.get().getEntityFast(TinkarTerm.USER));
