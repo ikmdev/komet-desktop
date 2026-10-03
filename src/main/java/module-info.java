@@ -95,7 +95,7 @@ module dev.ikm.komet.desktop {
     requires transitive dev.ikm.komet.rules;
     requires jdk.management;
     requires dev.ikm.tinkar.reasoner.service;
-    requires org.eclipse.jgit;
+    requires dev.ikm.jpms.jgit;
 
     // Logging related modules
     requires org.apache.logging.log4j;       // log4j-api
