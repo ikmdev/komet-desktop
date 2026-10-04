@@ -58,7 +58,7 @@ import dev.ikm.tinkar.common.service.ServiceExclusionGroup;
 import dev.ikm.tinkar.common.service.ServiceLifecycleManager;
 import dev.ikm.tinkar.coordinate.view.calculator.ViewCalculator;
 import dev.ikm.tinkar.entity.ConceptEntity;
-import dev.ikm.tinkar.entity.EntityService;
+import dev.ikm.tinkar.entity.EntityHandle;
 import dev.ikm.tinkar.terms.ConceptFacade;
 import dev.ikm.tinkar.terms.TinkarTerm;
 import javafx.application.Platform;
@@ -237,7 +237,7 @@ public class AppPages {
         Set<ConceptEntity> authors = NavigationReads.leafDescendantsOf(viewCalculator, TinkarTerm.USER);
         if (authors.isEmpty()) {
             // add default user into set of available users
-            authors.add(EntityService.get().getEntityFast(TinkarTerm.USER));
+            authors.add(EntityHandle.get(TinkarTerm.USER.nid()).expectConcept());
         }
         UUID uuid = null;
         try {
