@@ -44,7 +44,7 @@
         <komet-claude-plugin.version>7-64bit-SNAPSHOT</komet-claude-plugin.version>
         <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
-             dependency. All its runtime deps are in the boot image or already staged (composer). -->
+             dependency. All its runtime deps are in the boot image. -->
         <complex-clause-plugin.version>6-64bit-SNAPSHOT</complex-clause-plugin.version>
         <!-- rocks-kb-engine (ike-issues#583): staged into the runtime plugins/ layer like the two
              plugins above. Its version is duplicated here from komet-bom's rocks-kb.version so it
@@ -525,8 +525,8 @@
                                 <version>${komet-claude-plugin.version}</version>
                             </artifactItem>
                             <!-- complex-clause-plugin (#628): only the plugin jar is staged; its
-                                 runtime deps (komet layout/framework, tinkar, composer) are in the
-                                 boot image or already staged above. -->
+                                 runtime deps (komet layout/framework, tinkar) are in the boot
+                                 image. -->
                             <artifactItem>
                                 <groupId>network.ike.komet</groupId>
                                 <artifactId>complex-clause-plugin</artifactId>
@@ -535,8 +535,8 @@
                             <!-- Shared Markdown renderer (#585) the plugin requires at runtime.
                                  Staged into the plugins/ layer alongside the plugin (like
                                  rocksdbjni/jna are for rocks-kb-engine); it reads commonmark +
-                                 the jfx richtext model from the boot image. Version BOM-managed,
-                                 like composer below: komet-bom is imported at the REACTOR line
+                                 the jfx richtext model from the boot image. Version BOM-managed:
+                                 komet-bom is imported at the REACTOR line
                                  above (not the released one), and it manages every komet
                                  sub-module at ${komet.version} — so a version-less artifactItem
                                  tracks the workspace line by itself, in a sibling reactor too.
@@ -550,14 +550,6 @@
                             <artifactItem>
                                 <groupId>dev.ikm.komet</groupId>
                                 <artifactId>komet-markdown-richtext</artifactId>
-                            </artifactItem>
-                            <!-- tinkar-composer: required at runtime by the plugin's commit-narrator
-                                 (CommitNarratorLifecycle writes COMMENT_PATTERN semantics). Staged into
-                                 plugins/ alongside the plugin like the markdown renderer; reads tinkar
-                                 entity/terms from the boot image. Version BOM-managed (komet-bom). -->
-                            <artifactItem>
-                                <groupId>dev.ikm.tinkar</groupId>
-                                <artifactId>composer</artifactId>
                             </artifactItem>
                             <!-- komet-grpc-plugin: only the plugin jar is staged — the
                                  gRPC/protobuf runtime is shaded into it, and its tinkar/komet
