@@ -212,7 +212,7 @@ public final class DuplicateSemanticWithdrawerDialog extends Dialog<Void> {
                 Transaction transaction = dryRun
                         ? null
                         : Transaction.make("Single-semantic duplicate withdrawer (Komet menu)");
-                int authorNid = observableView.editCoordinate().getAuthorNidForChanges();
+                long authorNid = observableView.editCoordinate().getAuthorNidForChanges();
                 SingleSemanticDuplicateWithdrawer withdrawer =
                         new SingleSemanticDuplicateWithdrawer(transaction, authorNid, dryRun);
                 SingleSemanticDuplicateWithdrawer.Report report =
@@ -278,7 +278,7 @@ public final class DuplicateSemanticWithdrawerDialog extends Dialog<Void> {
         if (destination == null) {
             return;
         }
-        int authorNid = observableView.editCoordinate().getAuthorNidForChanges();
+        long authorNid = observableView.editCoordinate().getAuthorNidForChanges();
         String markdown = lastReport.toMarkdown(lastRunCompletedAt, lastRunWasDryRun, authorNid);
         try {
             Files.writeString(destination.toPath(), markdown,
