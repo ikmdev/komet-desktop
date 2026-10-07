@@ -93,6 +93,12 @@
         <codesign.profile.skip>${skip.image.profile}</codesign.profile.skip>
         <codesign.pkg.skip>false</codesign.pkg.skip>
         <notarize.skip>false</notarize.skip>
+        <!-- The nid build check (tinkar-core nid-check, IKE-Network/ike-issues#1244): how it
+             reports (error, or warning for a census), which classes may narrow a nid, and
+             javac's cap on warnings, raised for a census. -->
+        <nid-check.report>error</nid-check.report>
+        <nid-check.allow></nid-check.allow>
+        <javac.maxwarns>100</javac.maxwarns>
     </properties>
 
     <dependencyManagement>
@@ -484,6 +490,21 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.14.0</version>
+                    <configuration>
+                        <!-- The nid build check (tinkar-core nid-check, IKE-Network/ike-issues#1244). -->
+                        <compilerArgs combine.children="append">
+                            <arg>-Xplugin:NidCheck report=${nid-check.report} allow=${nid-check.allow}</arg>
+                            <arg>-Xmaxwarns</arg>
+                            <arg>${javac.maxwarns}</arg>
+                        </compilerArgs>
+                        <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
+                        <annotationProcessorPaths combine.children="append">
+                            <path>
+                                <groupId>dev.ikm.tinkar</groupId>
+                                <artifactId>nid-check</artifactId>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
