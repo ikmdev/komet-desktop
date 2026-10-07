@@ -8,7 +8,7 @@
  <parent>
         <groupId>network.ike.platform</groupId>
         <artifactId>ike-parent</artifactId>
-        <version>191</version>
+        <version>196</version>
         <relativePath/>
     </parent>
 
@@ -44,7 +44,7 @@
         <komet-claude-plugin.version>7-SNAPSHOT</komet-claude-plugin.version>
         <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
-             dependency. All its runtime deps are in the boot image or already staged (composer). -->
+             dependency. All its runtime deps are in the boot image. -->
         <complex-clause-plugin.version>6-SNAPSHOT</complex-clause-plugin.version>
         <!-- rocks-kb-engine (ike-issues#583): staged into the runtime plugins/ layer like the two
              plugins above. Its version is duplicated here from komet-bom's rocks-kb.version so it
@@ -93,6 +93,12 @@
         <codesign.profile.skip>${skip.image.profile}</codesign.profile.skip>
         <codesign.pkg.skip>false</codesign.pkg.skip>
         <notarize.skip>false</notarize.skip>
+        <!-- The nid build check (tinkar-core nid-check, IKE-Network/ike-issues#1244): how it
+             reports (error, or warning for a census), which classes may narrow a nid, and
+             javac's cap on warnings, raised for a census. -->
+        <nid-check.report>error</nid-check.report>
+        <nid-check.allow></nid-check.allow>
+        <javac.maxwarns>100</javac.maxwarns>
     </properties>
 
     <dependencyManagement>
@@ -283,6 +289,23 @@
             <groupId>one.jpro.platform</groupId>
             <artifactId>jpro-auth-core</artifactId>
         </dependency>
+        <!-- JPMS-packaged jjwt in place of the automatic io.jsonwebtoken jars
+             excluded from jpro-auth-core in komet-bom. -->
+        <dependency>
+            <groupId>one.jpro.platform.jpms</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>one.jpro.platform.jpms</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>one.jpro.platform.jpms</groupId>
+            <artifactId>jjwt-orgjson</artifactId>
+            <scope>runtime</scope>
+        </dependency>
         <dependency>
             <groupId>one.jpro.platform</groupId>
             <artifactId>jpro-utils</artifactId>
@@ -328,10 +351,6 @@
             <scope>test</scope>
         </dependency>
         <!-- End JPro related dependencies -->
-        <dependency>
-            <groupId>dev.ikm.tinkar</groupId>
-            <artifactId>composer</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.controlsfx</groupId>
             <artifactId>controlsfx</artifactId>
@@ -441,6 +460,12 @@
             <groupId>dev.ikm.tinkar</groupId>
             <artifactId>common</artifactId>
         </dependency>
+        <!-- The shared test logging configuration (log4j2-test.xml); a library ships none of its own. -->
+        <dependency>
+            <groupId>dev.ikm.tinkar</groupId>
+            <artifactId>test-logging</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -465,6 +490,21 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.14.0</version>
+                    <configuration>
+                        <!-- The nid build check (tinkar-core nid-check, IKE-Network/ike-issues#1244). -->
+                        <compilerArgs combine.children="append">
+                            <arg>-Xplugin:NidCheck report=${nid-check.report} allow=${nid-check.allow}</arg>
+                            <arg>-Xmaxwarns</arg>
+                            <arg>${javac.maxwarns}</arg>
+                        </compilerArgs>
+                        <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
+                        <annotationProcessorPaths combine.children="append">
+                            <path>
+                                <groupId>dev.ikm.tinkar</groupId>
+                                <artifactId>nid-check</artifactId>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -506,8 +546,8 @@
                                 <version>${komet-claude-plugin.version}</version>
                             </artifactItem>
                             <!-- complex-clause-plugin (#628): only the plugin jar is staged; its
-                                 runtime deps (komet layout/framework, tinkar, composer) are in the
-                                 boot image or already staged above. -->
+                                 runtime deps (komet layout/framework, tinkar) are in the boot
+                                 image. -->
                             <artifactItem>
                                 <groupId>network.ike.komet</groupId>
                                 <artifactId>complex-clause-plugin</artifactId>
@@ -516,8 +556,8 @@
                             <!-- Shared Markdown renderer (#585) the plugin requires at runtime.
                                  Staged into the plugins/ layer alongside the plugin (like
                                  rocksdbjni/jna are for rocks-kb-engine); it reads commonmark +
-                                 the jfx richtext model from the boot image. Version BOM-managed,
-                                 like composer below: komet-bom is imported at the REACTOR line
+                                 the jfx richtext model from the boot image. Version BOM-managed:
+                                 komet-bom is imported at the REACTOR line
                                  above (not the released one), and it manages every komet
                                  sub-module at ${komet.version} — so a version-less artifactItem
                                  tracks the workspace line by itself, in a sibling reactor too.
@@ -531,14 +571,6 @@
                             <artifactItem>
                                 <groupId>dev.ikm.komet</groupId>
                                 <artifactId>komet-markdown-richtext</artifactId>
-                            </artifactItem>
-                            <!-- tinkar-composer: required at runtime by the plugin's commit-narrator
-                                 (CommitNarratorLifecycle writes COMMENT_PATTERN semantics). Staged into
-                                 plugins/ alongside the plugin like the markdown renderer; reads tinkar
-                                 entity/terms from the boot image. Version BOM-managed (komet-bom). -->
-                            <artifactItem>
-                                <groupId>dev.ikm.tinkar</groupId>
-                                <artifactId>composer</artifactId>
                             </artifactItem>
                             <!-- komet-grpc-plugin: only the plugin jar is staged — the
                                  gRPC/protobuf runtime is shaded into it, and its tinkar/komet

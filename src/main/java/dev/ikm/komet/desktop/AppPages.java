@@ -11,7 +11,6 @@ import static dev.ikm.komet.desktop.util.CssFile.KVIEW_CSS;
 import static dev.ikm.komet.desktop.util.CssUtils.addStylesheets;
 import static dev.ikm.komet.kview.events.EventTopics.JOURNAL_TOPIC;
 import static dev.ikm.komet.kview.events.JournalTileEvent.UPDATE_JOURNAL_TILE;
-import static dev.ikm.komet.kview.mvvm.model.DataModelHelper.fetchLeafDescendentsOfConcept;
 import static dev.ikm.komet.kview.mvvm.view.loginauthor.LoginAuthorViewModel.LoginProperties.SELECTED_AUTHOR;
 import static dev.ikm.komet.kview.mvvm.viewmodel.ViewModelKey.CURRENT_JOURNAL_WINDOW_TOPIC;
 import static dev.ikm.komet.kview.mvvm.viewmodel.ViewModelKey.VIEW_PROPERTIES;
@@ -32,6 +31,7 @@ import static dev.ikm.komet.preferences.KLEditorPreferences.KL_STANDARD_WINDOWS_
 import static dev.ikm.komet.preferences.KLEditorPreferences.KL_USER_WINDOWS_DIR;
 import static javafx.scene.layout.Region.USE_COMPUTED_SIZE;
 import dev.ikm.komet.framework.KometNodeFactory;
+import dev.ikm.komet.framework.observable.read.NavigationReads;
 import dev.ikm.komet.framework.preferences.PrefX;
 import dev.ikm.komet.framework.view.ObservableEditCoordinate;
 import dev.ikm.komet.framework.view.ObservableViewNoOverride;
@@ -58,9 +58,9 @@ import dev.ikm.tinkar.common.service.ServiceExclusionGroup;
 import dev.ikm.tinkar.common.service.ServiceLifecycleManager;
 import dev.ikm.tinkar.coordinate.view.calculator.ViewCalculator;
 import dev.ikm.tinkar.entity.ConceptEntity;
-import dev.ikm.tinkar.entity.EntityService;
+import dev.ikm.tinkar.entity.EntityHandle;
 import dev.ikm.tinkar.terms.ConceptFacade;
-import dev.ikm.tinkar.terms.TinkarTerm;
+import dev.ikm.tinkar.terms.KernelTerm;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
@@ -181,7 +181,7 @@ public class AppPages {
      */
     private boolean bypassLogin(ViewProperties viewProperties, Consumer<ConceptEntity> preselect) {
         // Create new instance of ViewCalculator to have stated navigation along with inferred.
-        ViewCalculator viewCalculator = ViewCoordinateHelper.createNavigationCalculatorWithPatternNidsLatest(viewProperties, TinkarTerm.STATED_NAVIGATION_PATTERN.nid());
+        ViewCalculator viewCalculator = ViewCoordinateHelper.createNavigationCalculatorWithPatternNidsLatest(viewProperties, KernelTerm.STATED_NAVIGATION_PATTERN.nid());
 
         // Developer bypass using a known user, no password.
         String devAuthorPropStr = System.getProperty(DEV_AUTHOR);
@@ -226,7 +226,7 @@ public class AppPages {
 
     /**
      * Finds the author a launch option names, by public id or by name, among the authors the
-     * author screen lists: the leaf descendants of {@link TinkarTerm#USER}, else that concept itself.
+     * author screen lists: the leaf descendants of {@link KernelTerm#USER}, else that concept itself.
      *
      * @param viewCalculator a calculator with stated navigation
      * @param nameOrUuid     the author's name or one of its UUIDs
@@ -234,10 +234,10 @@ public class AppPages {
      */
     private static Optional<ConceptEntity> resolveAuthor(ViewCalculator viewCalculator, String nameOrUuid) {
         // Only leaf descendants of USER are named users; grouping concepts in the subtree are excluded (ike-issues#754).
-        Set<ConceptEntity> authors = fetchLeafDescendentsOfConcept(viewCalculator, TinkarTerm.USER.publicId());
+        Set<ConceptEntity> authors = NavigationReads.leafDescendantsOf(viewCalculator, KernelTerm.USER);
         if (authors.isEmpty()) {
             // add default user into set of available users
-            authors.add(EntityService.get().getEntityFast(TinkarTerm.USER));
+            authors.add(EntityHandle.get(KernelTerm.USER.nid()).expectConcept());
         }
         UUID uuid = null;
         try {
