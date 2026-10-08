@@ -35,7 +35,7 @@ import java.util.Set;
  *     <li>The SpinedArray {@code Open*Controller} offers the {@link Flow#SA} flow, and the
  *     Rocks KB {@code Open*Controller} offers the {@link Flow#ROCKS} flow — both a pre-built
  *     store snapshot unpacked as the base layer. No equivalent snapshot convention exists for
- *     MV Store today, so its {@code Open*Controller} offers nothing.</li>
+ *     a retired store today, so its {@code Open*Controller} offers nothing.</li>
  * </ul>
  */
 public final class ProviderArtifactQualifier {

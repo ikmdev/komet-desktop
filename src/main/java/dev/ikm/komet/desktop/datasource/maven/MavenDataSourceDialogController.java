@@ -1201,8 +1201,7 @@ public final class MavenDataSourceDialogController {
      * {@link ProviderArtifactQualifier.Flow#PB} the returned file name always ends in
      * {@code pb.zip}: that exact (case-insensitive) suffix is what every {@code New*Controller}'s
      * {@code isValidDataLocation} accepts a changeset zip by ({@code SpinedArrayProvider}'s new
-     * and load controllers, {@code MVStoreProvider}, and Rocks KB's {@code RocksProvider}
-     * all share the predicate). So a name that already ends in {@code pb} — the usual case now
+     * and load controllers and Rocks KB's {@code RocksProvider} share the predicate). So a name that already ends in {@code pb} — the usual case now
      * that artifact names embed the resolved classifier (ikmdev/komet-desktop#118), e.g.
      * {@code ...-reasoned-pb} — gets just {@code .zip}, and any other name ({@code ...-changeset},
      * a hand-typed Save-As name) gets {@code -pb.zip} appended. The {@code SA}/{@code ROCKS}

@@ -96,7 +96,7 @@ public class SelectDataSourceController {
     /**
      * The folder-name property every folder-creating New-store controller exposes — equal, as
      * a record, to the {@code NEW_FOLDER_PROPERTY} each of {@code SpinedArrayProvider},
-     * {@code MVStoreProvider}, and Rocks KB's {@code RocksProvider} declares verbatim as
+     * and Rocks KB's {@code RocksProvider} declares verbatim as
      * {@code new DataServiceProperty("New folder name", false, true)} (confirmed against their
      * sources). Record equality is what lets this class find the property in
      * {@link #dataServicePropertyStringMap} without a compile dependency on providers loaded
@@ -145,7 +145,6 @@ public class SelectDataSourceController {
      */
     private static final Map<String, String> STORE_SUFFIX_BY_CONTROLLER = Map.of(
             "New SpinedArrayStore", "sa",
-            "New MV Store", "mv",
             "New Rocks KB", "rkb");
 
     /**

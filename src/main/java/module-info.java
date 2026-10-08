@@ -36,7 +36,6 @@ module dev.ikm.komet.desktop {
 
     // TODO Not happy that I have to specify these here... Can't dynamically add modules?
     requires dev.ikm.tinkar.provider.spinedarray;
-    requires dev.ikm.tinkar.provider.mvstore;
     // dev.ikm.rocks.engine removed: loaded via plugin layer (see IkeServiceManager).
     // This is the first real-world test of the plugin system — rocks-kb-engine
     // stays as an <artifactItem> staged into plugins/, not as a compile dep.

@@ -113,8 +113,8 @@ final class KnowledgeBaseResolver {
             return matches.getFirst();
         }
         if (matches.isEmpty()) {
-            return new Unresolved(folder + " is not a knowledge base any provider opens (Rocks, SpinedArray, "
-                    + "MVStore). The picker lists knowledge bases under " + solorFolder + ".");
+            return new Unresolved(folder + " is not a knowledge base any provider opens (Rocks, SpinedArray). "
+                    + "The picker lists knowledge bases under " + solorFolder + ".");
         }
         return new Unresolved(folder + " can be opened by more than one provider ("
                 + matches.stream().map(Found::controllerName).collect(Collectors.joining(", "))

@@ -28,7 +28,6 @@ class ProviderArtifactQualifierTest {
 
     @Test
     void newControllersOfAnyBackendOfferThePbFlow() {
-        assertEquals(Optional.of(ProviderArtifactQualifier.Flow.PB), ProviderArtifactQualifier.flowFor("New MV Store"));
         assertEquals(Optional.of(ProviderArtifactQualifier.Flow.PB), ProviderArtifactQualifier.flowFor("New SpinedArrayStore"));
         assertEquals(Optional.of(ProviderArtifactQualifier.Flow.PB), ProviderArtifactQualifier.flowFor("New Rocks KB"));
     }
@@ -41,11 +40,6 @@ class ProviderArtifactQualifierTest {
     @Test
     void rocksOpenControllerOffersTheRocksFlow() {
         assertEquals(Optional.of(ProviderArtifactQualifier.Flow.ROCKS), ProviderArtifactQualifier.flowFor("Open Rocks KB"));
-    }
-
-    @Test
-    void mvStoreOpenControllerOffersNoFlow() {
-        assertTrue(ProviderArtifactQualifier.flowFor("Open MV Store").isEmpty());
     }
 
     @Test

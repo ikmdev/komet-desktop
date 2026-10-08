@@ -104,11 +104,11 @@ class KnowledgeBaseResolverTest {
     void aFolderTwoProvidersListIsUnresolved() {
         List<Candidate> overlapping = List.of(
                 new Candidate("Open Rocks KB", List.of(rocksOption)),
-                new Candidate("Open MV Store", List.of(rocksOption)));
+                new Candidate("Open SpinedArrayStore", List.of(rocksOption)));
 
         Resolution resolution = KnowledgeBaseResolver.resolve("SNOMED Rocks", solor, home, overlapping);
 
         Unresolved unresolved = assertInstanceOf(Unresolved.class, resolution);
-        assertTrue(unresolved.message().contains("Open Rocks KB, Open MV Store"), unresolved.message());
+        assertTrue(unresolved.message().contains("Open Rocks KB, Open SpinedArrayStore"), unresolved.message());
     }
 }
