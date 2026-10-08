@@ -181,6 +181,9 @@ public class SelectDataSourceController {
     @FXML // fx:id="cancelButton"
     private Button cancelButton; // Value injected by FXMLLoader
 
+    @FXML // fx:id="okButton"
+    private Button okButton; // Value injected by FXMLLoader
+
     @FXML // fx:id="rootBorderPane"
     private BorderPane rootBorderPane; // Value injected by FXMLLoader
 
@@ -295,6 +298,9 @@ public class SelectDataSourceController {
 
         propertySheet.getItems().clear();
         validationSupport = new ValidationSupport();
+        // OK waits for the sheet: a required field the provider rejects (a blank New-store
+        // folder name, say) keeps it disabled rather than launching into the failure.
+        okButton.disableProperty().bind(validationSupport.invalidProperty());
 
         DataServiceController<?> dataSourceController = dataSourceChoiceBox.getValue();
         dataSourceController.providerProperties().forEachKeyValue(
@@ -336,10 +342,23 @@ public class SelectDataSourceController {
                         }
                     }
                 });
+        // The remembered knowledge base was restored before the sheet existed, so it proposed
+        // nothing; a fresh launch would offer a New store with a blank folder name. Propose for
+        // it now unless the controller already carries a name, typed before a switch away.
+        if (isBlank(dataServicePropertyStringMap.get(NEW_FOLDER_PROPERTY))) {
+            proposeNewFolderName(fileListView.getSelectionModel().getSelectedItem());
+        }
+    }
+
+    private static boolean isBlank(SimpleStringProperty property) {
+        return property != null && (property.get() == null || property.get().isBlank());
     }
 
     @FXML
     void okButtonPressed(ActionEvent event) {
+        if (okButton.isDisabled()) {
+            return; // the double-click shortcut arrives here too
+        }
         // Early warning: don't launch into a store that is already open elsewhere.
         // Re-probe the current selection (the greyed-out list state can be stale).
         DataServiceController<?> selectedController = dataSourceChoiceBox.getValue();
