@@ -41,7 +41,7 @@ class MavenDataSourceDialogControllerTest {
 
     /**
      * Verbatim copy of the acceptance predicate shared by the {@code New*Controller}s of
-     * {@code SpinedArrayProvider}, {@code ProviderEphemeral}, {@code MVStoreProvider}, and
+     * {@code SpinedArrayProvider} (new and load), {@code MVStoreProvider}, and
      * Rocks KB's {@code RocksProvider} — the contract every PB destination name must satisfy.
      */
     private static boolean acceptedByNewControllers(String name) {
