@@ -20,6 +20,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.Alert;
 import dev.ikm.tinkar.common.service.DataStoreAlreadyOpenException;
 import dev.ikm.tinkar.common.service.PrimitiveData;
+import dev.ikm.tinkar.common.service.ServiceLifecycleManager;
 import dev.ikm.tinkar.common.service.TrackingCallable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,11 +39,28 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
         updateProgress(-1, -1);
     }
 
+    /** Each step of the startup, as the outer bar's message and progress. */
+    private final ServiceLifecycleManager.StartupListener steps = step -> {
+        updateMessage(step.phaseLabel() + ": starting " + step.serviceName()
+                + " (step " + (step.serviceIndex() + 1) + " of " + step.serviceCount()
+                + "; " + step.completed() + " complete, " + step.remaining() + " remaining)");
+        updateProgress(step.serviceIndex(), step.serviceCount());
+    };
+
     @Override
     protected Void compute() throws Exception {
         try {
             LOG.info("LoadDataSourceTask starting...");
-            PrimitiveData.start();
+            // The outer bar follows the lifecycle's steps; the import and the index rebuild
+            // within them are tracking callables of their own, with their own rows.
+            ServiceLifecycleManager.get().addStartupListener(steps);
+            try {
+                PrimitiveData.start();
+            } finally {
+                ServiceLifecycleManager.get().removeStartupListener(steps);
+            }
+            updateMessage("Data source loaded");
+            updateProgress(1, 1);
             LOG.info("PrimitiveData.start() completed successfully");
             LOG.info("Scheduling state transition to SELECT_USER");
             Platform.runLater(() -> {
