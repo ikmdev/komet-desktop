@@ -109,7 +109,7 @@ public class AppPages {
 
     void launchSelectDataSourcePage(Stage stage) {
         try {
-            // Completing a 6-bit → 8-bit migration: propose the new folder (ike-issues#1138).
+            // Completing a migration to a 64-bit database: propose the new folder (ike-issues#1138, #1258).
             NidLayoutMigration.applyPendingMigration();
             FXMLLoader sourceLoader = new FXMLLoader(getClass().getResource("SelectDataSource.fxml"));
             BorderPane sourceRoot = sourceLoader.load();

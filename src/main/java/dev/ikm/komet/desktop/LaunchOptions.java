@@ -68,8 +68,8 @@ public final class LaunchOptions {
         /** A file whose first line is the {@link #USER} password. */
         PASSWORD_FILE("password-file", "komet.password-file"),
         /**
-         * The folder the picker proposes for the new 8-bit database, set only on the relaunch
-         * that completes a 6-bit to 8-bit migration (IKE-Network/ike-issues#1138). A program
+         * The folder the picker proposes for the new 64-bit database, set only on the relaunch
+         * that completes a migration from a legacy layout (IKE-Network/ike-issues#1138, #1258). A program
          * argument, because {@code launchKomet} splits {@code JAVA_OPTS} on whitespace
          * (IKE-Network/ike-issues#1156).
          */

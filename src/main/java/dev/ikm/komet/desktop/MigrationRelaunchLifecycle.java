@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Relaunches Komet to finish a 6-bit → 8-bit migration, once this instance's
+ * Relaunches Komet to finish a migration from a legacy layout to a 64-bit database, once this instance's
  * knowledge base is closed (IKE-Network/ike-issues#1138).
  *
  * <p>The service lifecycle shuts services down in reverse phase order, so this
@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class MigrationRelaunchLifecycle implements ServiceLifecycle {
     private static final Logger LOG = LoggerFactory.getLogger(MigrationRelaunchLifecycle.class);
 
-    /** Folder to propose for the new 8-bit database; set when a migration requests a relaunch. */
+    /** Folder to propose for the new 64-bit database; set when a migration requests a relaunch. */
     private static final AtomicReference<String> PENDING_FOLDER = new AtomicReference<>();
 
     /** Public no-argument constructor, for service loading. */
