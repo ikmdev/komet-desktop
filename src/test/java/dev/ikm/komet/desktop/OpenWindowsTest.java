@@ -42,7 +42,7 @@ class OpenWindowsTest {
 
     @Test
     void aKlEditorWindowRoundTripsWithItsBounds() {
-        Entry editor = Entry.klEditor("Concept (2)", true, new Rectangle2D(10, 20, 1200, 800));
+        Entry editor = Entry.klEditor("Concept", true, new Rectangle2D(10, 20, 1200, 800));
 
         assertEquals(Optional.of(editor), OpenWindows.decode(OpenWindows.encode(editor)));
     }
