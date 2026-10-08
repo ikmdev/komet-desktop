@@ -33,6 +33,9 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
 
     public LoadDataSourceTask(SimpleObjectProperty<AppState> state) {
         super(false, true);
+        // The outer bar counts steps of very unequal length, so a rate over them would be a
+        // confident wrong number: elapsed time only, until step durations are remembered.
+        setRemainingTimeEstimable(false);
         this.state = state;
         updateTitle("Loading Data Source");
         updateMessage("Executing data source...");
