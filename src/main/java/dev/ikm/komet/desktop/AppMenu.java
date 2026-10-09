@@ -3,6 +3,11 @@ package dev.ikm.komet.desktop;
 import com.sun.management.OperatingSystemMXBean;
 import dev.ikm.komet.desktop.aboutdialog.AboutDialog;
 import dev.ikm.komet.desktop.maintenance.ChangeSetSummaryWindow;
+import dev.ikm.komet.desktop.maintenance.ChangeSetToolWindow;
+import dev.ikm.tinkar.entity.changeset.ChangeSetCompaction;
+import dev.ikm.tinkar.entity.changeset.ChangeSetExpansion;
+import dev.ikm.tinkar.entity.changeset.ChangeSetInspection;
+import dev.ikm.tinkar.entity.changeset.ChangeSetVerification;
 import dev.ikm.komet.desktop.maintenance.DuplicateSemanticWithdrawerDialog;
 import dev.ikm.komet.desktop.maintenance.LuceneIndexAnalysisWindow;
 import dev.ikm.tinkar.provider.search.Indexer;
@@ -33,6 +38,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
+import javafx.stage.Window;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -272,9 +278,22 @@ public class AppMenu {
         withdrawDuplicatesItem.setOnAction(actionEvent -> openDuplicateSemanticWithdrawer());
         MenuItem summarizeChangeSetItem = new MenuItem("Summarize Change Set…");
         summarizeChangeSetItem.setOnAction(actionEvent -> openChangeSetSummary());
+        MenuItem inspectChangeSetItem = new MenuItem("Inspect Change Set…");
+        inspectChangeSetItem.setOnAction(actionEvent -> openChangeSetTool("Change Set Inspection",
+                changeSet -> new ChangeSetInspection(changeSet).call().text()));
+        MenuItem verifyChangeSetItem = new MenuItem("Verify Change Set…");
+        verifyChangeSetItem.setOnAction(actionEvent -> openChangeSetTool("Change Set Verification",
+                changeSet -> new ChangeSetVerification(changeSet).call().text()));
+        MenuItem expandChangeSetItem = new MenuItem("Expand Change Set…");
+        expandChangeSetItem.setOnAction(actionEvent -> openChangeSetRewrite("Change Set Expansion", "-expanded",
+                (changeSet, target) -> new ChangeSetExpansion(changeSet, target).call().text()));
+        MenuItem compactChangeSetItem = new MenuItem("Compact Change Set…");
+        compactChangeSetItem.setOnAction(actionEvent -> openChangeSetRewrite("Change Set Compaction", "-compact",
+                (changeSet, target) -> new ChangeSetCompaction(changeSet, target).call().text()));
         MenuItem analyzeLuceneItem = new MenuItem("Analyze Lucene Index…");
         analyzeLuceneItem.setOnAction(actionEvent -> openLuceneIndexAnalysis());
-        toolsMenu.getItems().addAll(withdrawDuplicatesItem, summarizeChangeSetItem, analyzeLuceneItem);
+        toolsMenu.getItems().addAll(withdrawDuplicatesItem, summarizeChangeSetItem, inspectChangeSetItem,
+                verifyChangeSetItem, expandChangeSetItem, compactChangeSetItem, analyzeLuceneItem);
         return toolsMenu;
     }
 
@@ -322,6 +341,51 @@ public class AppMenu {
     }
 
     private void openChangeSetSummary() {
+        Stage owner = (Stage) getFocusedWindow();
+        File selected = chooseChangeSet(owner);
+        if (selected == null) return;
+        ChangeSetSummaryWindow.openFor(selected, owner);
+    }
+
+    /** A tool that reads a change set and reports. */
+    @FunctionalInterface
+    private interface ChangeSetTool {
+        String run(File changeSet) throws Exception;
+    }
+
+    /** A tool that writes a change set from another and reports. */
+    @FunctionalInterface
+    private interface ChangeSetRewrite {
+        String run(File changeSet, File target) throws Exception;
+    }
+
+    private void openChangeSetTool(String title, ChangeSetTool tool) {
+        Stage owner = (Stage) getFocusedWindow();
+        File selected = chooseChangeSet(owner);
+        if (selected == null) return;
+        ChangeSetToolWindow.open(title, selected, () -> tool.run(selected), owner);
+    }
+
+    private void openChangeSetRewrite(String title, String suffix, ChangeSetRewrite rewrite) {
+        Stage owner = (Stage) getFocusedWindow();
+        File selected = chooseChangeSet(owner);
+        if (selected == null) return;
+        FileChooser save = new FileChooser();
+        save.setTitle("Write Change Set");
+        save.getExtensionFilters().add(new FileChooser.ExtensionFilter("Change Set ZIP", "*.zip"));
+        if (selected.getParentFile() != null) {
+            save.setInitialDirectory(selected.getParentFile());
+        }
+        String name = selected.getName();
+        int dot = name.lastIndexOf('.');
+        save.setInitialFileName((dot > 0 ? name.substring(0, dot) : name) + suffix + ".zip");
+        File target = save.showSaveDialog(owner);
+        if (target == null) return;
+        ChangeSetToolWindow.open(title, selected, () -> rewrite.run(selected, target), owner);
+    }
+
+    /** The change set a tool reads, chosen from the writer's folder when there is one. */
+    private File chooseChangeSet(Window owner) {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Open Change Set");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Change Set ZIP", "*.zip"));
@@ -337,10 +401,7 @@ public class AppMenu {
                 chooser.setInitialDirectory(changeSetsDir);
             }
         });
-        Stage owner = (Stage) getFocusedWindow();
-        File selected = chooser.showOpenDialog(owner);
-        if (selected == null) return;
-        ChangeSetSummaryWindow.openFor(selected, owner);
+        return chooser.showOpenDialog(owner);
     }
 
     private Menu createFileMenu() {
