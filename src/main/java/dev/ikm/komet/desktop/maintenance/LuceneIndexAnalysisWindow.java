@@ -65,9 +65,11 @@ import java.util.Optional;
  *
  * <p>Two entry points:
  * <ul>
- *   <li>{@link #openForLiveIndex(IndexWriter, Path, Window, LuceneIndexAnalyzer.Options)}
+ *   <li>{@link #openForLiveIndex(IndexWriter, Path, Window, LuceneIndexAnalyzer.Options,
+ *       LuceneIndexAnalyzer.IndexRebuildCallback)}
  *       — operate on the running search provider's index.</li>
- *   <li>{@link #openForOfflineIndex(Path, Window, LuceneIndexAnalyzer.Options)}
+ *   <li>{@link #openForOfflineIndex(Path, Window, LuceneIndexAnalyzer.Options,
+ *       LuceneIndexAnalyzer.IndexRebuildCallback)}
  *       — open a private writer at the given path. Use only when the data
  *       store is offline (no live writer can coexist).</li>
  * </ul>
