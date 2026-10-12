@@ -540,7 +540,7 @@
                             </artifactItem>
                             <!-- stamp-adoc-core (ike-issues#468): komet-claude-plugin's STAMP-in-git
                                  engine, staged beside it. Its JGit is the wrapped module the boot
-                                 image already ships (org.eclipse.jgit), as is roaringbitmap, so
+                                 image already ships (dev.ikm.jpms.jgit), as is roaringbitmap, so
                                  only this jar is staged. -->
                             <artifactItem>
                                 <groupId>design.knowledge.stamp</groupId>
