@@ -42,6 +42,9 @@
              (the ike-issues#1027 defect, seen again 2026-08-17: 6-SNAPSHOT → 5-SNAPSHOT);
              correct it to the member's CURRENT snapshot after any align pass. -->
         <komet-claude-plugin.version>7-SNAPSHOT</komet-claude-plugin.version>
+        <!-- stamp-adoc-core (ike-issues#468): staged into plugins/ beside komet-claude-plugin;
+             keep in step with the plugin's own stamp-adoc-core.version. -->
+        <stamp-adoc-core.version>1.0.0-SNAPSHOT</stamp-adoc-core.version>
         <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
              dependency. All its runtime deps are in the boot image. -->
@@ -534,6 +537,15 @@
                                 <groupId>network.ike.komet</groupId>
                                 <artifactId>komet-claude-plugin</artifactId>
                                 <version>${komet-claude-plugin.version}</version>
+                            </artifactItem>
+                            <!-- stamp-adoc-core (ike-issues#468): komet-claude-plugin's STAMP-in-git
+                                 engine, staged beside it. Its JGit is the wrapped module the boot
+                                 image already ships (org.eclipse.jgit), as is roaringbitmap, so
+                                 only this jar is staged. -->
+                            <artifactItem>
+                                <groupId>design.knowledge.stamp</groupId>
+                                <artifactId>stamp-adoc-core</artifactId>
+                                <version>${stamp-adoc-core.version}</version>
                             </artifactItem>
                             <!-- complex-clause-plugin (#628): only the plugin jar is staged; its
                                  runtime deps (komet layout/framework, tinkar) are in the boot
