@@ -60,7 +60,8 @@ import dev.ikm.tinkar.coordinate.view.calculator.ViewCalculator;
 import dev.ikm.tinkar.entity.ConceptEntity;
 import dev.ikm.tinkar.entity.EntityHandle;
 import dev.ikm.tinkar.terms.ConceptFacade;
-import dev.ikm.tinkar.terms.KernelTerm;
+import dev.ikm.tinkar.terms.KernelConcept;
+import dev.ikm.tinkar.terms.KernelPattern;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
@@ -181,7 +182,7 @@ public class AppPages {
      */
     private boolean bypassLogin(ViewProperties viewProperties, Consumer<ConceptEntity> preselect) {
         // Create new instance of ViewCalculator to have stated navigation along with inferred.
-        ViewCalculator viewCalculator = ViewCoordinateHelper.createNavigationCalculatorWithPatternNidsLatest(viewProperties, KernelTerm.STATED_NAVIGATION_PATTERN.nid());
+        ViewCalculator viewCalculator = ViewCoordinateHelper.createNavigationCalculatorWithPatternNidsLatest(viewProperties, KernelPattern.STATED_NAVIGATION_PATTERN.nid());
 
         // Developer bypass using a known user, no password.
         String devAuthorPropStr = System.getProperty(DEV_AUTHOR);
@@ -226,7 +227,7 @@ public class AppPages {
 
     /**
      * Finds the author a launch option names, by public id or by name, among the authors the
-     * author screen lists: the leaf descendants of {@link KernelTerm#USER}, else that concept itself.
+     * author screen lists: the leaf descendants of {@link KernelConcept#USER}, else that concept itself.
      *
      * @param viewCalculator a calculator with stated navigation
      * @param nameOrUuid     the author's name or one of its UUIDs
@@ -234,10 +235,10 @@ public class AppPages {
      */
     private static Optional<ConceptEntity> resolveAuthor(ViewCalculator viewCalculator, String nameOrUuid) {
         // Only leaf descendants of USER are named users; grouping concepts in the subtree are excluded (ike-issues#754).
-        Set<ConceptEntity> authors = NavigationReads.leafDescendantsOf(viewCalculator, KernelTerm.USER);
+        Set<ConceptEntity> authors = NavigationReads.leafDescendantsOf(viewCalculator, KernelConcept.USER);
         if (authors.isEmpty()) {
             // add default user into set of available users
-            authors.add(EntityHandle.get(KernelTerm.USER.nid()).expectConcept());
+            authors.add(EntityHandle.get(KernelConcept.USER.nid()).expectConcept());
         }
         UUID uuid = null;
         try {

@@ -43,7 +43,7 @@ import dev.ikm.tinkar.events.EvtBus;
 import dev.ikm.tinkar.events.EvtBusFactory;
 import dev.ikm.tinkar.events.Subscriber;
 import dev.ikm.tinkar.terms.ConceptFacade;
-import dev.ikm.tinkar.terms.KernelTerm;
+import dev.ikm.tinkar.terms.KernelConcept;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
@@ -745,9 +745,9 @@ public class App extends Application {
                 case RUNNING -> {
                     LOG.info("App entering RUNNING state");
                     if (userProperty.get() == null) {
-                        //If user property is not set then use the KernelTerm.USER concept.
-                        LOG.info("No user set, using KernelTerm.USER");
-                        userProperty.set(KernelTerm.USER);
+                        //If user property is not set then use the KernelConcept.USER concept.
+                        LOG.info("No user set, using KernelConcept.USER");
+                        userProperty.set(KernelConcept.USER);
                     }
                     LOG.info("Launching landing page for user: {}", userProperty.get());
                     appPages.launchLandingPage(primaryStage, (ConceptFacade) userProperty.get());

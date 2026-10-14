@@ -20,7 +20,7 @@ import dev.ikm.tinkar.common.service.PrimitiveData;
 import dev.ikm.tinkar.entity.maintenance.SingleSemanticDuplicateWithdrawer;
 import dev.ikm.tinkar.entity.maintenance.SingleSemanticPatterns;
 import dev.ikm.tinkar.entity.transaction.Transaction;
-import dev.ikm.tinkar.terms.EntityProxy;
+import dev.ikm.tinkar.terms.PatternFacade;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.concurrent.Task;
@@ -201,7 +201,7 @@ public final class DuplicateSemanticWithdrawerDialog extends Dialog<Void> {
                     }
 
                     @Override
-                    public void onPatternStarting(EntityProxy.Pattern pattern, int nidsForPattern) {
+                    public void onPatternStarting(PatternFacade pattern, int nidsForPattern) {
                         LOG.info("Starting pattern {} with {} nids", pattern.description(), nidsForPattern);
                     }
                 };
