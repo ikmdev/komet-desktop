@@ -45,6 +45,9 @@
         <!-- stamp-adoc-core (ike-issues#468): staged into plugins/ beside komet-claude-plugin;
              keep in step with the plugin's own stamp-adoc-core.version. -->
         <stamp-adoc-core.version>1.0.0-SNAPSHOT</stamp-adoc-core.version>
+        <!-- ike-bindings (ike-issues#844): staged into plugins/ beside komet-claude-plugin;
+             keep in step with the plugin's own ike-starter-set.version. -->
+        <ike-starter-set.version>1-SNAPSHOT</ike-starter-set.version>
         <!-- complex-clause-plugin (ike-issues#628) is staged into the runtime plugins/ layer the
              same way as komet-claude-plugin; it loads via the plugin layer, not as a compile
              dependency. All its runtime deps are in the boot image. -->
@@ -546,6 +549,15 @@
                                 <groupId>design.knowledge.stamp</groupId>
                                 <artifactId>stamp-adoc-core</artifactId>
                                 <version>${stamp-adoc-core.version}</version>
+                            </artifactItem>
+                            <!-- ike-bindings (ike-issues#844): the IKE starter set's generated
+                                 bindings komet-claude-plugin names its document, journal and
+                                 annotation vocabulary through; its only requirement,
+                                 dev.ikm.tinkar.terms, is in the boot image. -->
+                            <artifactItem>
+                                <groupId>network.ike.foundation</groupId>
+                                <artifactId>ike-bindings</artifactId>
+                                <version>${ike-starter-set.version}</version>
                             </artifactItem>
                             <!-- complex-clause-plugin (#628): only the plugin jar is staged; its
                                  runtime deps (komet layout/framework, tinkar) are in the boot
