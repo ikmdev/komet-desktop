@@ -471,6 +471,7 @@ public class AppPages {
             // load additional panels
             journalController.loadNextGenReasonerPanel();
             journalController.loadNextGenSearchPanel();
+            journalController.loadUnpublishedChangesPanel();
         });
         // disable the delete menu option for a Journal Card.
         journalWindowSettings.setValue(CAN_DELETE, false);
