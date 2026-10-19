@@ -835,6 +835,32 @@
                             </filesets>
                         </configuration>
                     </execution>
+                    <!--
+                        IDE run only (not bound to a phase; invoked by id from the
+                        "Komet (Dev)" run configurations before stage-dev-plugins).
+                        Empties target/plugins so a renamed snapshot — 7-foo-SNAPSHOT
+                        beside 7-SNAPSHOT after a sibling switch — cannot leave two
+                        versions of one module in the plugin layer, which the layer
+                        resolver rejects the same way jlink rejects the module path
+                        above. overWriteSnapshots only replaces a same-named file.
+                    -->
+                    <execution>
+                        <id>clean-dev-plugins</id>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.build.directory}/plugins</directory>
+                                </fileset>
+                                <fileset>
+                                    <directory>${project.build.directory}/plugin-service-loader</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -948,6 +974,51 @@
                         <configuration>
                             <skip>${skip.image.profile}</skip>
                             <outputDirectory>${project.build.directory}/jreleaser-jlink/assemble/komet-profile/jlink/${jreleaser.platform.work}/kometProfileRuntimeImage-${jreleaser.platform.suffix}/plugin-service-loader</outputDirectory>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>dev.ikm.tinkar</groupId>
+                                    <artifactId>plugin-service-loader</artifactId>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                    <!--
+                        IDE run only. The "Komet (Dev)" / "Komet (Dev Debug)" run
+                        configurations launch KometLauncher from the IDE's class path
+                        with user.dir = komet-desktop/, where no jlink image exists, so
+                        none of the fetch-* executions above have staged a plugin layer
+                        and App.initializePluginSystem() found nothing. These two stage
+                        the same plugin set (the shared artifactItems from
+                        pluginManagement) and the plugin-service-loader into
+                        target/plugins and target/plugin-service-loader — the
+                        <user.dir>/target/<name> candidate that App.resolveRuntimeDirectory
+                        and IkeServiceManager.pluginServiceLoaderCandidates both probe as
+                        the local Maven build. Not bound to a phase: the run
+                        configurations invoke them by id, after clean-dev-plugins, as
+
+                            mvn -pl komet-desktop clean:clean@clean-dev-plugins
+                                dependency:copy@stage-dev-plugins
+                                dependency:copy@stage-dev-plugin-service-loader
+
+                        from the workspace root. The three fetch-* executions remain the
+                        image path; these never touch jreleaser-jlink/.
+                    -->
+                    <execution>
+                        <id>stage-dev-plugins</id>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/plugins</outputDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>stage-dev-plugin-service-loader</id>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/plugin-service-loader</outputDirectory>
                             <artifactItems>
                                 <artifactItem>
                                     <groupId>dev.ikm.tinkar</groupId>

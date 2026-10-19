@@ -6,6 +6,11 @@
     <option name="VM_PARAMETERS" value="--enable-preview -Xmx42g --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls --add-exports javafx.controls/com.sun.javafx.scene.control.behavior=dev.ikm.komet.navigator --add-exports javafx.base/com.sun.javafx.event=one.jpro.platform.file -Djava.util.concurrent.ForkJoinPool.common.exceptionHandler=dev.ikm.tinkar.common.alert.UncaughtExceptionAlertStreamer --add-modules jdk.incubator.vector -Dorg.apache.lucene.vectorization.upperJavaFeatureVersion=27" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/komet-desktop" />
     <method v="2">
+      <!-- Restage the plugin layer into komet-desktop/target/plugins (+ plugin-service-loader)
+           from the local repository before every launch, so the IDE run loads the same
+           plugins the jlink image does. Runs from the workspace root with -pl, as the
+           workspace rules require (ike-issues#1265). -->
+      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="-pl komet-desktop clean:clean@clean-dev-plugins dependency:copy@stage-dev-plugins dependency:copy@stage-dev-plugin-service-loader" />
       <option name="Make" enabled="true" />
     </method>
   </configuration>

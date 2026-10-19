@@ -33,6 +33,42 @@ op run --env-file=~/.config/ike/release.env -- mvn clean verify -DskipTests
 The env file sets `IKE_RELEASE=1` alongside the signing credentials, which
 deactivates `fast-dev` and runs the full jpackage + codesign + notarize path.
 
+## Running from IntelliJ with the plugin layer
+
+The `Komet (Dev)` and `Komet (Dev Debug)` run configurations
+(`.run/`) start `KometLauncher` from the IDE's module path in seconds,
+instead of the 8–12 minute build that assembles the jlink image. They
+load the same plugin layer as the image — the Claude assistant
+(`komet-claude-plugin`), `komet-grpc-plugin`, `complex-clause-plugin`,
+`rocks-kb-engine` and their companions — through a Maven before-launch
+task that runs, from the workspace root,
+
+```bash
+mvn -pl komet-desktop clean:clean@clean-dev-plugins dependency:copy@stage-dev-plugins dependency:copy@stage-dev-plugin-service-loader
+```
+
+That restages `target/plugins` and `target/plugin-service-loader` from
+the local Maven repository on every launch (about two seconds), and
+`App.resolveRuntimeDirectory` probes `<user.dir>/target/<name>` after
+`./<name>` and `../<name>`, the same way `IkeServiceManager` already
+probes `target/plugin-service-loader`. The clean step first empties both
+directories so a renamed snapshot (`7-foo-SNAPSHOT` beside `7-SNAPSHOT`
+after a sibling switch) cannot leave two versions of one module in the
+layer. The three `fetch-*` executions remain the image path.
+
+Because the plugins arrive from the repository, an edit to a plugin is
+not in the next IDE run until it is installed:
+
+```bash
+mvn -pl komet-claude-plugin -DskipTests install
+```
+
+The log confirms the layer: `Initializing plugin system from:
+.../komet-desktop/target/plugins`, then `Created plugin module layer
+'Standard plugins directory' with 11 modules` listing `komet.claude`. A
+`Failed to create module layer` names the missing module — install that
+plugin (or the dependency it names) rather than widening the boot layer.
+
 ## Key Facts
 
 - GroupId: `dev.ikm.komet`

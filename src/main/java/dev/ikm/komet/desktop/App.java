@@ -363,6 +363,11 @@ public class App extends Application {
      * <ol>
      *   <li>{@code ./<name>} relative to user.dir</li>
      *   <li>{@code ../<name>} (typical when launched from {@code bin/})</li>
+     *   <li>{@code <user.dir>/target/<name>} — the local Maven build, where the
+     *       {@code stage-dev-*} executions in this module's POM place the plugin
+     *       layer for an IDE run with {@code user.dir=komet-desktop/}; mirrors
+     *       {@code IkeServiceManager.pluginServiceLoaderCandidates}, which already
+     *       probes {@code <user.dir>/target/plugin-service-loader}</li>
      *   <li>{@code $JAVA_HOME/<name>} and two parent levels above</li>
      * </ol>
      *
@@ -373,6 +378,7 @@ public class App extends Application {
         List<Path> candidates = new ArrayList<>();
         candidates.add(Path.of(name));
         candidates.add(Path.of("..", name));
+        candidates.add(Path.of("target", name));
 
         String javaHome = System.getProperty("java.home");
         if (javaHome != null && !javaHome.isBlank()) {
