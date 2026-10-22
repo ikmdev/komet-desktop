@@ -269,6 +269,11 @@
             <groupId>dev.ikm.tinkar</groupId>
             <artifactId>data-spinedarray-provider</artifactId>
         </dependency>
+        <!-- The 64-bit spined array: Open, New and the memory-only store (IKE-Network/ike-issues#1313). -->
+        <dependency>
+            <groupId>dev.ikm.tinkar</groupId>
+            <artifactId>data-spinedarray64-provider</artifactId>
+        </dependency>
         <dependency>
             <groupId>dev.ikm.tinkar</groupId>
             <artifactId>changeset-writer-provider</artifactId>

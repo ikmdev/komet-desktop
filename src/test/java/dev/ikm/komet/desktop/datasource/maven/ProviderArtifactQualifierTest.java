@@ -30,6 +30,14 @@ class ProviderArtifactQualifierTest {
     void newControllersOfAnyBackendOfferThePbFlow() {
         assertEquals(Optional.of(ProviderArtifactQualifier.Flow.PB), ProviderArtifactQualifier.flowFor("New SpinedArrayStore"));
         assertEquals(Optional.of(ProviderArtifactQualifier.Flow.PB), ProviderArtifactQualifier.flowFor("New Rocks KB"));
+        assertEquals(Optional.of(ProviderArtifactQualifier.Flow.PB), ProviderArtifactQualifier.flowFor("New 64-bit SpinedArrayStore"));
+    }
+
+    @Test
+    void theSixtyFourBitControllersOfferNoStoreSnapshotFlow() {
+        // A published reasoned-sa snapshot is a sequential store, which the 64-bit store cannot open.
+        assertTrue(ProviderArtifactQualifier.flowFor("Open 64-bit SpinedArrayStore").isEmpty());
+        assertTrue(ProviderArtifactQualifier.flowFor("Load Memory-Only 64-bit Store").isEmpty());
     }
 
     @Test

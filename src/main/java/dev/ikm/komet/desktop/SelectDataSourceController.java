@@ -145,7 +145,16 @@ public class SelectDataSourceController {
      */
     private static final Map<String, String> STORE_SUFFIX_BY_CONTROLLER = Map.of(
             "New SpinedArrayStore", "sa",
+            "New 64-bit SpinedArrayStore", "sa64",
             "New Rocks KB", "rkb");
+
+    /**
+     * Controllers the chooser does not offer: the sequential spined array's memory-only store,
+     * whose role the 64-bit spined array's "Load Memory-Only 64-bit Store" has taken
+     * (IKE-Network/ike-issues#1313). The sequential store's Open and New stay offered, so an
+     * existing store opens to be migrated.
+     */
+    private static final java.util.Set<String> RETIRED_CONTROLLERS = java.util.Set.of("Load Ephemeral Store");
 
     /**
      * A snapshot-resolved version tail: {@code -<yyyyMMdd>.<HHmmss>} followed by any number of
@@ -213,8 +222,10 @@ public class SelectDataSourceController {
         }
 
         // Get sorted DATA_PROVIDER services (already sorted alphabetically)
-        lifecycleManager.getServicesForGroup(ServiceExclusionGroup.DATA_PROVIDER)
-                .forEach(service -> dataSourceChoiceBox.getItems().add((DataServiceController<?>) service));
+        lifecycleManager.getServicesForGroup(ServiceExclusionGroup.DATA_PROVIDER).stream()
+                .map(service -> (DataServiceController<?>) service)
+                .filter(controller -> !RETIRED_CONTROLLERS.contains(controller.controllerName()))
+                .forEach(dataSourceChoiceBox.getItems()::add);
 
         dataSourceChoiceBox.getSelectionModel().selectedItemProperty().addListener(this::dataSourceChanged);
 

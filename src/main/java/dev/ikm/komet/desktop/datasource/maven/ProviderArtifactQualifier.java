@@ -35,7 +35,10 @@ import java.util.Set;
  *     <li>The SpinedArray {@code Open*Controller} offers the {@link Flow#SA} flow, and the
  *     Rocks KB {@code Open*Controller} offers the {@link Flow#ROCKS} flow — both a pre-built
  *     store snapshot unpacked as the base layer. No equivalent snapshot convention exists for
- *     a retired store today, so its {@code Open*Controller} offers nothing.</li>
+ *     a retired store today, so its {@code Open*Controller} offers nothing; nor for the 64-bit
+ *     spined array, whose {@code "Open 64-bit SpinedArrayStore"} cannot open a published
+ *     {@code reasoned-sa} snapshot (a sequential store), so it offers nothing either until 64-bit
+ *     snapshots are published (IKE-Network/ike-issues#1313).</li>
  * </ul>
  */
 public final class ProviderArtifactQualifier {
