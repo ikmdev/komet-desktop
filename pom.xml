@@ -65,6 +65,10 @@
              from its DataServiceController provides; full runtime function lands
              with ikmdev/tinkar-core#220's remainder. -->
         <komet-grpc-plugin.version>6-SNAPSHOT</komet-grpc-plugin.version>
+        <!-- komet-sequential-store-plugin (ike-issues#1313): the sequential (32-bit) spined-array
+             store, staged into the runtime plugins/ layer like rocks-kb-engine so a store on disk
+             can still be opened, to migrate it to the 64-bit store. Not a compile dependency. -->
+        <komet-sequential-store-plugin.version>1-SNAPSHOT</komet-sequential-store-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
@@ -150,10 +154,6 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>dev.ikm.tinkar</groupId>
-            <artifactId>collection</artifactId>
         </dependency>
         <dependency>
             <groupId>dev.ikm.tinkar</groupId>
@@ -264,10 +264,6 @@
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>dev.ikm.tinkar</groupId>
-            <artifactId>data-spinedarray-provider</artifactId>
         </dependency>
         <!-- The 64-bit spined array: Open, New and the memory-only store (IKE-Network/ike-issues#1313). -->
         <dependency>
@@ -541,6 +537,14 @@
                                 <groupId>dev.ikm.ike</groupId>
                                 <artifactId>rocks-kb-engine</artifactId>
                             </artifactItem>
+                            <!-- komet-sequential-store-plugin (#1313): the sequential store, only
+                                 the plugin jar; its tinkar and eclipse-collections requirements
+                                 are in the boot image, its spined maps are inside it. -->
+                            <artifactItem>
+                                <groupId>network.ike.komet</groupId>
+                                <artifactId>komet-sequential-store-plugin</artifactId>
+                                <version>${komet-sequential-store-plugin.version}</version>
+                            </artifactItem>
                             <artifactItem>
                                 <groupId>network.ike.komet</groupId>
                                 <artifactId>komet-claude-plugin</artifactId>
@@ -658,6 +662,11 @@
                             <groupId>dev.ikm.ike</groupId>
                             <artifactId>rocks-kb-engine</artifactId>
                             <version>${rocks-kb-engine.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>network.ike.komet</groupId>
+                            <artifactId>komet-sequential-store-plugin</artifactId>
+                            <version>${komet-sequential-store-plugin.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>

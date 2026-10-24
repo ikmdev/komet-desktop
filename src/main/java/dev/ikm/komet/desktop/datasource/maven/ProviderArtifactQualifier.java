@@ -46,7 +46,9 @@ public final class ProviderArtifactQualifier {
     /**
      * The exact {@code controllerName()} of SpinedArray's open controller
      * ({@code dev.ikm.tinkar.provider.spinedarray.SpinedArrayProvider.OpenController
-     * .CONTROLLER_NAME}, confirmed verbatim against its source).
+     * .CONTROLLER_NAME}, confirmed verbatim against its source). The sequential store is a plugin
+     * since it left tinkar-core (komet-sequential-store-plugin, IKE-Network/ike-issues#1313);
+     * the published {@code reasoned-sa} snapshots are its stores.
      */
     private static final String SPINED_ARRAY_OPEN_CONTROLLER_NAME = "Open SpinedArrayStore";
 
