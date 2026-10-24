@@ -128,4 +128,42 @@ class LaunchOptionsTest {
         assertFalse(LaunchOptions.resolve(Map.of(), List.of(),
                 Map.of(LaunchOptions.NO_RESTORE_PROPERTY, "false")::get).noRestore());
     }
+
+    @Test
+    void upgradeIsOffByDefault() {
+        LaunchOptions options = LaunchOptions.fromArguments(new String[]{"--kb=ike-kb"}, NONE);
+        assertFalse(options.upgradeChangeSets());
+        assertEquals(Optional.of("ike-kb"), options.get(Option.KB));
+    }
+
+    @Test
+    void theUpgradeFlagAloneUpgradesTheStoresOwnFolder() {
+        LaunchOptions options = LaunchOptions.fromArguments(new String[]{"--kb=ike-kb", "--upgrade-change-sets"}, NONE);
+        assertTrue(options.upgradeChangeSets());
+        assertEquals(Optional.empty(), options.upgradeFolder());
+    }
+
+    @Test
+    void theUpgradeFlagMayNameAFolder() {
+        LaunchOptions options = LaunchOptions.fromArguments(
+                new String[]{"--upgrade-change-sets=/data/change sets", "--kb=/data/kb"}, NONE);
+        assertTrue(options.upgradeChangeSets());
+        assertEquals(Optional.of("/data/change sets"), options.upgradeFolder());
+        assertEquals(Optional.of("/data/kb"), options.get(Option.KB));
+    }
+
+    @Test
+    void anEmptyUpgradeFolderMeansTheStoresOwn() {
+        LaunchOptions options = LaunchOptions.fromArguments(new String[]{"--upgrade-change-sets="}, NONE);
+        assertTrue(options.upgradeChangeSets());
+        assertEquals(Optional.empty(), options.upgradeFolder());
+    }
+
+    @Test
+    void argumentsAreNamedAsJavaFxNamesThem() {
+        LaunchOptions options = LaunchOptions.fromArguments(
+                new String[]{"--no-restore", "--user=Gretel", "plain"}, NONE);
+        assertTrue(options.noRestore(), "--no-restore has no value, so it is unnamed");
+        assertEquals(Optional.of("Gretel"), options.get(Option.USER));
+    }
 }

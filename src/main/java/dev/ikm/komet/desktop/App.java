@@ -410,7 +410,7 @@ public class App extends Application {
      * plugin-provided services — in particular, before any FXML controller
      * that touches {@code ServiceLifecycleManager}.
      */
-    private static void initializePluginSystem() {
+    static void initializePluginSystem() {
         if (Boolean.getBoolean(PLUGINS_DISABLED_PROPERTY)) {
             LOG.info("Plugin system disabled via -D{}=true", PLUGINS_DISABLED_PROPERTY);
             return;

@@ -58,6 +58,13 @@ public final class LaunchOptions {
     public static final String NO_RESTORE_PROPERTY = "komet.no-restore";
 
     /**
+     * The argument that upgrades the knowledge base's change sets with no window and exits
+     * (IKE-Network/ike-issues#1313): {@code --upgrade-change-sets} for the store's own change-set
+     * folder, {@code --upgrade-change-sets=<folder>} for another. A program argument only.
+     */
+    public static final String UPGRADE_CHANGE_SETS_ARGUMENT = "upgrade-change-sets";
+
+    /**
      * A launch option: its program-argument name and its system-property fallback.
      */
     public enum Option {
@@ -102,14 +109,41 @@ public final class LaunchOptions {
         }
     }
 
-    private static LaunchOptions current = new LaunchOptions(new EnumMap<>(Option.class), false);
+    private static LaunchOptions current = new LaunchOptions(new EnumMap<>(Option.class), false, false, null);
 
     private final Map<Option, String> values;
     private final boolean noRestore;
+    private final boolean upgradeChangeSets;
+    private final String upgradeFolder;
 
-    private LaunchOptions(Map<Option, String> values, boolean noRestore) {
+    private LaunchOptions(Map<Option, String> values, boolean noRestore, boolean upgradeChangeSets, String upgradeFolder) {
         this.values = values;
         this.noRestore = noRestore;
+        this.upgradeChangeSets = upgradeChangeSets;
+        this.upgradeFolder = upgradeFolder;
+    }
+
+    /**
+     * Resolves the launch options from the program's arguments as {@code main} receives them,
+     * named the way JavaFX names them: {@code --name=value} is named, anything else is not. For
+     * the modes that run before, or instead of, the JavaFX application.
+     *
+     * @param arguments      the program arguments
+     * @param systemProperty looks up a system property; answers {@code null} when it is unset
+     * @return the resolved options
+     */
+    public static LaunchOptions fromArguments(String[] arguments, UnaryOperator<String> systemProperty) {
+        Map<String, String> named = new java.util.LinkedHashMap<>();
+        List<String> unnamed = new java.util.ArrayList<>();
+        for (String argument : arguments) {
+            int equals = argument.indexOf('=');
+            if (argument.startsWith("--") && equals > 2) {
+                named.put(argument.substring(2, equals), argument.substring(equals + 1));
+            } else {
+                unnamed.add(argument);
+            }
+        }
+        return resolve(named, unnamed, systemProperty);
     }
 
     /**
@@ -141,7 +175,10 @@ public final class LaunchOptions {
         }
         boolean noRestore = unnamedArguments.contains(NO_RESTORE_ARGUMENT)
                 || Boolean.parseBoolean(systemProperty.apply(NO_RESTORE_PROPERTY));
-        return new LaunchOptions(values, noRestore);
+        boolean upgrade = namedArguments.containsKey(UPGRADE_CHANGE_SETS_ARGUMENT)
+                || unnamedArguments.contains("--" + UPGRADE_CHANGE_SETS_ARGUMENT);
+        String upgradeFolder = namedArguments.get(UPGRADE_CHANGE_SETS_ARGUMENT);
+        return new LaunchOptions(values, noRestore, upgrade, isBlank(upgradeFolder) ? null : upgradeFolder.strip());
     }
 
     /**
@@ -179,6 +216,24 @@ public final class LaunchOptions {
      */
     public boolean noRestore() {
         return noRestore;
+    }
+
+    /**
+     * Whether this launch upgrades the knowledge base's change sets and exits, with no window.
+     *
+     * @return true for {@code --}{@value #UPGRADE_CHANGE_SETS_ARGUMENT}, with or without a folder
+     */
+    public boolean upgradeChangeSets() {
+        return upgradeChangeSets;
+    }
+
+    /**
+     * The folder {@code --}{@value #UPGRADE_CHANGE_SETS_ARGUMENT}{@code =<folder>} names.
+     *
+     * @return the folder, or empty for the knowledge base's own change-set folder
+     */
+    public Optional<String> upgradeFolder() {
+        return Optional.ofNullable(upgradeFolder);
     }
 
     /**

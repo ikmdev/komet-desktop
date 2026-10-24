@@ -39,6 +39,11 @@ public final class KometLauncher {
     }
 
     public static void main(String[] args) {
+        LaunchOptions options = LaunchOptions.fromArguments(args, System::getProperty);
+        if (options.upgradeChangeSets()) {
+            // No window: open the knowledge base, upgrade its change sets, report, exit (ike-issues#1313).
+            System.exit(ChangeSetUpgradeCommand.run(options, System.out, System.err));
+        }
         configureMacOSRenderingPipeline();
         Application.launch(App.class, args);
     }

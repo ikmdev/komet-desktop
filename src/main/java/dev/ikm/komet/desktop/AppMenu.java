@@ -4,6 +4,7 @@ import com.sun.management.OperatingSystemMXBean;
 import dev.ikm.komet.desktop.aboutdialog.AboutDialog;
 import dev.ikm.komet.desktop.maintenance.ChangeSetSummaryWindow;
 import dev.ikm.komet.desktop.maintenance.ChangeSetToolWindow;
+import dev.ikm.komet.desktop.maintenance.ChangeSetUpgradeWindow;
 import dev.ikm.tinkar.entity.changeset.ChangeSetCompaction;
 import dev.ikm.tinkar.entity.changeset.ChangeSetExpansion;
 import dev.ikm.tinkar.entity.changeset.ChangeSetInspection;
@@ -290,10 +291,12 @@ public class AppMenu {
         MenuItem compactChangeSetItem = new MenuItem("Compact Change Set…");
         compactChangeSetItem.setOnAction(actionEvent -> openChangeSetRewrite("Change Set Compaction", "-compact",
                 (changeSet, target) -> new ChangeSetCompaction(changeSet, target).call().text()));
+        MenuItem upgradeChangeSetsItem = new MenuItem("Upgrade Change Sets…");
+        upgradeChangeSetsItem.setOnAction(actionEvent -> openChangeSetUpgrade());
         MenuItem analyzeLuceneItem = new MenuItem("Analyze Lucene Index…");
         analyzeLuceneItem.setOnAction(actionEvent -> openLuceneIndexAnalysis());
         toolsMenu.getItems().addAll(withdrawDuplicatesItem, summarizeChangeSetItem, inspectChangeSetItem,
-                verifyChangeSetItem, expandChangeSetItem, compactChangeSetItem, analyzeLuceneItem);
+                verifyChangeSetItem, expandChangeSetItem, compactChangeSetItem, upgradeChangeSetsItem, analyzeLuceneItem);
         return toolsMenu;
     }
 
@@ -382,6 +385,21 @@ public class AppMenu {
         File target = save.showSaveDialog(owner);
         if (target == null) return;
         ChangeSetToolWindow.open(title, selected, () -> rewrite.run(selected, target), owner);
+    }
+
+    /** Upgrades change sets against the open knowledge base (IKE-Network/ike-issues#1313). */
+    private void openChangeSetUpgrade() {
+        Window owner = getFocusedWindow();
+        Optional<File> dataStoreRoot = ServiceProperties.get(ServiceKeys.DATA_STORE_ROOT);
+        if (dataStoreRoot.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION,
+                    "Change sets upgrade against the open knowledge base, and this one has no folder.");
+            alert.setHeaderText(null);
+            alert.setTitle("Upgrade Change Sets");
+            alert.showAndWait();
+            return;
+        }
+        ChangeSetUpgradeWindow.open(dataStoreRoot.get().toPath(), owner);
     }
 
     /** The change set a tool reads, chosen from the writer's folder when there is one. */

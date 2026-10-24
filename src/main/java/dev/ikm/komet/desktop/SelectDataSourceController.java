@@ -410,7 +410,19 @@ public class SelectDataSourceController {
     static void prepareDataSource(DataServiceController<?> controller, DataUriOption option) {
         // Remember this provider + knowledge base so the next launch pre-selects it.
         persistSelection(controller, option);
+        selectDataSource(controller, option);
+    }
 
+    /**
+     * Points the provider at the knowledge base and selects the provider and the search engine
+     * before the services start, remembering nothing for the next launch: {@link #prepareDataSource}
+     * without the picker's memory, for a launch that opens a knowledge base with no window, such as
+     * {@code --upgrade-change-sets} (IKE-Network/ike-issues#1313).
+     *
+     * @param controller the provider that opens the knowledge base
+     * @param option     the knowledge base
+     */
+    static void selectDataSource(DataServiceController<?> controller, DataUriOption option) {
         controller.setDataUriOption(option);
 
         // Select the service for the group BEFORE starting services
