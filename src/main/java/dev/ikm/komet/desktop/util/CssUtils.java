@@ -113,7 +113,9 @@ public final class CssUtils {
                 loadedFromFileSystemList.add(cssFile);
                 LOG.info("Loaded CSS '{}' from local file system: {}", cssFile.getFileName(), cssUri);
             } else {
-                LOG.warn("CSS file '{}' not found at local file system path '{}'", cssFile.getFileName(), cssPath);
+                // The file-system copy is a developer's live-edit source, absent in every installed or
+                // image-run Komet; the bundled stylesheet is the normal case, so its absence is no warning.
+                LOG.debug("No live-edit copy of CSS '{}' at '{}'; using the bundled stylesheet", cssFile.getFileName(), cssPath);
                 loadFromResource(cssFile, cssUris);
             }
         }
