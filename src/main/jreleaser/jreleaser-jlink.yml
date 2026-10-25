@@ -25,7 +25,6 @@ assemble:
         jvmOptions:
           universal:
             - --enable-preview
-            - -Xmx42g
             - -Dlog4j.configurationFile=$APP_HOME/conf/log4j2.xml
             - -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
             - --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls
@@ -36,6 +35,18 @@ assemble:
             # Lucene 10.5.1 turns its Vector API code on only up to Java 26 and warns on 27.
             # The property raises that limit. Drop it when a Lucene release supports Java 27.
             - -Dorg.apache.lucene.vectorization.upperJavaFeatureVersion=27
+          # The heap is the caller's: KOMET_MAX_HEAP (such as 24g) when set, else 42g, and
+          # KOMET_JAVA_OPTS after every option of the image's own, so the caller's -X and -D win
+          # (the JVM takes the last of each). The IKE Dashboard sizes both per store; anyone
+          # launching by hand sets them the same way (IKE-Network/ike-issues#1324). Windows'
+          # launcher cannot default an unset variable inline, so there the heap stays 42g unless
+          # KOMET_JAVA_OPTS names one.
+          unix:
+            - -Xmx${KOMET_MAX_HEAP:-42g}
+            - $KOMET_JAVA_OPTS
+          windows:
+            - -Xmx42g
+            - '%KOMET_JAVA_OPTS%'
       jdeps:
         multiRelease: base
         ignoreMissingDeps: true
@@ -73,7 +84,6 @@ assemble:
         jvmOptions:
           universal:
             - --enable-preview
-            - -Xmx42g
             - -Dlog4j.configurationFile=$APP_HOME/conf/log4j2.xml
             - -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
             - --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls
@@ -86,6 +96,18 @@ assemble:
             - -Dorg.apache.lucene.vectorization.upperJavaFeatureVersion=27
             - -agentpath:${jprofiler.agent.path}=port=8849,nowait
             - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+          # The heap is the caller's: KOMET_MAX_HEAP (such as 24g) when set, else 42g, and
+          # KOMET_JAVA_OPTS after every option of the image's own, so the caller's -X and -D win
+          # (the JVM takes the last of each). The IKE Dashboard sizes both per store; anyone
+          # launching by hand sets them the same way (IKE-Network/ike-issues#1324). Windows'
+          # launcher cannot default an unset variable inline, so there the heap stays 42g unless
+          # KOMET_JAVA_OPTS names one.
+          unix:
+            - -Xmx${KOMET_MAX_HEAP:-42g}
+            - $KOMET_JAVA_OPTS
+          windows:
+            - -Xmx42g
+            - '%KOMET_JAVA_OPTS%'
       jdeps:
         multiRelease: base
         ignoreMissingDeps: true
@@ -123,7 +145,6 @@ assemble:
         jvmOptions:
           universal:
             - --enable-preview
-            - -Xmx42g
             - -Dlog4j.configurationFile=$APP_HOME/conf/log4j2.xml
             - -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
             - --add-opens javafx.graphics/javafx.scene=org.controlsfx.controls
@@ -136,6 +157,18 @@ assemble:
             - -Dorg.apache.lucene.vectorization.upperJavaFeatureVersion=27
             - -Xms24g
             - -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000
+          # The heap is the caller's: KOMET_MAX_HEAP (such as 24g) when set, else 42g, and
+          # KOMET_JAVA_OPTS after every option of the image's own, so the caller's -X and -D win
+          # (the JVM takes the last of each). The IKE Dashboard sizes both per store; anyone
+          # launching by hand sets them the same way (IKE-Network/ike-issues#1324). Windows'
+          # launcher cannot default an unset variable inline, so there the heap stays 42g unless
+          # KOMET_JAVA_OPTS names one.
+          unix:
+            - -Xmx${KOMET_MAX_HEAP:-42g}
+            - $KOMET_JAVA_OPTS
+          windows:
+            - -Xmx42g
+            - '%KOMET_JAVA_OPTS%'
       jdeps:
         multiRelease: base
         ignoreMissingDeps: true
