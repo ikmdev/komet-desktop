@@ -44,7 +44,7 @@
         <komet-claude-plugin.version>7-SNAPSHOT</komet-claude-plugin.version>
         <!-- stamp-adoc-core (ike-issues#468): staged into plugins/ beside komet-claude-plugin;
              keep in step with the plugin's own stamp-adoc-core.version. -->
-        <stamp-adoc-core.version>1.0.0-SNAPSHOT</stamp-adoc-core.version>
+        <stamp-adoc-core.version>1.1.0-SNAPSHOT</stamp-adoc-core.version>
         <!-- ike-bindings (ike-issues#844): staged into plugins/ beside komet-claude-plugin;
              keep in step with the plugin's own ike-starter-set.version. -->
         <ike-starter-set.version>1-SNAPSHOT</ike-starter-set.version>
