@@ -18,6 +18,7 @@ package dev.ikm.komet.desktop;
 import com.jpro.webapi.WebAPI;
 import dev.ikm.komet.desktop.aboutdialog.BuildInfoProperties;
 import dev.ikm.komet.framework.ScreenInfo;
+import dev.ikm.komet.framework.graphics.LayoutWatchdog;
 import dev.ikm.komet.framework.graphics.LoadFonts;
 import dev.ikm.komet.framework.preferences.PrefX;
 import dev.ikm.komet.framework.settings.KometSettings;
@@ -527,6 +528,8 @@ public class App extends Application {
         // Every window shown from here on carries the user's text size and glyph choices.
         TextSizeStylesheet.install(KometSettings.get());
         KonceptGlyphSettings.install(KometSettings.get());
+        // A node that lays itself out over and over shows nothing but CPU, so the log names it.
+        LayoutWatchdog.install();
 
         try {
             App.primaryStage = stage;
