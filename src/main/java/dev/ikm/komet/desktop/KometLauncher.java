@@ -44,6 +44,10 @@ public final class KometLauncher {
             // No window: open the knowledge base, upgrade its change sets, report, exit (ike-issues#1313).
             System.exit(ChangeSetUpgradeCommand.run(options, System.out, System.err));
         }
+        if (options.loadChangeSets()) {
+            // No window: open the knowledge base, load the change sets it has not registered, report, exit.
+            System.exit(ChangeSetLoadCommand.run(options, System.out, System.err));
+        }
         configureMacOSRenderingPipeline();
         Application.launch(App.class, args);
     }

@@ -65,6 +65,13 @@ public final class LaunchOptions {
     public static final String UPGRADE_CHANGE_SETS_ARGUMENT = "upgrade-change-sets";
 
     /**
+     * The argument that loads the knowledge base's unregistered change sets with no window and
+     * exits ({@code dev-ike-dashboard}, decision 20): {@code --load-change-sets}. What every open
+     * does, run on its own for an upgrade's validation. A program argument only.
+     */
+    public static final String LOAD_CHANGE_SETS_ARGUMENT = "load-change-sets";
+
+    /**
      * A launch option: its program-argument name and its system-property fallback.
      */
     public enum Option {
@@ -109,18 +116,21 @@ public final class LaunchOptions {
         }
     }
 
-    private static LaunchOptions current = new LaunchOptions(new EnumMap<>(Option.class), false, false, null);
+    private static LaunchOptions current = new LaunchOptions(new EnumMap<>(Option.class), false, false, null, false);
 
     private final Map<Option, String> values;
     private final boolean noRestore;
     private final boolean upgradeChangeSets;
     private final String upgradeFolder;
+    private final boolean loadChangeSets;
 
-    private LaunchOptions(Map<Option, String> values, boolean noRestore, boolean upgradeChangeSets, String upgradeFolder) {
+    private LaunchOptions(Map<Option, String> values, boolean noRestore, boolean upgradeChangeSets, String upgradeFolder,
+                          boolean loadChangeSets) {
         this.values = values;
         this.noRestore = noRestore;
         this.upgradeChangeSets = upgradeChangeSets;
         this.upgradeFolder = upgradeFolder;
+        this.loadChangeSets = loadChangeSets;
     }
 
     /**
@@ -178,7 +188,9 @@ public final class LaunchOptions {
         boolean upgrade = namedArguments.containsKey(UPGRADE_CHANGE_SETS_ARGUMENT)
                 || unnamedArguments.contains("--" + UPGRADE_CHANGE_SETS_ARGUMENT);
         String upgradeFolder = namedArguments.get(UPGRADE_CHANGE_SETS_ARGUMENT);
-        return new LaunchOptions(values, noRestore, upgrade, isBlank(upgradeFolder) ? null : upgradeFolder.strip());
+        boolean load = unnamedArguments.contains("--" + LOAD_CHANGE_SETS_ARGUMENT)
+                || namedArguments.containsKey(LOAD_CHANGE_SETS_ARGUMENT);
+        return new LaunchOptions(values, noRestore, upgrade, isBlank(upgradeFolder) ? null : upgradeFolder.strip(), load);
     }
 
     /**
@@ -234,6 +246,16 @@ public final class LaunchOptions {
      */
     public Optional<String> upgradeFolder() {
         return Optional.ofNullable(upgradeFolder);
+    }
+
+    /**
+     * Whether this launch loads the knowledge base's unregistered change sets and exits, with no
+     * window.
+     *
+     * @return true for {@code --}{@value #LOAD_CHANGE_SETS_ARGUMENT}
+     */
+    public boolean loadChangeSets() {
+        return loadChangeSets;
     }
 
     /**

@@ -15,17 +15,10 @@
  */
 package dev.ikm.komet.desktop;
 
-import dev.ikm.tinkar.common.service.DataServiceController;
 import dev.ikm.tinkar.common.service.PrimitiveData;
-import dev.ikm.tinkar.common.service.ServiceExclusionGroup;
-import dev.ikm.tinkar.common.service.ServiceKeys;
-import dev.ikm.tinkar.common.service.ServiceLifecycleManager;
-import dev.ikm.tinkar.common.service.ServiceProperties;
 import dev.ikm.tinkar.entity.changeset.ChangeSetCompaction;
 import dev.ikm.tinkar.entity.changeset.ChangeSetUpgrade;
-import javafx.application.Platform;
 
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,10 +30,10 @@ import java.util.Optional;
 /**
  * {@code --kb=<store> --upgrade-change-sets[=<folder>]}: Komet with no window opens the knowledge
  * base, upgrades the change sets in its change-set folder (or the folder given) against it, prints
- * the report, and exits (IKE-Network/ike-issues#1313). JavaFX runs on its Headless platform: Komet's
- * executor needs the toolkit, the person sees nothing of it. The same steps as Tools → Upgrade Change
- * Sets…, with running the command as the confirmation: the originals that are replaced go first into
- * a dated {@code .tar.gz} in {@code ~/ike-archive}.
+ * the report, and exits (IKE-Network/ike-issues#1313). JavaFX runs on its Headless platform
+ * ({@link HeadlessStore}): Komet's executor needs the toolkit, the person sees nothing of it. The
+ * same steps as Tools → Upgrade Change Sets…, with running the command as the confirmation: the
+ * originals that are replaced go first into a dated {@code .tar.gz} in {@code ~/ike-archive}.
  *
  * <p>The report is Markdown on standard output, between {@value #REPORT_START} and
  * {@value #REPORT_END}, so a caller can find it among whatever the log writes there. Progress goes
@@ -110,18 +103,14 @@ public final class ChangeSetUpgradeCommand {
             err.println("No change-set folder at " + folder.get() + ".");
             return NOT_RUN;
         }
-        App.initLog4J2FromConf();
-        startHeadlessToolkit();
-        App.initializePluginSystem();
+        HeadlessStore.startPlatform();
         boolean started = false;
         try {
-            started = open(knowledgeBase.get(), err);
+            started = HeadlessStore.open(knowledgeBase.get(), err, "upgrade");
             if (!started) {
                 return NOT_RUN;
             }
-            Optional<File> dataStoreRoot = ServiceProperties.get(ServiceKeys.DATA_STORE_ROOT);
-            Path storeRoot = dataStoreRoot.map(File::toPath)
-                    .orElseThrow(() -> new IllegalStateException("the store started with no data store root"));
+            Path storeRoot = HeadlessStore.storeRoot();
             return upgrade(storeRoot, folder.orElse(changeSetFolder(storeRoot)), out, err);
         } catch (Exception e) {
             err.println("The upgrade stopped: " + e);
@@ -166,52 +155,5 @@ public final class ChangeSetUpgradeCommand {
         out.println(String.join("\n", report));
         out.println(REPORT_END);
         return plan.clean() && replacedAll ? CLEAN : INCOMPLETE;
-    }
-
-    /**
-     * Starts JavaFX on its Headless glass platform: no window, no Dock icon. Komet's executor
-     * reports each task's progress through the toolkit, so a store does not stop without one.
-     */
-    private static void startHeadlessToolkit() {
-        System.setProperty("glass.platform", "Headless");
-        System.setProperty("prism.order", "sw");
-        System.setProperty("java.awt.headless", "true");
-        Platform.setImplicitExit(false);
-        Platform.startup(() -> { });
-    }
-
-    /** Opens the knowledge base the way {@code --kb} does in the window, remembering nothing. */
-    private static boolean open(String knowledgeBase, PrintStream err) {
-        ServiceLifecycleManager lifecycleManager = ServiceLifecycleManager.get();
-        if (!lifecycleManager.isDiscovered()) {
-            lifecycleManager.discoverServices();
-        }
-        List<DataServiceController<?>> controllers = new ArrayList<>();
-        lifecycleManager.getServicesForGroup(ServiceExclusionGroup.DATA_PROVIDER)
-                .forEach(service -> controllers.add((DataServiceController<?>) service));
-        Path home = Path.of(System.getProperty("user.home"));
-        KnowledgeBaseResolver.Resolution resolution = KnowledgeBaseResolver.resolve(knowledgeBase,
-                home.resolve("Solor"), home, KnowledgeBaseResolver.candidates(controllers));
-        switch (resolution) {
-            case KnowledgeBaseResolver.Unresolved unresolved -> {
-                err.println("--" + LaunchOptions.Option.KB.argumentName() + "=" + knowledgeBase + ": " + unresolved.message());
-                return false;
-            }
-            case KnowledgeBaseResolver.Found found -> {
-                DataServiceController<?> controller = controllers.stream()
-                        .filter(candidate -> candidate.controllerName().equals(found.controllerName()))
-                        .findFirst().orElseThrow();
-                Optional<String> conflict = controller.openConflict(found.option());
-                if (conflict.isPresent()) {
-                    err.println(found.option().name() + " is open in another process: " + conflict.get()
-                            + ". Close it there, then upgrade.");
-                    return false;
-                }
-                err.println("Opening " + found.option().uri() + " with " + found.controllerName());
-                SelectDataSourceController.selectDataSource(controller, found.option());
-                PrimitiveData.start();
-                return true;
-            }
-        }
     }
 }

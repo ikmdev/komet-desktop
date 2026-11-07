@@ -243,6 +243,10 @@
         </dependency>
         <dependency>
             <groupId>dev.ikm.tinkar</groupId>
+            <artifactId>importer-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.ikm.tinkar</groupId>
             <artifactId>search-provider</artifactId>
         </dependency>
         <dependency>

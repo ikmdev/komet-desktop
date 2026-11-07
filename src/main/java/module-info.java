@@ -86,6 +86,7 @@ module dev.ikm.komet.desktop {
     requires org.apache.lucene.core;
     requires dev.ikm.tinkar.common;
     requires dev.ikm.tinkar.entity;
+    requires dev.ikm.tinkar.importer;
     requires dev.ikm.tinkar.provider.entity;
     requires dev.ikm.tinkar.terms;
     requires org.kordamp.ikonli.javafx;

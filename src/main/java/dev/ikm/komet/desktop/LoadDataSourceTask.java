@@ -20,11 +20,15 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.Alert;
 import dev.ikm.tinkar.common.service.DataStoreAlreadyOpenException;
 import dev.ikm.tinkar.common.service.PrimitiveData;
+import dev.ikm.tinkar.common.service.ServiceKeys;
 import dev.ikm.tinkar.common.service.ServiceLifecycleManager;
+import dev.ikm.tinkar.common.service.ServiceProperties;
 import dev.ikm.tinkar.common.service.TrackingCallable;
+import dev.ikm.tinkar.importer.registry.ChangeSetLoad;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.Optional;
 
 public class LoadDataSourceTask extends TrackingCallable<Void> {
@@ -62,9 +66,10 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
             } finally {
                 ServiceLifecycleManager.get().removeStartupListener(steps);
             }
+            LOG.info("PrimitiveData.start() completed successfully");
+            loadUnregisteredChangeSets();
             updateMessage("Data source loaded");
             updateProgress(1, 1);
-            LOG.info("PrimitiveData.start() completed successfully");
             LOG.info("Scheduling state transition to SELECT_USER");
             Platform.runLater(() -> {
                 // A legacy-layout database (6-bit or 8-bit) opens normally; warn before any
@@ -105,6 +110,37 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
         } finally {
             updateTitle("Data source loaded in " + durationString());
             updateMessage("Completed");
+        }
+    }
+
+    /**
+     * Loads the change sets in the store's change-set folders that the store has not registered,
+     * and registers each ({@code dev-ike-dashboard}, decision 20): the files an upgrade carried
+     * into a new build, a fresh clone's history, or a file another tool put there. A store that
+     * declares no registry loads every file; one in a legacy nid layout, which is offered a
+     * migration at this point, loads none here. A failure is logged and the open goes on: the
+     * store is whole without the files, and the next open tries them again.
+     */
+    private void loadUnregisteredChangeSets() {
+        Optional<File> root = ServiceProperties.get(ServiceKeys.DATA_STORE_ROOT);
+        if (root.isEmpty()) {
+            return;
+        }
+        if (NidLayoutMigration.inLegacyMode()) {
+            LOG.info("Not loading change sets at open: {} database, to be migrated", NidLayoutMigration.layoutName());
+            return;
+        }
+        try {
+            ChangeSetLoad.Report report = ChangeSetLoad.loadStore(root.get().toPath(), (index, count, file, retry) ->
+                    updateMessage((retry ? "Retrying change set " : "Loading change set ") + index + " of " + count
+                            + ": " + file.getFileName()));
+            if (report.results().isEmpty()) {
+                LOG.info("No change-set files to load at open in {}", root.get());
+            } else {
+                LOG.info("Change sets at open: {}\n{}", report.summary(), report.markdown());
+            }
+        } catch (Exception e) {
+            LOG.error("Loading the store's change sets at open failed; the open goes on without them", e);
         }
     }
 

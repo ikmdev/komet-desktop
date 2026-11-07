@@ -130,6 +130,20 @@ class LaunchOptionsTest {
     }
 
     @Test
+    void loadingChangeSetsIsOffByDefault() {
+        LaunchOptions options = LaunchOptions.fromArguments(new String[]{"--kb=ike-kb"}, NONE);
+        assertFalse(options.loadChangeSets());
+    }
+
+    @Test
+    void loadChangeSetsIsAFlag() {
+        LaunchOptions options = LaunchOptions.fromArguments(new String[]{"--kb=ike-kb", "--load-change-sets"}, NONE);
+        assertTrue(options.loadChangeSets());
+        assertFalse(options.upgradeChangeSets(), "one headless mode at a time");
+        assertEquals(Optional.of("ike-kb"), options.get(Option.KB));
+    }
+
+    @Test
     void upgradeIsOffByDefault() {
         LaunchOptions options = LaunchOptions.fromArguments(new String[]{"--kb=ike-kb"}, NONE);
         assertFalse(options.upgradeChangeSets());
