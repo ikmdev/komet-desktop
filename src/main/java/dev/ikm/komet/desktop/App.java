@@ -530,6 +530,8 @@ public class App extends Application {
         KonceptGlyphSettings.install(KometSettings.get());
         // A node that lays itself out over and over shows nothing but CPU, so the log names it.
         LayoutWatchdog.install();
+        // A rich text area's caret blink otherwise runs for good and keeps JavaFX pulsing at idle.
+        RichTextCaretRest.install();
 
         try {
             App.primaryStage = stage;
