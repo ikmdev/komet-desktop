@@ -46,9 +46,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class RichTextCaretRestTest {
 
-    /** Pulses counted over {@link #MEASURE_MILLIS}: a running caret gives about 30, rest about 0. */
+    /**
+     * Pulses counted over {@link #MEASURE_MILLIS}: a running caret gives about 30 on an idle machine,
+     * rest about 0. A caret runs when the count is above rest; a loaded machine pulses less often
+     * (13 on a parallel CI build), so no higher floor is asked of it.
+     */
     private static final int AT_REST_AT_MOST = 3;
-    private static final int PULSING_AT_LEAST = 15;
     private static final long SETTLE_MILLIS = 400;
     private static final long MEASURE_MILLIS = 600;
 
@@ -194,7 +197,8 @@ class RichTextCaretRestTest {
         });
         int counted = measure();
         onFx(() -> { watching.unsubscribe(); return null; });
-        assertTrue(counted >= PULSING_AT_LEAST, what + ": the caret should run, but only " + counted + " pulses ran");
+        assertTrue(counted > AT_REST_AT_MOST, what + ": the caret should run, but only " + counted + " pulses ran in "
+                + MEASURE_MILLIS + " ms, no more than at rest");
         assertTrue(flips.get() >= 1, what + ": the caret never blinked");
     }
 
