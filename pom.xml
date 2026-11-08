@@ -69,6 +69,10 @@
              store, staged into the runtime plugins/ layer like rocks-kb-engine so a store on disk
              can still be opened, to migrate it to the 64-bit store. Not a compile dependency. -->
         <komet-sequential-store-plugin.version>1-SNAPSHOT</komet-sequential-store-plugin.version>
+        <!-- komet-stamped-document-plugin (ike-issues#1351): the stamped document and its block
+             surface, staged into the runtime plugins/ layer; komet-claude-plugin requires it.
+             Not a compile dependency. -->
+        <komet-stamped-document-plugin.version>1-SNAPSHOT</komet-stamped-document-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
@@ -549,6 +553,13 @@
                                 <artifactId>komet-sequential-store-plugin</artifactId>
                                 <version>${komet-sequential-store-plugin.version}</version>
                             </artifactItem>
+                            <!-- komet-stamped-document-plugin (#1351): the stamped document, which
+                                 komet-claude-plugin requires; Komet opens documents with it alone. -->
+                            <artifactItem>
+                                <groupId>network.ike.komet</groupId>
+                                <artifactId>komet-stamped-document-plugin</artifactId>
+                                <version>${komet-stamped-document-plugin.version}</version>
+                            </artifactItem>
                             <artifactItem>
                                 <groupId>network.ike.komet</groupId>
                                 <artifactId>komet-claude-plugin</artifactId>
@@ -671,6 +682,11 @@
                             <groupId>network.ike.komet</groupId>
                             <artifactId>komet-sequential-store-plugin</artifactId>
                             <version>${komet-sequential-store-plugin.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>network.ike.komet</groupId>
+                            <artifactId>komet-stamped-document-plugin</artifactId>
+                            <version>${komet-stamped-document-plugin.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
