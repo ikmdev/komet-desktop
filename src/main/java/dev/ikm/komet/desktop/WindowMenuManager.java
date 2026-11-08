@@ -59,7 +59,11 @@ public class WindowMenuManager implements ListChangeListener<Window> {
             for (Window removed : c.getRemoved()) {
                 if (removed instanceof Stage stage && INSTANCE.managedMenus.containsKey(stage)) {
                     LOG.info("Stage removed: {}", stage.getTitle());
-                    INSTANCE.managedMenus.remove(stage);
+                    // The closed stage's own Window menu follows every other stage's focus; released, the
+                    // stages that stay open no longer hold the closed one (a closed journal, and all on it).
+                    INSTANCE.managedMenus.remove(stage).getMenus().stream()
+                            .filter(m -> "Window".equals(m.getText()))
+                            .forEach(WindowMenuManager::releaseWindowMenuItems);
                     changed = true;
                 }
             }
@@ -96,9 +100,8 @@ public class WindowMenuManager implements ListChangeListener<Window> {
         );
     }
 
-    private static void addWindowMenuItems(Stage windowStage, Menu windowMenu) {
-        // Release the previous build's title bindings and focus subscriptions before discarding
-        // the old items, so listeners do not accumulate on each stage's properties across rebuilds.
+    /** Releases the items' title bindings and focus subscriptions on other stages, then removes the items. */
+    private static void releaseWindowMenuItems(Menu windowMenu) {
         windowMenu.getItems().forEach(item -> {
             if (item instanceof CheckMenuItem checkItem) {
                 checkItem.textProperty().unbind();
@@ -108,6 +111,12 @@ public class WindowMenuManager implements ListChangeListener<Window> {
             }
         });
         windowMenu.getItems().clear();
+    }
+
+    private static void addWindowMenuItems(Stage windowStage, Menu windowMenu) {
+        // Release the previous build's title bindings and focus subscriptions before discarding
+        // the old items, so listeners do not accumulate on each stage's properties across rebuilds.
+        releaseWindowMenuItems(windowMenu);
 
         MenuItem minimize = new MenuItem("Minimize");
         minimize.setAccelerator(new KeyCodeCombination(KeyCode.M, KeyCombination.SHORTCUT_DOWN));
