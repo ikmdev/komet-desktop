@@ -30,6 +30,7 @@ import static dev.ikm.komet.preferences.KLEditorPreferences.KL_EDITOR_APP;
 import static dev.ikm.komet.preferences.KLEditorPreferences.KL_STANDARD_WINDOWS_DIR;
 import static dev.ikm.komet.preferences.KLEditorPreferences.KL_USER_WINDOWS_DIR;
 import static javafx.scene.layout.Region.USE_COMPUTED_SIZE;
+import dev.ikm.komet.desktop.alerts.WarningsAndErrorsWindow;
 import dev.ikm.komet.framework.KometNodeFactory;
 import dev.ikm.komet.framework.observable.read.NavigationReads;
 import dev.ikm.komet.framework.preferences.PrefX;
@@ -346,6 +347,7 @@ public class AppPages {
             app.landingPageController.setSelectedDatasetTitle(
                     PrimitiveData.get().name() + NidLayoutMigration.titleSuffix());
             app.landingPageController.getGithubStatusHyperlink().setOnAction(_ -> app.appGithub.connectToGithub());
+            WarningsAndErrorsWindow.follow(app.landingPageController.getWarningsAndErrorsHyperlink());
 
             stage.setTitle("Landing Page" + NidLayoutMigration.titleSuffix());
             stage.setMaximized(false);  // Change from true to false

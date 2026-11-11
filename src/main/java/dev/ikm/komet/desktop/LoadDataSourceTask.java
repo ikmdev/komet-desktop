@@ -18,6 +18,7 @@ package dev.ikm.komet.desktop;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.Alert;
+import dev.ikm.tinkar.common.alert.AlertLog;
 import dev.ikm.tinkar.common.service.DataStoreAlreadyOpenException;
 import dev.ikm.tinkar.common.service.PrimitiveData;
 import dev.ikm.tinkar.common.service.ServiceKeys;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.time.Instant;
 import java.util.Optional;
 
 public class LoadDataSourceTask extends TrackingCallable<Void> {
@@ -54,6 +56,20 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
         updateProgress(step.serviceIndex(), step.serviceCount());
     };
 
+    /**
+     * Has the alert log keep this knowledge base's warnings and errors in its folder, from the
+     * ones its startup reported onwards, so they can be read in a later run too. It waits for
+     * the knowledge base to open, since a new one's folder is the data store's to make.
+     *
+     * @param began when the knowledge base began to open
+     */
+    private static void keepWarningsAndErrors(Instant began) {
+        Optional<File> dataStoreRoot = ServiceProperties.get(ServiceKeys.DATA_STORE_ROOT);
+        if (dataStoreRoot.isPresent() && dataStoreRoot.get().isDirectory()) {
+            AlertLog.root().open(dataStoreRoot.get().toPath(), began);
+        }
+    }
+
     @Override
     protected Void compute() throws Exception {
         try {
@@ -61,12 +77,14 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
             // The outer bar follows the lifecycle's steps; the import and the index rebuild
             // within them are tracking callables of their own, with their own rows.
             ServiceLifecycleManager.get().addStartupListener(steps);
+            Instant began = Instant.now();
             try {
                 PrimitiveData.start();
             } finally {
                 ServiceLifecycleManager.get().removeStartupListener(steps);
             }
             LOG.info("PrimitiveData.start() completed successfully");
+            keepWarningsAndErrors(began);
             loadUnregisteredChangeSets();
             updateMessage("Data source loaded");
             updateProgress(1, 1);

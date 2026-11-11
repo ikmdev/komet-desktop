@@ -34,6 +34,7 @@ import dev.ikm.komet.preferences.KometPreferences;
 import dev.ikm.komet.preferences.KometPreferencesImpl;
 import dev.ikm.komet.preferences.Preferences;
 import dev.ikm.komet.executor.AlertDialogSubscriber;
+import dev.ikm.tinkar.common.alert.AlertLog;
 import dev.ikm.tinkar.common.alert.AlertObject;
 import dev.ikm.tinkar.common.alert.AlertStreams;
 import dev.ikm.tinkar.common.service.PrimitiveData;
@@ -535,6 +536,8 @@ public class App extends Application {
 
         try {
             App.primaryStage = stage;
+            // Every alert is recorded for the Warnings and Errors list, from here on.
+            AlertLog.root();
             // Show error dialogs for uncaught exceptions on any thread
             alertDialogSubscriber = new AlertDialogSubscriber();
             Thread.setDefaultUncaughtExceptionHandler((thread, exception) -> {

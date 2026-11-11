@@ -1,5 +1,7 @@
 package dev.ikm.komet.desktop;
 
+import dev.ikm.komet.desktop.alerts.WarningsAndErrorsWindow;
+
 import com.sun.management.OperatingSystemMXBean;
 import dev.ikm.komet.desktop.aboutdialog.AboutDialog;
 import dev.ikm.komet.desktop.maintenance.ChangeSetSummaryWindow;
@@ -463,7 +465,9 @@ public class AppMenu {
                 throw new RuntimeException(e);
             }
         });
-        viewMenu.getItems().addAll(classicKometMenuItem, createResourceUsageItem());
+        MenuItem warningsAndErrorsItem = new MenuItem("Warnings and Errors");
+        warningsAndErrorsItem.setOnAction(actionEvent -> WarningsAndErrorsWindow.show());
+        viewMenu.getItems().addAll(classicKometMenuItem, createResourceUsageItem(), warningsAndErrorsItem);
         return viewMenu;
     }
 

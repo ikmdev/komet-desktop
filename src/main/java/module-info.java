@@ -107,6 +107,9 @@ module dev.ikm.komet.desktop {
     requires javafx.graphics;
     //requires org.scenicview.scenicview;
 
+    // The journal sidebar's Warnings and Errors tray.
+    provides dev.ikm.komet.layout.tray.KlSidebarTrayProvider
+            with dev.ikm.komet.desktop.alerts.WarningsAndErrorsTrayProvider;
     provides dev.ikm.tinkar.common.service.ServiceLifecycle
             with dev.ikm.komet.desktop.MigrationRelaunchLifecycle;
 
