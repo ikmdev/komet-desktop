@@ -37,6 +37,8 @@ import dev.ikm.komet.framework.preferences.PrefX;
 import dev.ikm.komet.framework.view.ObservableEditCoordinate;
 import dev.ikm.komet.framework.view.ObservableViewNoOverride;
 import dev.ikm.komet.framework.view.ViewProperties;
+import dev.ikm.komet.desktop.util.CssFile;
+import dev.ikm.komet.layout.sidebar.KlAssistantSidebar;
 import dev.ikm.komet.framework.window.WindowSettings;
 import dev.ikm.komet.kleditorapp.view.KLEditorMainScreenController;
 import dev.ikm.komet.kview.events.JournalTileEvent;
@@ -326,6 +328,12 @@ public class AppPages {
         alert.showAndWait();
     }
 
+    /** The preferences node the landing page's and the KL editor's assistant sidebars keep their state under. */
+    private static final String ASSISTANT_SIDEBAR_NODE = "assistant-sidebar";
+
+    /** The landing page's assistant sidebar; empty when no plugin provides the assistant. */
+    private Optional<KlAssistantSidebar> landingAssistantSidebar = Optional.empty();
+
     public void launchLandingPage(Stage stage, ConceptFacade loggedInUser) {
         try {
             app.rootPane.getChildren().clear(); // Clear the root pane before adding new content
@@ -364,6 +372,15 @@ public class AppPages {
             });
 
             app.rootPane.getChildren().add(landingPageBorderPane);
+
+            // The landing page is loaded again when the person signs in again; the pane of the page it
+            // replaces lets go first, since both keep their state under the same node.
+            landingAssistantSidebar.ifPresent(KlAssistantSidebar::shutdown);
+            landingAssistantSidebar = KlAssistantSidebar.install(landingPageBorderPane, landingPageBorderPane::getCenter,
+                    appPreferences.node(ASSISTANT_SIDEBAR_NODE).node("landing-page"),
+                    windowSettings.getView().makeOverridableViewProperties("AppPages.landingAssistantSidebar"),
+                    null);
+            landingAssistantSidebar.ifPresent(sidebar -> sidebar.setHostName("Landing page"));
 
             app.appMenu.setupMenus(landingPageBorderPane, stage);
         } catch (IOException e) {
@@ -546,10 +563,34 @@ public class AppPages {
 
         app.appMenu.generateKLEditorMenu((BorderPane) root, klEditorWindowStage, klEditorMainScreenController);
 
+        // The assistant sidebar, its open button over the canvas. The editor's scene has its own
+        // stylesheets, so the pane's container carries the two the assistant is styled by elsewhere,
+        // and the "root" class their palette is defined on.
+        final Parent editorRoot = root;
+        final Optional<KlAssistantSidebar> assistantSidebar = KlAssistantSidebar.install((BorderPane) root,
+                () -> editorRoot.lookup("#canvasScrollPane"),
+                appPreferences.node(ASSISTANT_SIDEBAR_NODE).node("kl-editor"),
+                windowSettings.getView().makeOverridableViewProperties("AppPages.klEditorAssistantSidebar"),
+                null);
+        assistantSidebar.ifPresent(sidebar -> {
+            sidebar.setHostName("Knowledge Layout Editor");
+            sidebar.getDock().getStyleClass().add("root");
+            for (CssFile cssFile : List.of(KOMET_CSS, KVIEW_CSS)) {
+                sidebar.getDock().getStylesheets().add(
+                        AppPages.class.getClassLoader().getResource(cssFile.getResourcePath()).toExternalForm());
+            }
+        });
+
         bounds.ifPresentOrElse(saved -> ScreenFit.place(klEditorWindowStage, saved),
                 () -> klEditorWindowStage.setMaximized(true));
 
-        klEditorWindowStage.setOnHidden(windowEvent -> klEditorMainScreenController.shutdown());
+        klEditorWindowStage.setOnHidden(windowEvent -> {
+            klEditorMainScreenController.shutdown();
+            // Not during quit: the data services the pane saves through have stopped by then.
+            if (!App.shutdownInProgress) {
+                assistantSidebar.ifPresent(KlAssistantSidebar::shutdown);
+            }
+        });
 
         // Reopened at the next launch if it is open at quit on a saved layout (ike-issues#1151).
         if (!IS_BROWSER) {
