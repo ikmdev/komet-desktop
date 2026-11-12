@@ -15,6 +15,7 @@
  */
 package dev.ikm.komet.desktop.util;
 
+import dev.ikm.komet.kview.controls.ControlSceneStylesheets;
 import fr.brouillard.oss.cssfx.CSSFX;
 import fr.brouillard.oss.cssfx.api.URIToPathConverter;
 import javafx.scene.Scene;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -125,6 +127,12 @@ public final class CssUtils {
             LOG.info("Added {} stylesheet(s) to the scene.", cssUris.size());
         } else {
             LOG.warn("No CSS stylesheets were added to the scene.");
+        }
+
+        // A scene styled by kview.css hosts kview's controls. Their own stylesheets go on now, in
+        // one change, so that none is added later, while the scene is being styled.
+        if (Arrays.asList(cssFiles).contains(CssFile.KVIEW_CSS)) {
+            ControlSceneStylesheets.install(scene);
         }
 
         if (!loadedFromFileSystemList.isEmpty()) {
