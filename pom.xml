@@ -113,6 +113,11 @@
         <nid-check.report>error</nid-check.report>
         <nid-check.allow></nid-check.allow>
         <javac.maxwarns>10000</javac.maxwarns>
+        <!-- The unit tests' JVM options, which ike-parent's surefire argLine takes in: JavaFX logs
+             through JUL, which goes to stderr unless log4j's JUL manager takes it (a test that
+             starts the toolkit has JavaFX warn that it runs from the class path); the core
+             adapter honors the JUnit provider's setLevel call. -->
+        <argLine>-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager -Dlog4j.jul.LoggerAdapter=org.apache.logging.log4j.jul.CoreLoggerAdapter</argLine>
     </properties>
 
     <dependencyManagement>
