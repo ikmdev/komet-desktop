@@ -574,6 +574,8 @@ public class AppPages {
                 null);
         assistantSidebar.ifPresent(sidebar -> {
             sidebar.setHostName("Knowledge Layout Editor");
+            // Maximized, the pane also covers the window-title bar and the properties panel around the canvas.
+            sidebar.setMaximizedArea(() -> editorRoot.lookup("#canvasScrollPane").getParent());
             sidebar.getDock().getStyleClass().add("root");
             for (CssFile cssFile : List.of(KOMET_CSS, KVIEW_CSS)) {
                 sidebar.getDock().getStylesheets().add(
