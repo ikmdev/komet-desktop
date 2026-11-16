@@ -44,7 +44,7 @@
         <komet-claude-plugin.version>7-SNAPSHOT</komet-claude-plugin.version>
         <!-- stamp-adoc-core (ike-issues#468): staged into plugins/ beside komet-claude-plugin;
              keep in step with the plugin's own stamp-adoc-core.version. -->
-        <stamp-adoc-core.version>1.2.0-SNAPSHOT</stamp-adoc-core.version>
+        <stamp-adoc-core.version>1.3.0-SNAPSHOT</stamp-adoc-core.version>
         <!-- ike-bindings (ike-issues#844): staged into plugins/ beside komet-claude-plugin;
              keep in step with the plugin's own ike-starter-set.version. -->
         <ike-starter-set.version>1-SNAPSHOT</ike-starter-set.version>
@@ -73,6 +73,10 @@
              surface, staged into the runtime plugins/ layer; komet-claude-plugin requires it.
              Not a compile dependency. -->
         <komet-stamped-document-plugin.version>1-SNAPSHOT</komet-stamped-document-plugin.version>
+        <!-- komet-text-knowledge-plugin (ike-issues#1372, #1373): conceptification of stamped
+             documents and the match table's block kind, staged into the runtime plugins/ layer
+             beside the stamped document plugin it requires. Not a compile dependency. -->
+        <komet-text-knowledge-plugin.version>1-SNAPSHOT</komet-text-knowledge-plugin.version>
         <!-- Default: skip signing. Enable with -Dgpg.sign=true -->
         <gpg.sign.skip>true</gpg.sign.skip>
 
@@ -565,6 +569,19 @@
                                 <artifactId>komet-stamped-document-plugin</artifactId>
                                 <version>${komet-stamped-document-plugin.version}</version>
                             </artifactItem>
+                            <!-- komet-text-knowledge-plugin (#1372, #1373): conceptification and the
+                                 match table's block kind. It requires Lucene's analysis module, which
+                                 the boot image lacks (it has lucene-core), so that jar is staged
+                                 beside it, its version from komet-bom. -->
+                            <artifactItem>
+                                <groupId>network.ike.komet</groupId>
+                                <artifactId>komet-text-knowledge-plugin</artifactId>
+                                <version>${komet-text-knowledge-plugin.version}</version>
+                            </artifactItem>
+                            <artifactItem>
+                                <groupId>org.apache.lucene</groupId>
+                                <artifactId>lucene-analysis-common</artifactId>
+                            </artifactItem>
                             <artifactItem>
                                 <groupId>network.ike.komet</groupId>
                                 <artifactId>komet-claude-plugin</artifactId>
@@ -692,6 +709,11 @@
                             <groupId>network.ike.komet</groupId>
                             <artifactId>komet-stamped-document-plugin</artifactId>
                             <version>${komet-stamped-document-plugin.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>network.ike.komet</groupId>
+                            <artifactId>komet-text-knowledge-plugin</artifactId>
+                            <version>${komet-text-knowledge-plugin.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
