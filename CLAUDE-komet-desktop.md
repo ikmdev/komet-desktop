@@ -69,6 +69,31 @@ The log confirms the layer: `Initializing plugin system from:
 `Failed to create module layer` names the missing module — install that
 plugin (or the dependency it names) rather than widening the boot layer.
 
+## Tests against the jlinked image
+
+Integration tests (`*IT`, failsafe) run after `package` has built the
+image, and against it. `RuleCompilationInImageIT` has the image's own
+`java` run `RuleCompilationProbe`, which compiles rule source against
+Komet's types and fires the rules: add a rule to rules in use, list
+them, replace an edited rule, refuse source that does not compile. Its
+last cases put a rule source in use through Komet's own rule service
+(`EvreteRulesService`), as the running application does. In
+the image those types exist only inside the image, with no jar for a
+compiler to read, so a test on Maven's class path proves nothing about
+it. The test fails, rather than being skipped, when there is no image.
+
+To run it alone against an image already built, from the workspace
+root:
+
+```bash
+mvn -pl komet-desktop jacoco:prepare-agent-integration@jacoco-prepare-agent-integration failsafe:integration-test failsafe:verify -Dit.test=RuleCompilationInImageIT
+```
+
+The jacoco goal comes first because it sets `failsafeArgLine`; without
+it the test JVM is started with a literal `@{failsafeArgLine}` and
+dies. `-Dkomet.image.directory=<image>` points the test at an image
+built elsewhere.
+
 ## Key Facts
 
 - GroupId: `dev.ikm.komet`

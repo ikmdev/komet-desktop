@@ -122,6 +122,9 @@
              starts the toolkit has JavaFX warn that it runs from the class path); the core
              adapter honors the JUnit provider's setLevel call. -->
         <argLine>-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager -Dlog4j.jul.LoggerAdapter=org.apache.logging.log4j.jul.CoreLoggerAdapter</argLine>
+        <!-- The jlinked image the integration tests run against: the one package builds. Name
+             another with -Dkomet.image.directory=<image> to test an image built elsewhere. -->
+        <komet.image.directory>${project.build.directory}/kometRuntimeImage</komet.image.directory>
     </properties>
 
     <dependencyManagement>
@@ -1211,6 +1214,30 @@
                         <classpathDependencyExclude>dev.ikm.komet:executor</classpathDependencyExclude>
                     </classpathDependencyExcludes>
                 </configuration>
+            </plugin>
+            <!-- Integration tests run after package has built the jlinked image, and against it.
+                 RuleCompilationInImageIT has the image's own java compile rule source and fire the
+                 rules: a compiler finding Komet's types inside the image is what failed in the past,
+                 and what a test on Maven's class path cannot show. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/*IT.java</include>
+                    </includes>
+                    <systemPropertyVariables>
+                        <komet.image.directory>${komet.image.directory}</komet.image.directory>
+                    </systemPropertyVariables>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
