@@ -180,4 +180,32 @@ class LaunchOptionsTest {
         assertTrue(options.noRestore(), "--no-restore has no value, so it is unnamed");
         assertEquals(Optional.of("Gretel"), options.get(Option.USER));
     }
+
+    @Test
+    void aUserWithNoPasswordAsksOnlyToBeSelectedAndWarnsOfNothing() {
+        // The IKE Dashboard names the person at every launch, with no password (KEC, 2026-11-22).
+        LaunchOptions.UserLogin selected = LaunchOptions.UserLogin.of(true, false, false);
+        assertEquals(LaunchOptions.UserLogin.SELECTED, selected);
+        assertFalse(selected.warns());
+
+        LaunchOptions.UserLogin notHere = LaunchOptions.UserLogin.of(false, false, false);
+        assertEquals(LaunchOptions.UserLogin.NOT_AN_AUTHOR_HERE, notHere,
+                "a knowledge base has the person as an author only once the change set of authors is in it");
+        assertFalse(notHere.warns());
+    }
+
+    @Test
+    void aPasswordGivenInVainIsWorthAWarning() {
+        LaunchOptions.UserLogin loggedIn = LaunchOptions.UserLogin.of(true, true, true);
+        assertEquals(LaunchOptions.UserLogin.LOGGED_IN, loggedIn);
+        assertFalse(loggedIn.warns());
+
+        LaunchOptions.UserLogin wrong = LaunchOptions.UserLogin.of(true, true, false);
+        assertEquals(LaunchOptions.UserLogin.WRONG_PASSWORD, wrong);
+        assertTrue(wrong.warns());
+
+        LaunchOptions.UserLogin unknown = LaunchOptions.UserLogin.of(false, true, false);
+        assertEquals(LaunchOptions.UserLogin.UNKNOWN_AUTHOR, unknown);
+        assertTrue(unknown.warns());
+    }
 }

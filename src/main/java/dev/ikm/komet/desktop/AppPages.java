@@ -177,7 +177,8 @@ public class AppPages {
      * the developer bypass {@code -Ddev_author=<name or uuid>} with no password, or
      * {@code --user=<name or uuid>} with the password the author screen would accept
      * (IKE-Network/ike-issues#1139). When {@code --user} names an author but the password is
-     * missing or does not check, the author screen opens with that author selected.
+     * missing or does not check, the author screen opens with that author selected. What each case
+     * comes to, and which is worth a warning, is {@link LaunchOptions.UserLogin}.
      *
      * @param viewProperties the author screen's view
      * @param preselect      receives the {@code --user} author when the screen must still be shown
@@ -200,30 +201,32 @@ public class AppPages {
             LOG.warn("No concept entity found for user id {}. Will be showing login screen.", devAuthorPropStr);
         }
 
-        // --user: the password is checked the way the author screen checks it.
+        // --user: the password is checked the way the author screen checks it. With no password the launch
+        // asks only for the author to be selected on the screen, as the IKE Dashboard does at every launch
+        // (KEC, 2026-11-22), so that is said quietly: a warning is for a launch that asked to skip the screen.
         Optional<String> launchUser = LaunchOptions.current().get(LaunchOptions.Option.USER);
         if (launchUser.isPresent()) {
+            String user = LaunchOptions.Option.USER.argumentName();
             Optional<ConceptEntity> author = resolveAuthor(viewCalculator, launchUser.get());
-            if (author.isEmpty()) {
-                LOG.warn("--{} names no author: {}. Showing the author screen.",
-                        LaunchOptions.Option.USER.argumentName(), launchUser.get());
-                return false;
-            }
             Optional<String> password = LaunchOptions.current().password(System::getenv);
-            if (password.isPresent() && LoginAuthorViewModel.passwordMatches(viewProperties, author.get(), password.get())) {
-                LOG.info("Logged in from the command line as {}", viewCalculator.getDescriptionTextOrNid(author.get().nid()));
-                logIn(author.get());
-                return true;
-            }
-            if (password.isEmpty()) {
-                LOG.warn("--{} {}: no password supplied (set {} or pass --{}). Showing the author screen.",
-                        LaunchOptions.Option.USER.argumentName(), launchUser.get(),
+            boolean checks = author.isPresent() && password.isPresent()
+                    && LoginAuthorViewModel.passwordMatches(viewProperties, author.get(), password.get());
+            switch (LaunchOptions.UserLogin.of(author.isPresent(), password.isPresent(), checks)) {
+                case LOGGED_IN -> {
+                    LOG.info("Logged in from the command line as {}", viewCalculator.getDescriptionTextOrNid(author.get().nid()));
+                    logIn(author.get());
+                    return true;
+                }
+                case SELECTED -> LOG.info("--{} {}: no password was given (set {} or pass --{} to skip the author screen),"
+                                + " so the author screen opens with that author selected.", user, launchUser.get(),
                         LaunchOptions.PASSWORD_ENVIRONMENT_VARIABLE, LaunchOptions.Option.PASSWORD_FILE.argumentName());
-            } else {
-                LOG.warn("--{} {}: the password does not match. Showing the author screen.",
-                        LaunchOptions.Option.USER.argumentName(), launchUser.get());
+                case NOT_AN_AUTHOR_HERE -> LOG.info("--{} {}: this knowledge base has no such author, so the author screen"
+                        + " opens as it always has.", user, launchUser.get());
+                case UNKNOWN_AUTHOR -> LOG.warn("--{} names no author: {}. Showing the author screen.", user, launchUser.get());
+                case WRONG_PASSWORD -> LOG.warn("--{} {}: the password does not match. Showing the author screen.",
+                        user, launchUser.get());
             }
-            preselect.accept(author.get());
+            author.ifPresent(preselect);
         }
         return false;
     }

@@ -116,6 +116,61 @@ public final class LaunchOptions {
         }
     }
 
+    /**
+     * What a launch with {@link Option#USER} comes to, and whether it is worth a warning in the log.
+     *
+     * <p>A launch that gives a password asks to skip the author screen, so a warning says when it could
+     * not. A launch that gives none asks only for the author to be selected on the screen: the IKE
+     * Dashboard names the person that way at every launch (KEC, 2026-11-22), and a knowledge base has that
+     * person as an author only once the change set of authors is loaded into it. So that a knowledge base
+     * has no such author is ordinary there, and is said without a warning.
+     */
+    public enum UserLogin {
+        /** The password checks: Komet opens as the author, with no author screen. */
+        LOGGED_IN(false),
+        /** No password was given: the author screen opens with the author selected. */
+        SELECTED(false),
+        /** No password was given, and the knowledge base has no such author: the author screen opens as it always has. */
+        NOT_AN_AUTHOR_HERE(false),
+        /** A password was given for an author the knowledge base does not have. */
+        UNKNOWN_AUTHOR(true),
+        /** A password was given, and it does not check. */
+        WRONG_PASSWORD(true);
+
+        private final boolean warns;
+
+        UserLogin(boolean warns) {
+            this.warns = warns;
+        }
+
+        /**
+         * Whether the case is worth a warning: the launch asked to skip the author screen and could not.
+         *
+         * @return true for a password that was given in vain
+         */
+        public boolean warns() {
+            return warns;
+        }
+
+        /**
+         * What a launch with {@code --user} comes to.
+         *
+         * @param authorFound    whether the knowledge base has the author named
+         * @param passwordGiven  whether a password was supplied
+         * @param passwordChecks whether the password is the one the author screen would accept
+         * @return the case
+         */
+        public static UserLogin of(boolean authorFound, boolean passwordGiven, boolean passwordChecks) {
+            if (!authorFound) {
+                return passwordGiven ? UNKNOWN_AUTHOR : NOT_AN_AUTHOR_HERE;
+            }
+            if (!passwordGiven) {
+                return SELECTED;
+            }
+            return passwordChecks ? LOGGED_IN : WRONG_PASSWORD;
+        }
+    }
+
     private static LaunchOptions current = new LaunchOptions(new EnumMap<>(Option.class), false, false, null, false);
 
     private final Map<Option, String> values;
