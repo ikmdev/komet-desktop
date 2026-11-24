@@ -1,6 +1,7 @@
 package dev.ikm.komet.desktop;
 
 import dev.ikm.komet.desktop.alerts.WarningsAndErrorsWindow;
+import dev.ikm.komet.desktop.storage.StorageWindow;
 
 import com.sun.management.OperatingSystemMXBean;
 import dev.ikm.komet.desktop.aboutdialog.AboutDialog;
@@ -467,7 +468,9 @@ public class AppMenu {
         });
         MenuItem warningsAndErrorsItem = new MenuItem("Warnings and Errors");
         warningsAndErrorsItem.setOnAction(actionEvent -> WarningsAndErrorsWindow.show());
-        viewMenu.getItems().addAll(classicKometMenuItem, createResourceUsageItem(), warningsAndErrorsItem);
+        MenuItem storageItem = new MenuItem("Storage");
+        storageItem.setOnAction(actionEvent -> StorageWindow.show());
+        viewMenu.getItems().addAll(classicKometMenuItem, createResourceUsageItem(), warningsAndErrorsItem, storageItem);
         return viewMenu;
     }
 

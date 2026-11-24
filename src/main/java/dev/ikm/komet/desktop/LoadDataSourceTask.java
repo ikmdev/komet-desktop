@@ -149,6 +149,11 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
             return;
         }
         try {
+            applySharedMarkers(root.get().toPath());
+        } catch (RuntimeException e) {
+            LOG.error("Reading the markers in the folder of shared data failed; nothing was removed", e);
+        }
+        try {
             ChangeSetLoad.Report report = ChangeSetLoad.loadStore(root.get().toPath(), (index, count, file, retry) ->
                     updateMessage((retry ? "Retrying change set " : "Loading change set ") + index + " of " + count
                             + ": " + file.getFileName()));
@@ -160,6 +165,24 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
         } catch (Exception e) {
             LOG.error("Loading the store's change sets at open failed; the open goes on without them", e);
         }
+    }
+
+    /**
+     * Removes the shared documents a marker says were deleted or made local elsewhere, before the change
+     * sets load, so none of theirs is read back (IKE-Network/ike-issues#1313, decision 8 as amended on
+     * 2026-11-23). Missing files without a marker remove nothing; each thing done or noticed is kept in
+     * Warnings and Errors.
+     */
+    private static void applySharedMarkers(java.nio.file.Path root) {
+        java.nio.file.Path folder = dev.ikm.tinkar.entity.scope.SharedFolder.of(root);
+        if (!java.nio.file.Files.isDirectory(folder)) {
+            return;                                                // nothing was shared, or the next sync says what is missing
+        }
+        dev.ikm.tinkar.entity.scope.SharedFolder.apply(folder, dev.ikm.tinkar.terms.KernelConcept.USER).sentences().forEach(sentence -> {
+            LOG.info("Shared data: {}", sentence);
+            dev.ikm.tinkar.common.alert.AlertStreams.getRoot().dispatch(
+                    dev.ikm.tinkar.common.alert.AlertObject.makeAdvisory("Shared documents", sentence));
+        });
     }
 
     /**
