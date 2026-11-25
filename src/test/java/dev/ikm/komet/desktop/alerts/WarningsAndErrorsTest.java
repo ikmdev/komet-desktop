@@ -122,6 +122,17 @@ class WarningsAndErrorsTest {
     }
 
     @Test
+    void whatWorkedIsANoteAndWhatDidNotIsAWarning() {
+        AlertLog log = new AlertLog();
+        log.record(AlertObject.makeOutcome(true, "Share", "Shared notes/a.adoc."));
+        log.record(AlertObject.makeOutcome(false, "Export", "The file could not be written."));
+        String text = WarningsAndErrors.plainText(log.entries(), ZoneOffset.UTC);
+        assertTrue(text.contains("Note: Share"), text);
+        assertTrue(text.contains("Warning: Export"), text);
+        assertEquals("1 warning, 1 note (1 new)", WarningsAndErrors.summary(log.entries(), log.unseenCount()));
+    }
+
+    @Test
     void theLandingPageCountsEachKindAndWhatIsNew() {
         List<AlertLog.Entry> entries = List.of(
                 entry(NOON, AlertType.WARNING, "One", "", true),
