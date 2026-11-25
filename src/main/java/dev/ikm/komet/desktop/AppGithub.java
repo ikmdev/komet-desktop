@@ -1,14 +1,19 @@
 package dev.ikm.komet.desktop;
 
+import dev.ikm.komet.framework.concurrent.TaskWrapper;
+import dev.ikm.komet.framework.events.appevents.ProgressEvent;
 import dev.ikm.komet.framework.progress.ProgressHelper;
 import dev.ikm.komet.kview.controls.GlassPane;
+import dev.ikm.komet.kview.mvvm.model.GitHubPreferencesDao;
 import dev.ikm.komet.kview.mvvm.view.changeset.exchange.*;
 import dev.ikm.komet.kview.mvvm.viewmodel.GitHubPreferencesViewModel;
 import dev.ikm.tinkar.common.service.ServiceKeys;
 import dev.ikm.tinkar.common.service.ServiceProperties;
 import dev.ikm.tinkar.common.service.TinkExecutor;
+import dev.ikm.tinkar.events.EvtBusFactory;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
 import org.carlfx.cognitive.loader.FXMLMvvmLoader;
 import org.carlfx.cognitive.loader.JFXNode;
 import org.slf4j.Logger;
@@ -30,6 +35,7 @@ public class AppGithub {
 
     private static final Logger LOG = LoggerFactory.getLogger(AppGithub.class);
     static final String CHANGESETS_DIR = "changeSets";
+    private static final String CANCEL_BUTTON_TEXT = "Cancel";
 
     private final App app;
 
@@ -44,16 +50,17 @@ public class AppGithub {
      * {@code true} if the user successfully enters valid credentials and connects,
      * or {@code false} if they cancel the operation.
      *
+     * @param stage the window the dialog opens in
      * @return A CompletableFuture that completes with true if valid GitHub preferences
      *         were successfully provided by the user, or false if the user canceled the operation
      */
-    CompletableFuture<Boolean> promptForGitHubPrefs() {
+    CompletableFuture<Boolean> promptForGitHubPrefs(Stage stage) {
         // Create a CompletableFuture that will be completed when the user makes a choice
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
         // Show dialog on JavaFX thread
         runOnFxThread(() -> {
-            GlassPane glassPane = new GlassPane(app.landingPageController.getRoot());
+            GlassPane glassPane = new GlassPane(dialogHost(stage));
 
             final JFXNode<Pane, GitHubPreferencesController> githubPreferencesNode = FXMLMvvmLoader
                     .make(GitHubPreferencesController.class.getResource("github-preferences.fxml"));
@@ -84,6 +91,19 @@ public class AppGithub {
         });
 
         return future;
+    }
+
+    /**
+     * The pane of a window that the exchange's dialogs cover.
+     *
+     * @param stage the window
+     * @return the landing page for the primary window, else the root of the window's scene
+     */
+    private Pane dialogHost(Stage stage) {
+        if (stage == App.primaryStage && app.landingPageController != null) {
+            return app.landingPageController.getRoot();
+        }
+        return (Pane) stage.getScene().getRoot();
     }
 
     /**
@@ -136,8 +156,9 @@ public class AppGithub {
      *
      * @param mode The operation mode (CONNECT, PULL, or SYNC) that determines what
      *             Git operations will be performed
+     * @param stage the window it was chosen in, where its dialog opens and its progress shows
      */
-    void executeGitTask(GitTask.OperationMode mode) {
+    void executeGitTask(GitTask.OperationMode mode, Stage stage) {
         Optional<File> optionalDataStoreRoot = ServiceProperties.get(ServiceKeys.DATA_STORE_ROOT);
         if (optionalDataStoreRoot.isEmpty()) {
             LOG.error("ServiceKeys.DATA_STORE_ROOT not provided.");
@@ -157,17 +178,17 @@ public class AppGithub {
             LOG.info("GitHub preferences missing or incomplete. Prompting user...");
 
             // Prompt for preferences before proceeding
-            promptForGitHubPrefs().thenAccept(confirmed -> {
+            promptForGitHubPrefs(stage).thenAccept(confirmed -> {
                 if (confirmed) {
                     // Preferences entered successfully, now run the GitTask
-                    createAndRunGitTask(mode, changeSetFolder);
+                    createAndRunGitTask(mode, changeSetFolder, stage);
                 } else {
                     LOG.info("User cancelled the GitHub preferences dialog");
                 }
             });
         } else {
             // Preferences already valid, run the GitTask directly
-            createAndRunGitTask(mode, changeSetFolder);
+            createAndRunGitTask(mode, changeSetFolder, stage);
         }
     }
 
@@ -181,19 +202,26 @@ public class AppGithub {
      *   <li>Handles errors and updates the UI accordingly</li>
      * </ol>
      * The task is executed asynchronously through the ProgressHelper service to
-     * provide user feedback during long-running operations.
+     * provide user feedback during long-running operations. The landing page shows the progress, and when
+     * the operation was chosen in another window the journals show it too.
      *
      * @param operationMode The operation mode specifying which Git operations to perform
      * @param changeSetFolder The folder where the Git repository is located
+     * @param stage the window the operation was chosen in
      * @return A CompletableFuture that completes with true if the operation was successful,
      *         or false if it failed or was cancelled
      */
-    CompletableFuture<Boolean> createAndRunGitTask(GitTask.OperationMode operationMode, File changeSetFolder) {
+    CompletableFuture<Boolean> createAndRunGitTask(GitTask.OperationMode operationMode, File changeSetFolder, Stage stage) {
         // Create a GitTask with only the connection success callback
         GitTask gitTask = new GitTask(operationMode, changeSetFolder.toPath(), this::gotoGitHubConnectedState);
 
         // Run the task
-        return ProgressHelper.progress(LANDING_PAGE_TOPIC, gitTask)
+        TaskWrapper<Boolean> task = TaskWrapper.make(gitTask);
+        if (stage != App.primaryStage) {
+            EvtBusFactory.getDefaultEvtBus()
+                    .publish(PROGRESS_TOPIC, new ProgressEvent(task, ProgressEvent.SUMMON, task, CANCEL_BUTTON_TEXT));
+        }
+        return ProgressHelper.progress(LANDING_PAGE_TOPIC, task, CANCEL_BUTTON_TEXT)
                 .whenComplete((result, throwable) -> {
                     if (throwable != null) {
                         LOG.error("Error during {} operation", operationMode, throwable);
@@ -215,41 +243,32 @@ public class AppGithub {
      */
     void connectToGithub() {
         LOG.info("Attempting to connect to GitHub...");
-        executeGitTask(CONNECT);
+        executeGitTask(CONNECT, App.primaryStage);
     }
 
     /**
-     * Disconnects from GitHub and cleans up local resources.
-     * <p>     * This method performs the following cleanup operations:
-     * <ol>
-     *   <li>Logs the disconnection attempt</li>
-     *   <li>Removes all GitHub-related preferences from user preferences</li>
-     *   <li>Deletes the local .git repository folder if it exists</li>
-     *   <li>Deletes the README.md file if it exists</li>
-     *   <li>Updates the UI to reflect the disconnected state</li>
-     * </ol>
-     * If any errors occur during this process, they are logged but do not prevent
-     * the disconnection from completing.
+     * Disconnects from GitHub: forgets the password and shows the disconnected state. The URL, email and user
+     * name stay in the knowledge base's preferences, so the next connection asks only for the password. The
+     * local repository is left as it is.
      */
     void disconnectFromGithub() {
         LOG.info("Disconnecting from GitHub...");
+        app.gitHubPreferencesDao.forgetPassword();
 
-        // Delete stored user preferences related to GitHub
+        // What an earlier Komet kept for all knowledge bases, its password among it
         try {
-            app.gitHubPreferencesDao.delete();
-            LOG.info("Successfully deleted GitHub preferences");
+            GitHubPreferencesDao.removeUserWidePreferences();
         } catch (BackingStoreException e) {
-            LOG.error("Failed to delete GitHub preferences", e);
-    }
-    
-    // Update the UI state - but only if not shutting down
-    if (!app.shutdownInProgress) {
-        gotoGitHubDisconnectedState();
-    } else {
-        LOG.info("Skipping UI update during shutdown");
-    }
-}
+            LOG.error("Failed to delete the GitHub preferences of an earlier Komet", e);
+        }
 
+        // Update the UI state - but only if not shutting down
+        if (!app.shutdownInProgress) {
+            gotoGitHubDisconnectedState();
+        } else {
+            LOG.info("Skipping UI update during shutdown");
+        }
+    }
 
 
     /**
@@ -265,8 +284,10 @@ public class AppGithub {
      *   <li>If no repository exists, prompts for GitHub preferences and initiates connection</li>
      *   <li>Fetches and displays repository information</li>
      * </ol>
+     *
+     * @param stage the window it was chosen in, where its dialogs open
      */
-    void infoAction() {
+    void infoAction(Stage stage) {
         Optional<File> optionalDataStoreRoot = ServiceProperties.get(ServiceKeys.DATA_STORE_ROOT);
         if (optionalDataStoreRoot.isEmpty()) {
             LOG.error("ServiceKeys.DATA_STORE_ROOT not provided.");
@@ -277,19 +298,19 @@ public class AppGithub {
         final File gitDir = new File(changeSetFolder, ".git");
 
         if (gitDir.exists()) {
-            fetchAndShowRepositoryInfo(changeSetFolder);
+            fetchAndShowRepositoryInfo(changeSetFolder, stage);
         } else {
             // Prompt for preferences before proceeding
-            promptForGitHubPrefs().thenCompose(confirmed -> {
+            promptForGitHubPrefs(stage).thenCompose(confirmed -> {
                 if (confirmed) {
                     // Preferences entered successfully, now run the GitTask
-                    return createAndRunGitTask(CONNECT, changeSetFolder);
+                    return createAndRunGitTask(CONNECT, changeSetFolder, stage);
                 } else {
                     return CompletableFuture.completedFuture(false);
                 }
             }).thenAccept(confirmed -> {
                 if (confirmed) {
-                    fetchAndShowRepositoryInfo(changeSetFolder);
+                    fetchAndShowRepositoryInfo(changeSetFolder, stage);
                 }
             });
         }
@@ -303,8 +324,9 @@ public class AppGithub {
      * to avoid blocking the UI.
      *
      * @param changeSetFolder The repository folder to fetch information from
+     * @param stage the window the dialog opens in
      */
-    private void fetchAndShowRepositoryInfo(File changeSetFolder) {
+    private void fetchAndShowRepositoryInfo(File changeSetFolder, Stage stage) {
         CompletableFuture.supplyAsync(() -> {
                     try {
                         InfoTask task = new InfoTask(changeSetFolder.toPath());
@@ -313,7 +335,7 @@ public class AppGithub {
                         throw new RuntimeException("Failed to fetch repository information", ex);
                     }
                 }, TinkExecutor.threadPool())
-                .thenCompose(repoInfo -> showRepositoryInfoDialog(repoInfo)
+                .thenCompose(repoInfo -> showRepositoryInfoDialog(repoInfo, stage)
                         .thenAccept(confirmed -> {
                             if (confirmed) {
                                 LOG.info("User closed the repository info dialog");
@@ -325,20 +347,21 @@ public class AppGithub {
      * Displays the repository information dialog.
      * <p>     * This method creates and displays a dialog showing Git repository information
      * including URL, username, email, and status. The dialog is displayed using a
-     * glass pane overlay on top of the landing page.
+     * glass pane overlay on top of the window it was chosen in.
      * <p>     * The method returns a CompletableFuture that will be completed when the user
      * closes the dialog.
      *
      * @param repoInfo Map containing repository information with keys defined in {@code GitPropertyName}
+     * @param stage the window the dialog opens in
      * @return A CompletableFuture that completes with {@code true} when the user closes the dialog
      */
-    private CompletableFuture<Boolean> showRepositoryInfoDialog(Map<GitPropertyName, String> repoInfo) {
+    private CompletableFuture<Boolean> showRepositoryInfoDialog(Map<GitPropertyName, String> repoInfo, Stage stage) {
         // Create a CompletableFuture that will be completed when the user makes a choice
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
         // Show dialog on JavaFX thread
         runOnFxThread(() -> {
-            GlassPane glassPane = new GlassPane(app.landingPageController.getRoot());
+            GlassPane glassPane = new GlassPane(dialogHost(stage));
 
             final JFXNode<Pane, GitHubInfoController> githubInfoNode = FXMLMvvmLoader
                     .make(GitHubInfoController.class.getResource("github-info.fxml"));

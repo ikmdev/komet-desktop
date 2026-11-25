@@ -131,7 +131,7 @@ public class AppMenu {
 
         Menu helpMenu = createHelpMenu();
 
-        menuBar.getMenus().addAll(fileMenu, editMenu, helpMenu);
+        menuBar.getMenus().addAll(fileMenu, editMenu, createExchangeMenu(stage), helpMenu);
         menuBar.setUseSystemMenuBar(true);
 
         // Register with WindowMenuManager — inserts a "Window" menu before "Help"
@@ -181,7 +181,7 @@ public class AppMenu {
 
         Menu helpMenu = createHelpMenu();
 
-        menuBar.getMenus().addAll(fileMenu, editMenu, helpMenu);
+        menuBar.getMenus().addAll(fileMenu, editMenu, createExchangeMenu(stage), helpMenu);
         menuBar.setUseSystemMenuBar(true);
 
         // Register with WindowMenuManager — inserts a live "Window" menu before "Help"
@@ -190,15 +190,22 @@ public class AppMenu {
         Platform.runLater(() -> root.setTop(menuBar));
     }
 
-    Menu createExchangeMenu() {
+    /**
+     * Creates the menu of the change set exchange. Every window's menu bar has one: on macOS the window in front
+     * supplies the menu bar, so a menu that only the landing page has cannot be reached from the other windows.
+     *
+     * @param stage the window whose menu bar this is, which the exchange's dialogs open in
+     * @return the menu
+     */
+    Menu createExchangeMenu(Stage stage) {
         Menu exchangeMenu = new Menu("Exchange");
 
         MenuItem infoMenuItem = new MenuItem("Info");
-        infoMenuItem.setOnAction(actionEvent -> app.appGithub.infoAction());
+        infoMenuItem.setOnAction(actionEvent -> app.appGithub.infoAction(stage));
         MenuItem pullMenuItem = new MenuItem("Pull");
-        pullMenuItem.setOnAction(actionEvent -> app.appGithub.executeGitTask(PULL));
+        pullMenuItem.setOnAction(actionEvent -> app.appGithub.executeGitTask(PULL, stage));
         MenuItem pushMenuItem = new MenuItem("Sync");
-        pushMenuItem.setOnAction(actionEvent -> app.appGithub.executeGitTask(SYNC));
+        pushMenuItem.setOnAction(actionEvent -> app.appGithub.executeGitTask(SYNC, stage));
 
         exchangeMenu.getItems().addAll(infoMenuItem, pullMenuItem, pushMenuItem);
         return exchangeMenu;
@@ -271,7 +278,7 @@ public class AppMenu {
         if (App.state.get() == RUNNING) {
             menuBar.getMenus().addAll(createFileMenu(), createEditMenu(), createViewMenu(), createToolsMenu());
         }
-        menuBar.getMenus().add(createExchangeMenu());
+        menuBar.getMenus().add(createExchangeMenu(App.primaryStage));
         menuBar.getMenus().add(createHelpMenu());
         return menuBar;
     }
