@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.prefs.BackingStoreException;
 
@@ -209,7 +210,7 @@ public class AppGithub {
      * @param changeSetFolder The folder where the Git repository is located
      * @param stage the window the operation was chosen in
      * @return A CompletableFuture that completes with true if the operation was successful,
-     *         or false if it failed or was cancelled
+     *         with false if it failed, and exceptionally if it was cancelled
      */
     CompletableFuture<Boolean> createAndRunGitTask(GitTask.OperationMode operationMode, File changeSetFolder, Stage stage) {
         // Create a GitTask with only the connection success callback
@@ -223,7 +224,10 @@ public class AppGithub {
         }
         return ProgressHelper.progress(LANDING_PAGE_TOPIC, task, CANCEL_BUTTON_TEXT)
                 .whenComplete((result, throwable) -> {
-                    if (throwable != null) {
+                    if (throwable instanceof CancellationException) {
+                        // Neither a failure nor a disconnection: the next operation goes on with the same login.
+                        LOG.info("{} cancelled", operationMode);
+                    } else if (throwable != null) {
                         LOG.error("Error during {} operation", operationMode, throwable);
                         disconnectFromGithub();
                     } else if (!result) {
