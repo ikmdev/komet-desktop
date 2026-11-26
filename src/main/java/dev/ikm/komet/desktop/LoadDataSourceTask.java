@@ -18,6 +18,7 @@ package dev.ikm.komet.desktop;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.Alert;
+import dev.ikm.komet.kview.mvvm.view.changeset.exchange.RefusedChangeSets;
 import dev.ikm.tinkar.common.alert.AlertLog;
 import dev.ikm.tinkar.common.service.DataStoreAlreadyOpenException;
 import dev.ikm.tinkar.common.service.PrimitiveData;
@@ -137,9 +138,12 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
      * into a new build, a fresh clone's history, or a file another tool put there. A store that
      * declares no registry loads every file; one in a legacy nid layout, which is offered a
      * migration at this point, loads none here. A failure is logged and the open goes on: the
-     * store is whole without the files, and the next open tries them again.
+     * store is whole without the files, and the next open tries them again. A file the store
+     * refuses is named in Warnings and Errors, with why, as an advisory that opens no dialog, at
+     * every open that refuses it (IKE-Network/ike-issues#1406). Package-private so a test can run
+     * this step on a store it started.
      */
-    private void loadUnregisteredChangeSets() {
+    void loadUnregisteredChangeSets() {
         Optional<File> root = ServiceProperties.get(ServiceKeys.DATA_STORE_ROOT);
         if (root.isEmpty()) {
             return;
@@ -162,6 +166,8 @@ public class LoadDataSourceTask extends TrackingCallable<Void> {
             } else {
                 LOG.info("Change sets at open: {}\n{}", report.summary(), report.markdown());
             }
+            RefusedChangeSets.advise("Opening the knowledge base", "found when it opened", root.get().toPath(),
+                    report.refused());
         } catch (Exception e) {
             LOG.error("Loading the store's change sets at open failed; the open goes on without them", e);
         }
